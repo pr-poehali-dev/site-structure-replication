@@ -97,9 +97,9 @@ const Index = () => {
               </Button>
             </div>
           </div>
-          <div className="relative animate-scale-in">
+          <div className="relative animate-scale-in flex items-center">
             <div className="absolute -inset-4 bg-secondary/20 rounded-3xl blur-2xl" />
-            <img src={HERO_IMG} alt="Дети играют в шахматы" className="relative rounded-3xl shadow-2xl w-full object-cover aspect-square" />
+            <img src={HERO_IMG} alt="Шахматная доска" className="relative rounded-3xl shadow-2xl w-full h-full object-contain" />
           </div>
         </div>
       </section>
