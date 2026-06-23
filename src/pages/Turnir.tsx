@@ -25,7 +25,7 @@ export default function Turnir() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
-  const [form, setForm] = useState({ name: '', child_name: '', age: '', phone: '', email: '' });
+  const [form, setForm] = useState({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function Turnir() {
 
   function openModal(t: Tournament) {
     setModalTournament(t);
-    setForm({ name: '', child_name: '', age: '', phone: '', email: '' });
+    setForm({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
     setSent(false);
   }
 
@@ -120,7 +120,7 @@ export default function Turnir() {
       {/* Modal */}
       {modalTournament && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={closeModal}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={closeModal}>
               <Icon name="X" size={20} />
             </button>
@@ -128,30 +128,46 @@ export default function Turnir() {
             {!sent ? (
               <>
                 <h2 className="font-heading font-bold text-xl text-primary mb-1">Заявка на участие</h2>
-                <p className="text-sm text-gray-500 mb-5">{modalTournament.title}</p>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <p className="text-sm text-gray-500 mb-4">{modalTournament.title}</p>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Ваше имя (родитель) *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван Иванович" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                    <label className="text-sm font-medium text-gray-700">ФИО участника *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван Иванович" value={form.fio} onChange={e => setForm({ ...form, fio: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Имя ребёнка *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван" value={form.child_name} onChange={e => setForm({ ...form, child_name: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Возраст ребёнка *</label>
+                    <label className="text-sm font-medium text-gray-700">Возраст участника *</label>
                     <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Например: 10 лет" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Телефон *</label>
-                    <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                    <label className="text-sm font-medium text-gray-700">ID ФШР</label>
+                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Номер в системе ФШР" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="example@mail.ru" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                    <label className="text-sm font-medium text-gray-700">ФИО тренера</label>
+                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Петров Пётр Петрович" value={form.coach} onChange={e => setForm({ ...form, coach: e.target.value })} />
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Страна / Город *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Россия, Москва" value={form.country_city} onChange={e => setForm({ ...form, country_city: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Учебное заведение</label>
+                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Шахматная школа / клуб" value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Электронная почта *</label>
+                    <input required type="email" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="example@mail.ru" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Телефон представителя *</label>
+                    <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                  </div>
+                  <label className="flex items-start gap-2 cursor-pointer mt-1">
+                    <input required type="checkbox" className="mt-0.5 accent-secondary w-4 h-4 shrink-0" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
+                    <span className="text-sm text-gray-600">Соглашаюсь с условиями проведения соревнования</span>
+                  </label>
                   <Button type="submit" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
-                    Отправить заявку
+                    <Icon name="CreditCard" size={16} className="mr-2" /> Оплатить и подать заявку
                   </Button>
                 </form>
               </>
