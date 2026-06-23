@@ -23,7 +23,7 @@ const FESTIVALS = [
 ];
 
 const STATS = [
-  { value: '5 000+', label: 'юных участников' },
+  { value: '1 000+', label: 'юных участников' },
   { value: '120+', label: 'проведённых турниров' },
   { value: '15', label: 'лет опыта' },
   { value: '40+', label: 'городов' },
