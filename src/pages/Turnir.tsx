@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { Header, Footer } from '@/components/Layout';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 
@@ -14,12 +15,6 @@ interface Tournament {
   price: number | null;
   fsr_id: string;
 }
-
-const NAV = [
-  { label: 'Главная', href: '/' },
-  { label: 'Турниры', href: '/turnir' },
-  { label: 'Контакты', href: '/#contacts' },
-];
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -57,21 +52,7 @@ export default function Turnir() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <a href="/" className="flex items-center gap-2">
-            <span className="font-heading font-bold text-lg tracking-wide text-white uppercase">Мир шахмат</span>
-          </a>
-          <nav className="flex items-center gap-1">
-            {NAV.map(n => (
-              <a key={n.href} href={n.href} className="px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
-                {n.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero */}
       <section className="bg-primary text-white py-12 px-4">
@@ -187,6 +168,7 @@ export default function Turnir() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

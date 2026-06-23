@@ -1,6 +1,7 @@
-import { useState } from 'react';
+
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import { Header, Footer } from '@/components/Layout';
 
 const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/76b32a6f-e433-447e-98e3-d7bfa6e19bb3.png';
 
@@ -39,35 +40,9 @@ const SERVICES = [
 ];
 
 const Index = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <a href="#top" />
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV.map((n) => (
-              <a key={n.href} href={n.href} className="px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
-                {n.label}
-              </a>
-            ))}
-          </nav>
-          <button className="lg:hidden text-white" onClick={() => setMenuOpen((v) => !v)}>
-            <Icon name={menuOpen ? 'X' : 'Menu'} size={26} />
-          </button>
-        </div>
-        {menuOpen && (
-          <nav className="lg:hidden bg-primary px-4 pb-4 flex flex-col gap-1 animate-fade-in">
-            {NAV.map((n) => (
-              <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)} className="py-2 text-white/85 hover:text-secondary border-b border-white/10">
-                {n.label}
-              </a>
-            ))}
-          </nav>
-        )}
-      </header>
+      <Header />
 
       {/* Hero */}
       <section id="top" className="relative overflow-hidden bg-primary text-white">
@@ -226,16 +201,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-black text-white/70">
-        <div className="container px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-white">
-            <Icon name="Crown" size={20} className="text-secondary" />
-            <span className="font-heading font-semibold uppercase tracking-wide">Мир шахмат</span>
-          </div>
-          <p className="text-sm">© {new Date().getFullYear()} Центр поддержки детского шахматного спорта</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
