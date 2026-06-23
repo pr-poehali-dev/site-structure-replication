@@ -47,10 +47,7 @@ const Index = () => {
       <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
         <div className="container flex items-center justify-between h-16 px-4">
           <a href="#top" className="flex items-center gap-2">
-            <span className="grid place-items-center w-9 h-9 rounded-lg bg-secondary text-secondary-foreground">
-              <Icon name="Crown" size={20} />
-            </span>
-            <span className="font-heading font-bold text-lg tracking-wide text-white uppercase">Мир шахмат</span>
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/39c22ba2-cc44-4ec2-a184-0f358df698ab.png" alt="Логотип" className="h-10 w-auto object-contain" />
           </a>
           <nav className="hidden lg:flex items-center gap-1">
             {NAV.map((n) => (
