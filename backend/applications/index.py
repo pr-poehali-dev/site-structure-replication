@@ -1,0 +1,83 @@
+import json
+import os
+import psycopg2
+
+def get_conn():
+    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+
+def cors_headers():
+    return {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password',
+    }
+
+def handler(event: dict, context) -> dict:
+    """Управление заявками на турниры: публичное создание и админское CRUD"""
+    if event.get('httpMethod') == 'OPTIONS':
+        return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
+
+    method = event.get('httpMethod')
+    path = event.get('path', '')
+    headers = event.get('headers', {}) or {}
+    body = json.loads(event.get('body') or '{}')
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # Публичное создание заявки (POST /)
+    if method == 'POST' and not path.endswith('/update'):
+        admin_pw = headers.get('X-Admin-Password', '')
+        # Если без пароля — публичная подача заявки
+        cur.execute(
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            (body.get('tournament_id'), body.get('tournament_title'), body.get('fio'),
+             body.get('age'), body.get('fsr_id'), body.get('coach'),
+             body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'))
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'id': new_id})}
+
+    # Все остальные — только для админа
+    admin_password = headers.get('X-Admin-Password', '')
+    if admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+        conn.close()
+        return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+
+    # GET — список заявок
+    if method == 'GET':
+        tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
+        if tournament_id:
+            cur.execute(
+                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at FROM applications WHERE tournament_id = %s ORDER BY created_at DESC",
+                (tournament_id,)
+            )
+        else:
+            cur.execute(
+                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at FROM applications ORDER BY created_at DESC"
+            )
+        rows = cur.fetchall()
+        conn.close()
+        cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'fsr_id', 'coach', 'country_city', 'school', 'email', 'phone', 'status', 'notes', 'created_at']
+        apps = [dict(zip(cols, r)) for r in rows]
+        for a in apps:
+            a['created_at'] = str(a['created_at'])
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'applications': apps})}
+
+    # PUT /update — редактирование заявки
+    if method == 'POST' and path.endswith('/update'):
+        cur.execute(
+            "UPDATE applications SET fio=%s, age=%s, fsr_id=%s, coach=%s, country_city=%s, school=%s, email=%s, phone=%s, status=%s, notes=%s WHERE id=%s",
+            (body.get('fio'), body.get('age'), body.get('fsr_id'), body.get('coach'),
+             body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
+             body.get('status', 'new'), body.get('notes', ''), body.get('id'))
+        )
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
+    conn.close()
+    return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}

@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
+const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 
 interface Tournament {
   id: number;
@@ -27,6 +28,8 @@ export default function Turnir() {
   const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
   const [form, setForm] = useState({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     fetch(API_URL)
@@ -45,9 +48,38 @@ export default function Turnir() {
     setModalTournament(null);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSent(true);
+    if (!modalTournament) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch(APPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournament_id: modalTournament.id,
+          tournament_title: modalTournament.title,
+          fio: form.fio,
+          age: form.age,
+          fsr_id: form.fsr_id,
+          coach: form.coach,
+          country_city: form.country_city,
+          school: form.school,
+          email: form.email,
+          phone: form.phone,
+        }),
+      });
+      if (res.ok) {
+        setSent(true);
+      } else {
+        setSubmitError('Ошибка при отправке. Попробуйте ещё раз.');
+      }
+    } catch {
+      setSubmitError('Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -166,8 +198,9 @@ export default function Turnir() {
                     <input required type="checkbox" className="mt-0.5 accent-secondary w-4 h-4 shrink-0" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
                     <span className="text-sm text-gray-600">Соглашаюсь с условиями проведения соревнования</span>
                   </label>
-                  <Button type="submit" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
-                    <Icon name="CreditCard" size={16} className="mr-2" /> Оплатить и подать заявку
+                  {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
+                  <Button type="submit" disabled={submitting} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
+                    <Icon name="CreditCard" size={16} className="mr-2" /> {submitting ? 'Отправка...' : 'Оплатить и подать заявку'}
                   </Button>
                 </form>
               </>
