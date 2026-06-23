@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 
-const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/files/e42dcb68-5b75-419a-a50b-80b2e07ba074.jpg';
+const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/454a4363-86d7-47c0-b5d0-ac9da3c14797.jpg';
 
 const NAV = [
   { label: 'Турниры', href: '#turnir' },
