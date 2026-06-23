@@ -82,8 +82,12 @@ export default function Admin() {
   }
 
   useEffect(() => {
+    if (authed) fetchApps();
+  }, [authed, filterTournament]);
+
+  useEffect(() => {
     if (authed && section === 'applications') fetchApps();
-  }, [authed, section, filterTournament]);
+  }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -223,24 +227,53 @@ export default function Admin() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {tournaments.map(t => (
-                    <div key={t.id} className="bg-white rounded-2xl shadow p-5 flex flex-col md:flex-row md:items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg text-primary">{t.title}</h3>
-                        {t.description && <p className="text-gray-600 text-sm mt-1">{t.description}</p>}
-                        <div className="flex flex-wrap gap-3 mt-3 text-sm text-gray-500">
-                          {t.date && <span className="flex items-center gap-1"><Icon name="Calendar" size={14} />{t.date}</span>}
-                          {t.location && <span className="flex items-center gap-1"><Icon name="MapPin" size={14} />{t.location}</span>}
-                          {t.age_category && <span className="flex items-center gap-1"><Icon name="Users" size={14} />{t.age_category}</span>}
-                          {t.price && <span className="flex items-center gap-1"><Icon name="CreditCard" size={14} />{t.price} ₽</span>}
-                          {t.fsr_id && <span className="flex items-center gap-1"><Icon name="Hash" size={14} />ФШР: {t.fsr_id}</span>}
+                  {tournaments.map(t => {
+                    const tApps = apps.filter(a => a.tournament_id === t.id);
+                    return (
+                    <div key={t.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-4">
+                      <div className="flex flex-col md:flex-row md:items-start gap-4">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-primary">{t.title}</h3>
+                          {t.description && <p className="text-gray-600 text-sm mt-1">{t.description}</p>}
+                          <div className="flex flex-wrap gap-3 mt-3 text-sm text-gray-500">
+                            {t.date && <span className="flex items-center gap-1"><Icon name="Calendar" size={14} />{t.date}</span>}
+                            {t.location && <span className="flex items-center gap-1"><Icon name="MapPin" size={14} />{t.location}</span>}
+                            {t.age_category && <span className="flex items-center gap-1"><Icon name="Users" size={14} />{t.age_category}</span>}
+                            {t.price && <span className="flex items-center gap-1"><Icon name="CreditCard" size={14} />{t.price} ₽</span>}
+                            {t.fsr_id && <span className="flex items-center gap-1"><Icon name="Hash" size={14} />ФШР: {t.fsr_id}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-center bg-primary/10 rounded-xl px-4 py-2">
+                            <div className="font-bold text-2xl text-primary">{tApps.length}</div>
+                            <div className="text-xs text-gray-500">заявок</div>
+                          </div>
+                          <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteTournament(t.id)}>
+                            <Icon name="Trash2" size={14} className="mr-1" /> Удалить
+                          </Button>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteTournament(t.id)}>
-                        <Icon name="Trash2" size={14} className="mr-1" /> Удалить
-                      </Button>
+                      {tApps.length > 0 && (
+                        <div className="border-t border-gray-100 pt-4">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Участники</p>
+                          <div className="flex flex-col gap-1">
+                            {tApps.map((a, i) => (
+                              <div key={a.id} className="flex items-center gap-2 text-sm">
+                                <span className="text-gray-400 w-5 shrink-0">{i + 1}.</span>
+                                <span className="font-medium text-gray-800">{a.fio}</span>
+                                {a.age && <span className="text-gray-400">· {a.age}</span>}
+                                {a.country_city && <span className="text-gray-400">· {a.country_city}</span>}
+                                <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-600'}`}>
+                                  {STATUS_LABELS[a.status] || a.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
           </>
