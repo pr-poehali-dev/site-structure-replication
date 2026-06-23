@@ -12,7 +12,7 @@ def handler(event: dict, context) -> dict:
 
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT id, title, description, date, location, age_category, price, fsr_id FROM tournaments ORDER BY date ASC NULLS LAST, created_at DESC")
+    cur.execute("SELECT id, title, description, date, location, age_category, price, fsr_id, status FROM tournaments ORDER BY date ASC NULLS LAST, created_at DESC")
     rows = cur.fetchall()
     conn.close()
 
@@ -23,7 +23,7 @@ def handler(event: dict, context) -> dict:
             'date': str(r[3]) if r[3] else None,
             'location': r[4], 'age_category': r[5],
             'price': float(r[6]) if r[6] else None,
-            'fsr_id': r[7],
+            'fsr_id': r[7], 'status': r[8],
         })
 
     return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}

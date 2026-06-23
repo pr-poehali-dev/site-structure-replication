@@ -20,7 +20,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
 
     if method == 'GET':
-        cur.execute("SELECT id, title, description, date, location, age_category, price, fsr_id, created_at FROM tournaments ORDER BY created_at DESC")
+        cur.execute("SELECT id, title, description, date, location, age_category, price, fsr_id, created_at, status FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
         for r in rows:
@@ -28,18 +28,23 @@ def handler(event: dict, context) -> dict:
                 'id': r[0], 'title': r[1], 'description': r[2],
                 'date': str(r[3]) if r[3] else None, 'location': r[4],
                 'age_category': r[5], 'price': float(r[6]) if r[6] else None,
-                'fsr_id': r[7], 'created_at': str(r[8])
+                'fsr_id': r[7], 'created_at': str(r[8]), 'status': r[9]
             })
         conn.close()
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
 
     if method == 'POST':
         body = json.loads(event.get('body') or '{}')
-        path = event.get('path', '')
+        action = body.get('_action', '')
 
-        if path.endswith('/delete'):
-            tid = body.get('id')
-            cur.execute("DELETE FROM tournaments WHERE id = %s", (tid,))
+        if action == 'delete':
+            cur.execute("DELETE FROM tournaments WHERE id = %s", (body.get('id'),))
+            conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
+
+        if action == 'set_status':
+            cur.execute("UPDATE tournaments SET status = %s WHERE id = %s", (body.get('status'), body.get('id')))
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}

@@ -11,6 +11,7 @@ const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7de
 interface Tournament {
   id: number; title: string; description: string; date: string | null;
   location: string; age_category: string; price: number | null; fsr_id: string; created_at: string;
+  status: string;
 }
 
 interface Application {
@@ -110,10 +111,20 @@ export default function Admin() {
 
   async function handleDeleteTournament(id: number) {
     if (!confirm('Удалить турнир?')) return;
-    await fetch(TOURNAMENTS_URL + '/delete', {
+    await fetch(TOURNAMENTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ _action: 'delete', id }),
+    });
+    fetchTournaments();
+  }
+
+  async function handleToggleStatus(t: Tournament) {
+    const newStatus = t.status === 'open' ? 'closed' : 'open';
+    await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'set_status', id: t.id, status: newStatus }),
     });
     fetchTournaments();
   }
@@ -233,7 +244,12 @@ export default function Admin() {
                     <div key={t.id} className="bg-white rounded-2xl shadow p-5 flex flex-col gap-4">
                       <div className="flex flex-col md:flex-row md:items-start gap-4">
                         <div className="flex-1">
-                          <h3 className="font-bold text-lg text-primary">{t.title}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-lg text-primary">{t.title}</h3>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${t.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                              {t.status === 'open' ? 'Приём открыт' : 'Приём закрыт'}
+                            </span>
+                          </div>
                           {t.description && <p className="text-gray-600 text-sm mt-1">{t.description}</p>}
                           <div className="flex flex-wrap gap-3 mt-3 text-sm text-gray-500">
                             {t.date && <span className="flex items-center gap-1"><Icon name="Calendar" size={14} />{t.date}</span>}
@@ -243,11 +259,18 @@ export default function Admin() {
                             {t.fsr_id && <span className="flex items-center gap-1"><Icon name="Hash" size={14} />ФШР: {t.fsr_id}</span>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
                           <div className="text-center bg-primary/10 rounded-xl px-4 py-2">
                             <div className="font-bold text-2xl text-primary">{tApps.length}</div>
                             <div className="text-xs text-gray-500">заявок</div>
                           </div>
+                          <Button
+                            variant="outline" size="sm"
+                            className={t.status === 'open' ? 'border-green-300 text-green-700 hover:bg-green-50' : 'border-orange-300 text-orange-700 hover:bg-orange-50'}
+                            onClick={() => handleToggleStatus(t)}>
+                            <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
+                            {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}
+                          </Button>
                           <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteTournament(t.id)}>
                             <Icon name="Trash2" size={14} className="mr-1" /> Удалить
                           </Button>

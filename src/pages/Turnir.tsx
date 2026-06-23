@@ -15,6 +15,7 @@ interface Tournament {
   age_category: string;
   price: number | null;
   fsr_id: string;
+  status: string;
 }
 
 function formatDate(dateStr: string) {
@@ -111,10 +112,17 @@ export default function Turnir() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tournaments.map(t => (
-              <div key={t.id} className="bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="bg-primary/5 px-6 py-5 border-b border-gray-100">
-                  <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+            {tournaments.map(t => {
+              const isOpen = t.status !== 'closed';
+              return (
+              <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
+                <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+                    <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                      {isOpen ? 'Приём открыт' : 'Приём закрыт'}
+                    </span>
+                  </div>
                   {t.date && (
                     <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
                       <Icon name="Calendar" size={14} /> {formatDate(t.date)}
@@ -124,27 +132,26 @@ export default function Turnir() {
                 <div className="px-6 py-4 flex-1 flex flex-col gap-3">
                   {t.description && <p className="text-gray-600 text-sm leading-relaxed">{t.description}</p>}
                   <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
-                    {t.location && (
-                      <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>
-                    )}
-                    {t.age_category && (
-                      <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>
-                    )}
-                    {t.price && (
-                      <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>
-                    )}
-                    {t.fsr_id && (
-                      <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>
-                    )}
+                    {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
+                    {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
+                    {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
+                    {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
                   </div>
                 </div>
                 <div className="px-6 pb-5">
-                  <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
-                    <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
-                  </Button>
+                  {isOpen ? (
+                    <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
+                      <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
+                    </Button>
+                  ) : (
+                    <div className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 text-gray-400 font-semibold py-2.5 text-sm">
+                      <Icon name="Lock" size={15} /> Приём заявок завершён
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
