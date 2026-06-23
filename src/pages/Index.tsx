@@ -26,7 +26,7 @@ const STATS = [
   { value: '1 000+', label: 'юных участников' },
   { value: '100+', label: 'проведённых турниров' },
   { value: '300+', label: 'комплектов наград' },
-  { value: '40+', label: 'городов' },
+  { value: 'Россия', label: 'и страны СНГ' },
 ];
 
 const SERVICES = [
