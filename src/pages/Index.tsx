@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/76b32a6f-e433-447e-98e3-d7bfa6e19bb3.png';
 
 const NAV = [
-  { label: 'Турниры', href: '#turnir' },
+  { label: 'Турниры', href: '/turnir' },
   { label: 'Фестивали', href: '#festivali' },
   { label: 'Шашки', href: '#shashki' },
   { label: 'Результаты', href: '#result' },

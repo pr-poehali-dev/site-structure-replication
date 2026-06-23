@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "GET public tournaments returns 200",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

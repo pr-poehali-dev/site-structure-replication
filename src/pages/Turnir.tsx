@@ -1,0 +1,192 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/ui/icon';
+
+const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
+
+interface Tournament {
+  id: number;
+  title: string;
+  description: string;
+  date: string | null;
+  location: string;
+  age_category: string;
+  price: number | null;
+  fsr_id: string;
+}
+
+const NAV = [
+  { label: 'Главная', href: '/' },
+  { label: 'Турниры', href: '/turnir' },
+  { label: 'Контакты', href: '/#contacts' },
+];
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export default function Turnir() {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
+  const [form, setForm] = useState({ name: '', child_name: '', age: '', phone: '', email: '' });
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then(r => r.json())
+      .then(data => setTournaments(data.tournaments || []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function openModal(t: Tournament) {
+    setModalTournament(t);
+    setForm({ name: '', child_name: '', age: '', phone: '', email: '' });
+    setSent(false);
+  }
+
+  function closeModal() {
+    setModalTournament(null);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSent(true);
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
+        <div className="container flex items-center justify-between h-16 px-4">
+          <a href="/" className="flex items-center gap-2">
+            <span className="font-heading font-bold text-lg tracking-wide text-white uppercase">Мир шахмат</span>
+          </a>
+          <nav className="flex items-center gap-1">
+            {NAV.map(n => (
+              <a key={n.href} href={n.href} className="px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
+                {n.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="bg-primary text-white py-12 px-4">
+        <div className="container">
+          <h1 className="font-heading font-bold text-4xl md:text-5xl uppercase">
+            <span className="text-secondary">Турниры</span>
+          </h1>
+          <p className="mt-3 text-white/70 text-lg max-w-xl">Выберите турнир и подайте заявку на участие онлайн</p>
+        </div>
+      </section>
+
+      {/* Tournaments */}
+      <section className="container px-4 py-12">
+        {loading ? (
+          <div className="text-center py-20 text-gray-400">
+            <Icon name="Loader" size={36} className="mx-auto mb-3 opacity-40 animate-spin" />
+            <p>Загрузка турниров...</p>
+          </div>
+        ) : tournaments.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <Icon name="Swords" size={48} className="mx-auto mb-4 opacity-20" />
+            <p className="text-xl font-medium">Турниров пока нет</p>
+            <p className="mt-2 text-sm">Следите за обновлениями — скоро появятся новые соревнования</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tournaments.map(t => (
+              <div key={t.id} className="bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="bg-primary/5 px-6 py-5 border-b border-gray-100">
+                  <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+                  {t.date && (
+                    <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
+                      <Icon name="Calendar" size={14} /> {formatDate(t.date)}
+                    </p>
+                  )}
+                </div>
+                <div className="px-6 py-4 flex-1 flex flex-col gap-3">
+                  {t.description && <p className="text-gray-600 text-sm leading-relaxed">{t.description}</p>}
+                  <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
+                    {t.location && (
+                      <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>
+                    )}
+                    {t.age_category && (
+                      <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>
+                    )}
+                    {t.price && (
+                      <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>
+                    )}
+                    {t.fsr_id && (
+                      <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="px-6 pb-5">
+                  <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
+                    <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Modal */}
+      {modalTournament && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={closeModal}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={closeModal}>
+              <Icon name="X" size={20} />
+            </button>
+
+            {!sent ? (
+              <>
+                <h2 className="font-heading font-bold text-xl text-primary mb-1">Заявка на участие</h2>
+                <p className="text-sm text-gray-500 mb-5">{modalTournament.title}</p>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Ваше имя (родитель) *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван Иванович" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Имя ребёнка *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван" value={form.child_name} onChange={e => setForm({ ...form, child_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Возраст ребёнка *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Например: 10 лет" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Телефон *</label>
+                    <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="example@mail.ru" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  </div>
+                  <Button type="submit" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
+                    Отправить заявку
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Icon name="CheckCircle" size={32} className="text-green-500" />
+                </div>
+                <h2 className="font-heading font-bold text-xl text-primary mb-2">Заявка принята!</h2>
+                <p className="text-gray-500 text-sm">Мы свяжемся с вами в ближайшее время для подтверждения участия.</p>
+                <Button className="mt-6 w-full" variant="outline" onClick={closeModal}>Закрыть</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
