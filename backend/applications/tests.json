@@ -1,10 +1,10 @@
 {
   "tests": [
     {
-      "name": "GET applications without password returns 401",
+      "name": "GET participants without tournament_id returns 400",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 401
+      "expectedStatus": 400
     }
   ]
 }

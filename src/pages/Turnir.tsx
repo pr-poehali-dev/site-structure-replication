@@ -32,6 +32,11 @@ export default function Turnir() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  // Модал списка участников
+  const [participantsModal, setParticipantsModal] = useState<Tournament | null>(null);
+  const [participants, setParticipants] = useState<{fio: string; age: string}[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+
   useEffect(() => {
     fetch(API_URL)
       .then(r => r.json())
@@ -47,6 +52,16 @@ export default function Turnir() {
 
   function closeModal() {
     setModalTournament(null);
+  }
+
+  async function openParticipants(t: Tournament) {
+    setParticipantsModal(t);
+    setParticipantsLoading(true);
+    setParticipants([]);
+    const res = await fetch(`${APPS_URL}?tournament_id=${t.id}`);
+    const data = await res.json();
+    setParticipants(data.participants || []);
+    setParticipantsLoading(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -138,7 +153,7 @@ export default function Turnir() {
                     {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
                   </div>
                 </div>
-                <div className="px-6 pb-5">
+                <div className="px-6 pb-5 flex flex-col gap-2">
                   {isOpen ? (
                     <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
                       <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
@@ -148,6 +163,9 @@ export default function Turnir() {
                       <Icon name="Lock" size={15} /> Приём заявок завершён
                     </div>
                   )}
+                  <Button variant="outline" className="w-full text-primary border-primary/30 hover:bg-primary/5" onClick={() => openParticipants(t)}>
+                    <Icon name="Users" size={16} className="mr-2" /> Список участников
+                  </Button>
                 </div>
               </div>
               );
@@ -224,6 +242,46 @@ export default function Turnir() {
           </div>
         </div>
       )}
+      {/* Модал списка участников */}
+      {participantsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setParticipantsModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-heading font-bold text-xl text-primary">Список участников</h2>
+              <button onClick={() => setParticipantsModal(null)} className="text-gray-400 hover:text-gray-600">
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">{participantsModal.title}</p>
+
+            {participantsLoading ? (
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                <Icon name="Loader" size={28} className="animate-spin mr-2" /> Загрузка...
+              </div>
+            ) : participants.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-8">
+                <Icon name="Users" size={36} className="mb-2 opacity-30" />
+                <p>Заявок пока нет</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 mb-3 font-medium">Всего участников: <span className="text-primary font-bold">{participants.length}</span></p>
+                <div className="overflow-y-auto flex-1 flex flex-col gap-1">
+                  {participants.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                      <span className="text-gray-400 text-sm w-6 shrink-0 text-right">{i + 1}.</span>
+                      <span className="font-medium text-gray-800 text-sm flex-1">{p.fio}</span>
+                      {p.age && <span className="text-gray-400 text-sm shrink-0">{p.age}</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <Button className="mt-4 w-full" variant="outline" onClick={() => setParticipantsModal(null)}>Закрыть</Button>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

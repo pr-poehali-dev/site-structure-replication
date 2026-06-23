@@ -25,6 +25,21 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor()
 
+    # Публичный список участников турнира (GET ?tournament_id=X)
+    if method == 'GET':
+        tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
+        if not tournament_id:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'tournament_id required'})}
+        cur.execute(
+            "SELECT fio, age FROM applications WHERE tournament_id = %s AND status != 'cancelled' ORDER BY created_at ASC",
+            (tournament_id,)
+        )
+        rows = cur.fetchall()
+        conn.close()
+        participants = [{'fio': r[0], 'age': r[1]} for r in rows]
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'participants': participants, 'count': len(participants)})}
+
     # Публичное создание заявки (POST без _action и без пароля)
     if method == 'POST' and action != 'update':
         cur.execute(
