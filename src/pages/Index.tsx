@@ -98,8 +98,7 @@ const Index = () => {
             </div>
           </div>
           <div className="relative animate-scale-in flex items-center">
-            <div className="absolute -inset-4 bg-secondary/20 rounded-3xl blur-2xl" />
-            <img src={HERO_IMG} alt="Шахматная доска" className="relative rounded-3xl shadow-2xl w-full h-full object-contain" />
+            <img src={HERO_IMG} alt="Шахматная доска" className="w-full h-full object-contain" style={{ maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)' }} />
           </div>
         </div>
       </section>
