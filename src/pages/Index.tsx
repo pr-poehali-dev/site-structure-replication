@@ -45,9 +45,9 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
-        <div className="container flex items-center justify-between h-16 px-4">
-          <a href="#top" className="flex items-center gap-2">
-            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/39c22ba2-cc44-4ec2-a184-0f358df698ab.png" alt="Логотип" className="h-10 w-auto object-contain" />
+        <div className="container flex items-center justify-between h-32 px-4">
+          <a href="#top" className="flex items-center gap-2 h-full py-2">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/39c22ba2-cc44-4ec2-a184-0f358df698ab.png" alt="Логотип" className="h-full w-auto object-contain" />
           </a>
           <nav className="hidden lg:flex items-center gap-1">
             {NAV.map((n) => (
@@ -74,7 +74,7 @@ const Index = () => {
       {/* Hero */}
       <section id="top" className="relative overflow-hidden bg-primary text-white">
         <div className="absolute inset-0 chess-grid opacity-60" />
-        <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-16 md:py-24">
+        <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
               <Icon name="Sparkles" size={16} /> Центр поддержки детского шахматного спорта
