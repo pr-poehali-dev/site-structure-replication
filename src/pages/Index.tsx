@@ -233,7 +233,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[hsl(230,70%,18%)] text-white/70">
+      <footer className="bg-black text-white/70">
         <div className="container px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-white">
             <Icon name="Crown" size={20} className="text-secondary" />
