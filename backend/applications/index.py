@@ -18,17 +18,15 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
     method = event.get('httpMethod')
-    path = event.get('path', '')
     headers = event.get('headers', {}) or {}
     body = json.loads(event.get('body') or '{}')
+    action = body.get('_action', '')  # 'update' для редактирования
 
     conn = get_conn()
     cur = conn.cursor()
 
-    # Публичное создание заявки (POST /)
-    if method == 'POST' and not path.endswith('/update'):
-        admin_pw = headers.get('X-Admin-Password', '')
-        # Если без пароля — публичная подача заявки
+    # Публичное создание заявки (POST без _action и без пароля)
+    if method == 'POST' and action != 'update':
         cur.execute(
             """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone)
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
@@ -67,8 +65,8 @@ def handler(event: dict, context) -> dict:
             a['created_at'] = str(a['created_at'])
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'applications': apps})}
 
-    # PUT /update — редактирование заявки
-    if method == 'POST' and path.endswith('/update'):
+    # Редактирование заявки (_action: update)
+    if method == 'POST' and action == 'update':
         cur.execute(
             "UPDATE applications SET fio=%s, age=%s, fsr_id=%s, coach=%s, country_city=%s, school=%s, email=%s, phone=%s, status=%s, notes=%s WHERE id=%s",
             (body.get('fio'), body.get('age'), body.get('fsr_id'), body.get('coach'),

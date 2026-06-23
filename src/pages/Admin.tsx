@@ -118,10 +118,10 @@ export default function Admin() {
     e.preventDefault();
     if (!editApp) return;
     setEditSaving(true);
-    await fetch(APPS_URL + '/update', {
+    await fetch(APPS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify(editApp),
+      body: JSON.stringify({ ...editApp, _action: 'update' }),
     });
     setEditSaving(false);
     setEditApp(null);
