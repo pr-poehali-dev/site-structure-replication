@@ -25,23 +25,28 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor()
 
-    # Публичный список участников турнира (GET ?tournament_id=X)
+    admin_password = headers.get('X-Admin-Password', '')
+    is_admin = admin_password == os.environ.get('ADMIN_PASSWORD', '')
+
+    # GET — публичный (только участники) или админский (полные заявки)
     if method == 'GET':
         tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
-        if not tournament_id:
+        if not is_admin:
+            # Публичный: только ФИО и возраст, tournament_id обязателен
+            if not tournament_id:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'tournament_id required'})}
+            cur.execute(
+                "SELECT fio, age FROM applications WHERE tournament_id = %s AND status != 'cancelled' ORDER BY created_at ASC",
+                (tournament_id,)
+            )
+            rows = cur.fetchall()
             conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'tournament_id required'})}
-        cur.execute(
-            "SELECT fio, age FROM applications WHERE tournament_id = %s AND status != 'cancelled' ORDER BY created_at ASC",
-            (tournament_id,)
-        )
-        rows = cur.fetchall()
-        conn.close()
-        participants = [{'fio': r[0], 'age': r[1]} for r in rows]
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'participants': participants, 'count': len(participants)})}
+            participants = [{'fio': r[0], 'age': r[1]} for r in rows]
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'participants': participants, 'count': len(participants)})}
 
     # Публичное создание заявки (POST без _action и без пароля)
-    if method == 'POST' and action != 'update':
+    if method == 'POST' and action != 'update' and not is_admin:
         cur.execute(
             """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone)
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
@@ -55,12 +60,11 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'id': new_id})}
 
     # Все остальные — только для админа
-    admin_password = headers.get('X-Admin-Password', '')
-    if admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+    if not is_admin:
         conn.close()
         return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
 
-    # GET — список заявок
+    # GET — полный список заявок для админа
     if method == 'GET':
         tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
         if tournament_id:
