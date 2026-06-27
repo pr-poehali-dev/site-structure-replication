@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 
 const NAV = [
+  { label: 'Главная', href: '/' },
   { label: 'Турниры', href: '/turnir' },
   { label: 'Олимпиады', href: '/#olimpiady' },
   { label: 'Результаты', href: '/result' },
