@@ -103,9 +103,9 @@ const Index = () => {
       </section>
 
       {/* About promo */}
-      <section className="container px-4 py-16 md:py-24">
+      <section className="container px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-7">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
               <Icon name="Sparkles" size={15} /> Официальные онлайн-турниры
             </span>
@@ -190,7 +190,7 @@ const Index = () => {
 
       {/* Olimpiads */}
       <section id="olimpiady" className="bg-muted/30 scroll-mt-16">
-        <div className="container px-4 py-16 md:py-24">
+        <div className="container px-4 py-8">
           <div className="text-center max-w-2xl mx-auto mb-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
               <Icon name="Medal" size={15} /> Регулярные олимпиады
@@ -231,8 +231,8 @@ const Index = () => {
 
       {/* Services / разделы */}
       <section className="bg-muted/40 chess-grid">
-        <div className="container px-4 py-16 md:py-24">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+        <div className="container px-4 py-8">
+          <div className="text-center max-w-2xl mx-auto mb-7">
             <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Разделы центра</h2>
             <p className="mt-4 text-muted-foreground text-lg">Всё, что нужно юному шахматисту и его родителям.</p>
           </div>
@@ -256,8 +256,8 @@ const Index = () => {
       </section>
 
       {/* About */}
-      <section className="container px-4 py-16 md:py-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <section className="container px-4 py-8">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div>
             <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">О центре «Мир шахмат»</h2>
             <p className="mt-5 text-muted-foreground text-lg leading-relaxed">
