@@ -46,7 +46,7 @@ export function Header() {
 export function Footer() {
   return (
     <footer id="contacts" className="bg-primary text-white scroll-mt-16">
-      <div className="container px-4 py-12 grid md:grid-cols-2 gap-10 items-start max-w-5xl mx-auto">
+      <div className="container px-4 py-12 grid md:grid-cols-3 gap-10 items-start max-w-5xl mx-auto">
         {/* Лого + копирайт */}
         <div className="flex flex-col gap-3">
           <img
@@ -59,10 +59,7 @@ export function Footer() {
 
         {/* Контакты */}
         <div>
-          <h2 className="font-heading font-bold text-2xl uppercase mb-1">Контакты</h2>
-          <p className="text-white/50 text-xs uppercase font-semibold tracking-wide mb-1">Организатор</p>
-          <p className="font-semibold text-white">Мозжерин Илья Вячеславович</p>
-          <p className="text-white/60 text-sm mb-5">ИНН: 591703749251</p>
+          <h2 className="font-heading font-bold text-2xl uppercase mb-4">Контакты</h2>
           <div className="space-y-3">
             <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center gap-3 text-white/85 hover:text-secondary transition-colors text-sm">
               <Icon name="Mail" size={17} className="shrink-0" /> mir.shahmat@inbox.ru
@@ -77,6 +74,13 @@ export function Footer() {
               <Icon name="Users" size={17} className="shrink-0" /> vk.com/mir.shahmat
             </a>
           </div>
+        </div>
+
+        {/* Организатор */}
+        <div>
+          <h2 className="font-heading font-bold text-2xl uppercase mb-4">Организатор</h2>
+          <p className="font-semibold text-white">Мозжерин Илья Вячеславович</p>
+          <p className="text-white/60 text-sm mt-1">ИНН: 591703749251</p>
         </div>
       </div>
     </footer>
