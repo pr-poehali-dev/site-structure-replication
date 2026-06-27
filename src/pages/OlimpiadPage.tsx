@@ -156,7 +156,7 @@ const OlimpiadPage = () => {
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl border border-border bg-card p-7">
               <h2 className="font-heading font-bold text-xl uppercase text-primary mb-5">Награды участников</h2>
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3 mb-4">
                 {o.awards.map((a) => (
                   <li key={a} className="flex items-start gap-3">
                     <Icon name="Trophy" size={18} className="text-secondary shrink-0 mt-0.5" />
@@ -164,6 +164,13 @@ const OlimpiadPage = () => {
                   </li>
                 ))}
               </ul>
+              <div className="flex items-start gap-3 rounded-xl bg-primary/6 border border-primary/15 px-4 py-3 mb-4">
+                <Icon name="ShieldCheck" size={18} className="text-primary shrink-0 mt-0.5" />
+                <p className="text-xs text-foreground/80 leading-relaxed">
+                  Каждый диплом имеет <span className="font-semibold text-primary">уникальный номер</span> и подтверждается официальными результатами в разделе{' '}
+                  <a href="/#result" className="font-semibold text-secondary hover:underline">«Результаты»</a> на нашем сайте.
+                </p>
+              </div>
               <div className="border-t border-border pt-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">Стоимость участия</p>
