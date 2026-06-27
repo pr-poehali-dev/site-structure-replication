@@ -151,17 +151,20 @@ const OlimpiadPage = () => {
 
             <div className="rounded-2xl bg-primary text-white p-7 flex flex-col gap-4">
               <h3 className="font-heading font-bold text-xl uppercase">Готовы участвовать?</h3>
-              <p className="text-white/75 text-sm leading-relaxed">Принять участие в олимпиаде "Дебют" можно в любое время суток и в любой день недели. </p>
+              <p className="text-white/75 text-sm leading-relaxed">Следите за расписанием олимпиад и записывайтесь в нашей группе ВКонтакте «Мир Шахмат».</p>
+              <a
+                href="/#pay"
+                className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-3 text-sm hover:bg-secondary/90 transition-colors"
+              >
+                <Icon name="CreditCard" size={16} /> Оплатить и принять участие
+              </a>
               <a
                 href="https://vk.com/mirshahmat"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-3 text-sm hover:bg-secondary/90 transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-white/30 text-white rounded-xl px-5 py-2.5 text-sm hover:bg-white/10 transition-colors"
               >
-                <Icon name="ExternalLink" size={16} /> Перейти в группу ВКонтакте
-              </a>
-              <a href="/#contacts" className="text-center text-white/60 text-xs hover:text-white transition-colors">
-                или свяжитесь с нами напрямую
+                <Icon name="ExternalLink" size={15} /> Группа ВКонтакте
               </a>
             </div>
           </div>
