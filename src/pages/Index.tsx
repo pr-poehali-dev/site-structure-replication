@@ -141,7 +141,7 @@ const Index = () => {
                 По итогам соревнований победители и призёры получают Дипломы I, II и III степени. Наставники получают благодарственные письма.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Все результаты подтверждены протоколами — смотреть в разделе <a href="/#result" className="text-primary hover:text-secondary underline underline-offset-2 transition-colors">«Результаты»</a>
+                Все результаты подтверждены протоколами — смотреть в разделе <a href="/result" className="text-primary hover:text-secondary underline underline-offset-2 transition-colors">«Результаты»</a>
               </p>
             </div>
 

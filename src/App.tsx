@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Turnir from "./pages/Turnir";
 import OlimpiadPage from "./pages/OlimpiadPage";
+import Result from "./pages/Result";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/turnir" element={<Turnir />} />
           <Route path="/olimpiad/:slug" element={<OlimpiadPage />} />
+          <Route path="/result" element={<Result />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
