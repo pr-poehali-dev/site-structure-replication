@@ -104,6 +104,19 @@ const OlimpiadPage = () => {
         </div>
       </section>
 
+      {/* Age banner */}
+      <div className="bg-secondary">
+        <div className="container max-w-4xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <span className="grid place-items-center w-12 h-12 rounded-xl bg-secondary-foreground/10 shrink-0">
+            <Icon name="GraduationCap" size={26} className="text-secondary-foreground" />
+          </span>
+          <div>
+            <p className="font-heading font-bold text-secondary-foreground text-lg uppercase leading-tight">Задания подобраны индивидуально</p>
+            <p className="text-secondary-foreground/80 text-sm mt-0.5">С учётом возраста участника и срока обучения шахматам — каждый соревнуется в равных условиях.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       <section className="container px-4 py-16 md:py-24 max-w-4xl mx-auto">
         <div className="grid md:grid-cols-2 gap-10">
