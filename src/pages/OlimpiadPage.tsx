@@ -118,11 +118,11 @@ const OlimpiadPage = () => {
       </section>
 
       {/* Content */}
-      <section className="container px-4 py-16 md:py-24 max-w-4xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-10">
+      <section className="container px-4 py-5 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-5">
 
           {/* Left */}
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-5">
             <div>
               <h2 className="font-heading font-bold text-2xl uppercase text-primary mb-4">Об олимпиаде</h2>
               <p className="text-muted-foreground leading-relaxed">{o.desc}</p>
@@ -164,7 +164,7 @@ const OlimpiadPage = () => {
           </div>
 
           {/* Right */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-5">
             <div className="rounded-2xl border border-border bg-card p-7">
               <h2 className="font-heading font-bold text-xl uppercase text-primary mb-5">Награды участников</h2>
               <ul className="space-y-3 mb-4">
@@ -221,7 +221,7 @@ const OlimpiadPage = () => {
 
       {/* Other olimpiads */}
       <section className="bg-muted/40">
-        <div className="container px-4 py-12 max-w-4xl mx-auto">
+        <div className="container px-4 py-5 max-w-4xl mx-auto">
           <h2 className="font-heading font-bold text-xl uppercase text-primary mb-6 text-center">Другие олимпиады</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {Object.entries(OLIMPIADS)
