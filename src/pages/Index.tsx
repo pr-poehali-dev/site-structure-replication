@@ -257,42 +257,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* About */}
-      <section className="bg-amber-50/60">
-      <div className="container px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
-          <div>
-            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">О центре «Мир шахмат»</h2>
-            <p className="mt-5 text-muted-foreground text-lg leading-relaxed">
-              Мы — центр поддержки детского шахматного спорта. Организуем турниры и фестивали, помогаем детям полюбить шахматы, развиваем логику, усидчивость и стремление к победе.
-            </p>
-            <ul className="mt-7 space-y-4">
-              {[
-                'Опытные судьи и тренеры',
-                'Дипломы и награды каждому участнику',
-                'Турниры для любого уровня подготовки',
-                'Дружеская атмосфера и честная игра',
-              ].map((t) => (
-                <li key={t} className="flex items-start gap-3">
-                  <Icon name="CircleCheckBig" size={22} className="text-secondary shrink-0 mt-0.5" />
-                  <span className="text-foreground/90">{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-4">
-              {['Crown', 'Castle', 'CircleDot', 'Award'].map((ic, i) => (
-                <div key={ic} className={`aspect-square rounded-2xl grid place-items-center ${i % 2 === 0 ? 'bg-primary text-secondary' : 'bg-secondary text-secondary-foreground'} animate-float`} style={{ animationDelay: `${i * 0.4}s` }}>
-                  <Icon name={ic} size={56} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );
