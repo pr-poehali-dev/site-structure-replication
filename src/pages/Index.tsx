@@ -140,9 +140,9 @@ const Index = () => {
               <p className="text-muted-foreground text-sm leading-relaxed">
                 По итогам соревнований победители и призёры получают Дипломы I, II и III степени. Наставники получают благодарственные письма.
               </p>
-              <a href="/#result" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-secondary transition-colors mt-1">
-                <Icon name="FileCheck" size={14} /> Все результаты подтверждены протоколами — смотреть в разделе «Результаты»
-              </a>
+              <p className="text-xs text-muted-foreground mt-1">
+                Все результаты подтверждены протоколами — смотреть в разделе <a href="/#result" className="text-primary hover:text-secondary underline underline-offset-2 transition-colors">«Результаты»</a>
+              </p>
             </div>
 
             <div className="rounded-2xl border border-secondary/40 bg-secondary/5 p-7 flex flex-col gap-4 md:col-span-1">
