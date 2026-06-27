@@ -100,11 +100,24 @@ const Index = () => {
             </p>
           </div>
 
-          <h3 className="font-heading font-bold text-xl md:text-2xl text-primary text-center uppercase mb-8">Что отличает наши турниры?</h3>
+          <h3 className="font-heading font-bold text-xl md:text-2xl text-primary text-center uppercase mb-6">Что отличает наши турниры?</h3>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+            <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl px-5 py-3">
+              <Icon name="Flag" size={18} className="text-primary shrink-0" />
+              <span className="text-sm font-semibold text-primary">Статус <span className="text-secondary">Всероссийского</span> турнира</span>
+              <span className="text-xs text-muted-foreground ml-1">— для участников из России</span>
+            </div>
+            <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl px-5 py-3">
+              <Icon name="Globe" size={18} className="text-primary shrink-0" />
+              <span className="text-sm font-semibold text-primary">Статус <span className="text-secondary">Международного</span> турнира</span>
+              <span className="text-xs text-muted-foreground ml-1">— при участии из-за рубежа</span>
+            </div>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-10">
             <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
-              <span className="grid place-items-center w-13 h-13 w-14 h-14 rounded-xl bg-primary text-secondary">
+              <span className="grid place-items-center w-14 h-14 rounded-xl bg-primary text-secondary">
                 <Icon name="ScrollText" size={28} />
               </span>
               <h4 className="font-heading font-semibold text-lg text-primary uppercase">Официальные награды</h4>
