@@ -102,16 +102,15 @@ const Index = () => {
 
           <h3 className="font-heading font-bold text-xl md:text-2xl text-primary text-center uppercase mb-6">Что отличает наши турниры?</h3>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
-            <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl px-5 py-3">
-              <Icon name="Flag" size={18} className="text-primary shrink-0" />
-              <span className="text-sm font-semibold text-primary">Статус <span className="text-secondary">Всероссийского</span> турнира</span>
-              <span className="text-xs text-muted-foreground ml-1">— для участников из России</span>
-            </div>
-            <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl px-5 py-3">
-              <Icon name="Globe" size={18} className="text-primary shrink-0" />
-              <span className="text-sm font-semibold text-primary">Статус <span className="text-secondary">Международного</span> турнира</span>
-              <span className="text-xs text-muted-foreground ml-1">— при участии из-за рубежа</span>
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-4 bg-primary/8 border border-primary/20 rounded-2xl px-6 py-4">
+              <Icon name="Globe" size={22} className="text-secondary shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-primary">
+                  Статус <span className="text-secondary">Всероссийского</span> или <span className="text-secondary">Международного</span> турнира
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">в зависимости от географии участников</p>
+              </div>
             </div>
           </div>
 
