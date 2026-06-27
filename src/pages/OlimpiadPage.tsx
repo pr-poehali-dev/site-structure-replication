@@ -12,6 +12,7 @@ const OLIMPIADS: Record<string, {
   who: string;
   price: string;
   awards: string[];
+  polojenie: string | null;
 }> = {
   debyut: {
     name: 'Дебют',
@@ -27,6 +28,7 @@ const OLIMPIADS: Record<string, {
     who: 'Олимпиада подходит для шахматистов любого уровня, желающих проверить и углубить знание дебютной теории.',
     price: '250',
     awards: ['Диплом I, II или III степени', 'Благодарственное письмо наставнику'],
+    polojenie: null,
   },
   evrika: {
     name: 'Эврика',
@@ -42,6 +44,7 @@ const OLIMPIADS: Record<string, {
     who: 'Для шахматистов, которые хотят развить тактическое мышление и умение видеть нестандартные решения.',
     price: '250',
     awards: ['Диплом I, II или III степени', 'Благодарственное письмо наставнику'],
+    polojenie: null,
   },
   erudit: {
     name: 'Эрудит',
@@ -57,6 +60,7 @@ const OLIMPIADS: Record<string, {
     who: 'Для любознательных шахматистов, интересующихся не только игрой, но и её богатой историей и теорией.',
     price: '250',
     awards: ['Диплом I, II или III степени', 'Благодарственное письмо наставнику'],
+    polojenie: null,
   },
 };
 
@@ -146,6 +150,16 @@ const OlimpiadPage = () => {
                   <p className="text-xs text-muted-foreground">Стоимость участия</p>
                   <p className="font-heading font-bold text-3xl text-primary">{o.price} ₽</p>
                 </div>
+                {o.polojenie ? (
+                  <a href={o.polojenie} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-secondary transition-colors">
+                    <Icon name="FileText" size={16} /> Положение
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground cursor-not-allowed">
+                    <Icon name="FileText" size={16} /> Положение скоро
+                  </span>
+                )}
               </div>
             </div>
 
@@ -157,14 +171,6 @@ const OlimpiadPage = () => {
                 className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-3 text-sm hover:bg-secondary/90 transition-colors"
               >
                 <Icon name="CreditCard" size={16} /> Оплатить и принять участие
-              </a>
-              <a
-                href="https://vk.com/mirshahmat"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 border border-white/30 text-white rounded-xl px-5 py-2.5 text-sm hover:bg-white/10 transition-colors"
-              >
-                <Icon name="ExternalLink" size={15} /> Группа ВКонтакте
               </a>
             </div>
           </div>
