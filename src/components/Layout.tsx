@@ -47,9 +47,8 @@ export function Footer() {
   return (
     <footer className="bg-black text-white/70">
       <div className="container px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-white">
-          <Icon name="Crown" size={20} className="text-secondary" />
-          <span className="font-heading font-semibold uppercase tracking-wide">Мир шахмат</span>
+        <div className="flex items-center">
+          <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" className="h-16 w-auto object-contain" />
         </div>
         <p className="text-sm">© {new Date().getFullYear()} Центр поддержки детского шахматного спорта</p>
       </div>
