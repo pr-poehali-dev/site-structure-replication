@@ -6,7 +6,7 @@ const NAV = [
   { label: 'Турниры', href: '/turnir' },
   { label: 'Олимпиады', href: '/#olimpiady' },
   { label: 'Результаты', href: '/result' },
-  { label: 'Заказать награды', href: '/#kubki' },
+  { label: 'Заказать награды', href: '/kubki' },
   { label: 'Оплата', href: '/#pay' },
   { label: 'Контакты', href: '/#contacts' },
 ];
