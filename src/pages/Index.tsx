@@ -85,6 +85,77 @@ const Index = () => {
         </div>
       </section>
 
+      {/* About promo */}
+      <section className="container px-4 py-16 md:py-24">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
+              <Icon name="Sparkles" size={15} /> Официальные онлайн-турниры
+            </span>
+            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary leading-tight">
+              Мир Шахмат — там, где ценят <span className="text-secondary">каждого</span> участника
+            </h2>
+            <p className="mt-5 text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
+              Мы — ведущий центр поддержки детского шахматного спорта, специализирующийся на организации официальных онлайн-турниров и олимпиад. Наша миссия — создать для юных шахматистов платформу для развития, соревнований и признания их уникальных талантов.
+            </p>
+          </div>
+
+          <h3 className="font-heading font-bold text-xl md:text-2xl text-primary text-center uppercase mb-8">Что отличает наши турниры?</h3>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
+              <span className="grid place-items-center w-13 h-13 w-14 h-14 rounded-xl bg-primary text-secondary">
+                <Icon name="ScrollText" size={28} />
+              </span>
+              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Официальные награды</h4>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                По итогам соревнований победители и призёры получают Дипломы I, II и III степени. Наставники получают благодарственные письма.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-secondary/40 bg-secondary/5 p-7 flex flex-col gap-4 md:col-span-1">
+              <span className="grid place-items-center w-14 h-14 rounded-xl bg-secondary text-secondary-foreground">
+                <Icon name="Trophy" size={28} />
+              </span>
+              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Множество номинаций</h4>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-2">
+                Шанс получить награду есть у каждого — вне зависимости от итогового места. Мы отмечаем самые яркие моменты:
+              </p>
+              <ul className="space-y-1.5">
+                {['"Самый быстрый мат"', '"Самый красивый мат"', '"Лучшая шахматистка"', '"Юное дарование"', '"Боевая ничья"'].map(n => (
+                  <li key={n} className="flex items-center gap-2 text-sm text-foreground/80">
+                    <Icon name="Star" size={14} className="text-secondary shrink-0" />{n}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
+              <span className="grid place-items-center w-14 h-14 rounded-xl bg-primary text-secondary">
+                <Icon name="Globe" size={28} />
+              </span>
+              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Из любой точки мира</h4>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Соревнуйтесь с сильнейшими сверстниками, не выходя из дома. Доступность онлайн-формата открывает возможности для всех.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-primary text-white p-8 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+            <Icon name="Users" size={40} className="text-secondary shrink-0" />
+            <div className="flex-1">
+              <p className="text-lg font-medium leading-relaxed">
+                Помогите своему ученику не просто играть в шахматы, а получать заслуженное признание и удовольствие от игры. Присоединяйтесь к нашим турнирам и следите за расписанием в нашей группе <span className="text-secondary font-semibold">ВКонтакте «Мир Шахмат»</span>.
+              </p>
+            </div>
+            <a href="https://vk.com/mirshahmat" target="_blank" rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-semibold px-6 py-3 rounded-xl hover:bg-secondary/90 transition-colors whitespace-nowrap">
+              <Icon name="ExternalLink" size={16} /> Группа ВКонтакте
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Festivals */}
       <section id="festivali" className="container px-4 py-16 md:py-24 scroll-mt-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
