@@ -151,9 +151,7 @@ const OlimpiadPage = () => {
 
             <div className="rounded-2xl bg-primary text-white p-7 flex flex-col gap-4">
               <h3 className="font-heading font-bold text-xl uppercase">Готовы участвовать?</h3>
-              <p className="text-white/75 text-sm leading-relaxed">
-                Следите за расписанием олимпиад и записывайтесь в нашей группе ВКонтакте «Мир Шахмат».
-              </p>
+              <p className="text-white/75 text-sm leading-relaxed">Принять участие в олимпиаде "Дебют" можно в любое время суток и в любой день недели. </p>
               <a
                 href="https://vk.com/mirshahmat"
                 target="_blank"
