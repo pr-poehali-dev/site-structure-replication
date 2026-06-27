@@ -16,11 +16,28 @@ const NAV = [
   { label: 'Контакты', href: '#contacts' },
 ];
 
-const FESTIVALS = [
-  { name: 'Дебют', icon: 'Swords', desc: 'Турнир для начинающих шахматистов, делающих первые шаги в большой игре.' },
-  { name: 'Эврика', icon: 'Lightbulb', desc: 'Фестиваль для смекалистых: задачи, комбинации и яркие открытия за доской.' },
-  { name: 'Эрудит', icon: 'BookOpen', desc: 'Интеллектуальное состязание для тех, кто любит думать на несколько ходов вперёд.' },
-  { name: 'Олимп', icon: 'Trophy', desc: 'Главный фестиваль сезона для сильнейших юных шахматистов.' },
+const OLIMPIADS = [
+  {
+    name: 'Дебют',
+    slug: 'debyut',
+    icon: 'Swords',
+    desc: 'Задания на знание дебютной базы, а также проверка знания основных правил игры в дебюте.',
+    color: 'bg-primary text-secondary',
+  },
+  {
+    name: 'Эврика',
+    slug: 'evrika',
+    icon: 'Lightbulb',
+    desc: 'Решение шахматных задач на тактику и комбинации. Проверь свою смекалку и наблюдательность.',
+    color: 'bg-secondary text-secondary-foreground',
+  },
+  {
+    name: 'Эрудит',
+    slug: 'erudit',
+    icon: 'BookOpen',
+    desc: 'Задания на знание правил и истории развития шахмат. Для тех, кто любит думать глубоко.',
+    color: 'bg-primary text-secondary',
+  },
 ];
 
 const STATS = [
@@ -168,24 +185,44 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Festivals */}
-      <section id="festivali" className="container px-4 py-16 md:py-24 scroll-mt-16">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Наши фестивали</h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            Серия ярких шахматных событий для детей разного уровня — от первых шагов до серьёзных побед.
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FESTIVALS.map((f) => (
-            <div key={f.name} className="group rounded-2xl border border-border bg-card p-7 hover-scale hover:border-secondary hover:shadow-xl">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-primary text-secondary mb-5 group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
-                <Icon name={f.icon} size={28} />
-              </span>
-              <h3 className="font-heading font-semibold text-xl uppercase text-primary">{f.name}</h3>
-              <p className="mt-3 text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+      {/* Olimpiads */}
+      <section id="festivali" className="bg-muted/30 scroll-mt-16">
+        <div className="container px-4 py-16 md:py-24">
+          <div className="text-center max-w-2xl mx-auto mb-4">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
+              <Icon name="Medal" size={15} /> Регулярные олимпиады
+            </span>
+            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Регулярные олимпиады</h2>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 mb-10">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Monitor" size={16} className="text-secondary" />
+              Интерактивный онлайн-формат
             </div>
-          ))}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Clock" size={16} className="text-secondary" />
+              Результаты в течение 2 рабочих дней
+            </div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {OLIMPIADS.map((o) => (
+              <div key={o.name} className="group rounded-2xl border border-border bg-card p-7 flex flex-col hover:shadow-xl hover:border-secondary transition-all">
+                <span className={`grid place-items-center w-14 h-14 rounded-xl ${o.color} mb-5`}>
+                  <Icon name={o.icon} size={28} />
+                </span>
+                <h3 className="font-heading font-semibold text-xl uppercase text-primary mb-3">
+                  Олимпиада «{o.name}»
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed flex-1">{o.desc}</p>
+                <a
+                  href={`/olimpiad/${o.slug}`}
+                  className="mt-6 inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-2.5 text-sm hover:bg-secondary/90 transition-colors"
+                >
+                  <Icon name="ArrowRight" size={16} /> Принять участие
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
