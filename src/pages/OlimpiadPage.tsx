@@ -169,6 +169,16 @@ const OlimpiadPage = () => {
               </div>
             </div>
 
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="px-5 pt-5 pb-3">
+                <h2 className="font-heading font-bold text-xl uppercase text-primary mb-1">Образец диплома</h2>
+                <p className="text-xs text-muted-foreground">Именной диплом для каждого участника</p>
+              </div>
+              <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" target="_blank" rel="noopener noreferrer">
+                <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" alt="Образец диплома олимпиады" className="w-full object-contain hover:opacity-90 transition-opacity cursor-zoom-in" />
+              </a>
+            </div>
+
             <div className="rounded-2xl bg-primary text-white p-7 flex flex-col gap-4">
               <h3 className="font-heading font-bold text-xl uppercase">Готовы участвовать?</h3>
               <p className="text-white/75 text-sm leading-relaxed">Принять участие в олимпиаде "Дебют" можно в любое время суток и в любой день недели.
