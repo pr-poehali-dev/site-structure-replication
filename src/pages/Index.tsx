@@ -286,34 +286,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA / Contacts */}
-      <section id="contacts" className="bg-primary text-white scroll-mt-16">
-        <div className="container px-4 py-16 md:py-24 max-w-2xl mx-auto">
-          <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase mb-2">Контакты</h2>
-          <div className="mt-4 mb-2 text-white/60 text-sm uppercase font-semibold tracking-wide">Организатор</div>
-          <p className="text-white font-semibold text-lg">Мозжерин Илья Вячеславович</p>
-          <p className="text-white/80 text-sm mb-6">ИНН: 591703749251</p>
-          <div className="space-y-4">
-            <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Mail" size={20} /></span>
-              mir.shahmat@inbox.ru
-            </a>
-            <a href="tel:+79922281068" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Phone" size={20} /></span>
-              8-99-222-810-68
-            </a>
-            <a href="https://мир-шахмат.рф" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Globe" size={20} /></span>
-              мир-шахмат.рф
-            </a>
-            <a href="https://vk.com/mir.shahmat" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Users" size={20} /></span>
-              ВКонтакте — vk.com/mir.shahmat
-            </a>
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );

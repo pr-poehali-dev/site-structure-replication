@@ -45,12 +45,39 @@ export function Header() {
 
 export function Footer() {
   return (
-    <footer className="bg-black text-white/70">
-      <div className="container px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center">
-          <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" className="h-16 w-auto object-contain" />
+    <footer id="contacts" className="bg-primary text-white scroll-mt-16">
+      <div className="container px-4 py-12 grid md:grid-cols-2 gap-10 items-start max-w-5xl mx-auto">
+        {/* Лого + копирайт */}
+        <div className="flex flex-col gap-3">
+          <img
+            src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png"
+            alt="Мир шахмат"
+            className="h-28 w-auto object-contain"
+          />
+          <p className="text-sm text-white/50">© {new Date().getFullYear()} Центр поддержки детского шахматного спорта</p>
         </div>
-        <p className="text-sm">© {new Date().getFullYear()} Центр поддержки детского шахматного спорта</p>
+
+        {/* Контакты */}
+        <div>
+          <h2 className="font-heading font-bold text-2xl uppercase mb-1">Контакты</h2>
+          <p className="text-white/50 text-xs uppercase font-semibold tracking-wide mb-1">Организатор</p>
+          <p className="font-semibold text-white">Мозжерин Илья Вячеславович</p>
+          <p className="text-white/60 text-sm mb-5">ИНН: 591703749251</p>
+          <div className="space-y-3">
+            <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center gap-3 text-white/85 hover:text-secondary transition-colors text-sm">
+              <Icon name="Mail" size={17} className="shrink-0" /> mir.shahmat@inbox.ru
+            </a>
+            <a href="tel:+79922281068" className="flex items-center gap-3 text-white/85 hover:text-secondary transition-colors text-sm">
+              <Icon name="Phone" size={17} className="shrink-0" /> 8-99-222-810-68
+            </a>
+            <a href="https://мир-шахмат.рф" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/85 hover:text-secondary transition-colors text-sm">
+              <Icon name="Globe" size={17} className="shrink-0" /> мир-шахмат.рф
+            </a>
+            <a href="https://vk.com/mir.shahmat" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/85 hover:text-secondary transition-colors text-sm">
+              <Icon name="Users" size={17} className="shrink-0" /> vk.com/mir.shahmat
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
   );
