@@ -3,7 +3,7 @@ import Icon from '@/components/ui/icon';
 
 const NAV = [
   { label: 'Турниры', href: '/turnir' },
-  { label: 'Фестивали', href: '/#festivali' },
+  { label: 'Олимпиады', href: '/#olimpiady' },
   { label: 'Результаты', href: '/result' },
   { label: 'Кубки', href: '/#kubki' },
   { label: 'Оплата', href: '/#pay' },
