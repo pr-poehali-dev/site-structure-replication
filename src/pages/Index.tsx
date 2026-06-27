@@ -103,7 +103,8 @@ const Index = () => {
       </section>
 
       {/* About promo */}
-      <section className="container px-4 py-8">
+      <section className="bg-white">
+        <div className="container px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-7">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
@@ -186,10 +187,11 @@ const Index = () => {
             </a>
           </div>
         </div>
+        </div>
       </section>
 
       {/* Olimpiads */}
-      <section id="olimpiady" className="bg-muted/30 scroll-mt-16">
+      <section id="olimpiady" className="bg-amber-50/60 scroll-mt-16">
         <div className="container px-4 py-8">
           <div className="text-center max-w-2xl mx-auto mb-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
@@ -230,7 +232,7 @@ const Index = () => {
       </section>
 
       {/* Services / разделы */}
-      <section className="bg-muted/40 chess-grid">
+      <section className="bg-white chess-grid">
         <div className="container px-4 py-8">
           <div className="text-center max-w-2xl mx-auto mb-7">
             <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Разделы центра</h2>
@@ -256,7 +258,8 @@ const Index = () => {
       </section>
 
       {/* About */}
-      <section className="container px-4 py-8">
+      <section className="bg-amber-50/60">
+      <div className="container px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div>
             <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">О центре «Мир шахмат»</h2>
@@ -286,6 +289,7 @@ const Index = () => {
               ))}
             </div>
           </div>
+        </div>
         </div>
       </section>
 
