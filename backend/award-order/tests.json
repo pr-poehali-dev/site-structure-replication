@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Create award order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customer_name": "Тест Тестов",
+        "customer_phone": "+7 900 000-00-00",
+        "items": [{"kit_id": "standard", "kit_title": "Стандарт", "tournament_id": 1, "tournament_title": "Тестовый турнир", "price": 1500}]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get orders list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"orders": [{"id": 1}]},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
