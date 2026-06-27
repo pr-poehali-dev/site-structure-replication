@@ -90,7 +90,7 @@ const OlimpiadPage = () => {
       {/* Hero */}
       <section className="bg-primary text-white relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="container relative px-4 py-16 md:py-24 max-w-4xl mx-auto text-center">
+        <div className="container relative px-4 py-10 md:py-14 max-w-4xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
             <Icon name="Medal" size={15} /> Регулярные олимпиады
           </span>
