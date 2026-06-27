@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
@@ -67,12 +68,24 @@ const OLIMPIADS: Record<string, {
 const OlimpiadPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const o = slug ? OLIMPIADS[slug] : null;
+  const [diplom, setDiplom] = useState(false);
 
   if (!o) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
+
+      {diplom && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setDiplom(false)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setDiplom(false)} className="absolute -top-10 right-0 text-white/70 hover:text-white flex items-center gap-1 text-sm">
+              <Icon name="X" size={18} /> Закрыть
+            </button>
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" alt="Диплом" className="w-full rounded-xl shadow-2xl" />
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="bg-primary text-white relative overflow-hidden">
@@ -174,9 +187,14 @@ const OlimpiadPage = () => {
                 <h2 className="font-heading font-bold text-xl uppercase text-primary mb-1">Образец диплома</h2>
                 <p className="text-xs text-muted-foreground">Именной диплом для каждого участника</p>
               </div>
-              <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" target="_blank" rel="noopener noreferrer">
-                <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" alt="Образец диплома олимпиады" className="w-full object-contain hover:opacity-90 transition-opacity cursor-zoom-in" />
-              </a>
+              <div className="relative group cursor-zoom-in" onClick={() => setDiplom(true)}>
+                <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/2ea2f61b-3108-4efc-a8fd-cf5414f5c9de.jpg" alt="Образец диплома олимпиады" className="w-full object-contain max-h-64 object-top group-hover:opacity-80 transition-opacity" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="bg-black/60 text-white rounded-xl px-4 py-2 text-sm flex items-center gap-2">
+                    <Icon name="ZoomIn" size={16} /> Посмотреть полностью
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-2xl bg-primary text-white p-7 flex flex-col gap-4">
