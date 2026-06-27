@@ -288,35 +288,28 @@ const Index = () => {
 
       {/* CTA / Contacts */}
       <section id="contacts" className="bg-primary text-white scroll-mt-16">
-        <div className="container px-4 py-16 md:py-24">
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div>
-              <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase">Контакты</h2>
-              <p className="mt-4 text-white/75 text-lg">Свяжитесь с нами, чтобы записать ребёнка на турнир или задать вопрос.</p>
-              <div className="mt-8 space-y-5">
-                <a href="tel:+70000000000" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-                  <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Phone" size={20} /></span>
-                  +7 (000) 000-00-00
-                </a>
-                <a href="mailto:info@мир-шахмат.рф" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
-                  <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Mail" size={20} /></span>
-                  info@мир-шахмат.рф
-                </a>
-                <div className="flex items-center gap-4 text-white/90">
-                  <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="MapPin" size={20} /></span>
-                  Россия
-                </div>
-              </div>
-            </div>
-            <form className="bg-white/5 border border-white/10 rounded-2xl p-7 space-y-4">
-              <h3 className="font-heading font-semibold text-xl uppercase">Записаться на турнир</h3>
-              <input className="w-full h-12 rounded-lg bg-white/10 border border-white/15 px-4 text-white placeholder:text-white/50 focus:outline-none focus:border-secondary" placeholder="Имя ребёнка и родителя" />
-              <input className="w-full h-12 rounded-lg bg-white/10 border border-white/15 px-4 text-white placeholder:text-white/50 focus:outline-none focus:border-secondary" placeholder="Телефон" />
-              <textarea rows={3} className="w-full rounded-lg bg-white/10 border border-white/15 px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-secondary" placeholder="Комментарий" />
-              <Button type="button" size="lg" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold h-12">
-                Отправить заявку
-              </Button>
-            </form>
+        <div className="container px-4 py-16 md:py-24 max-w-2xl mx-auto">
+          <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase mb-2">Контакты</h2>
+          <div className="mt-4 mb-2 text-white/60 text-sm uppercase font-semibold tracking-wide">Организатор</div>
+          <p className="text-white font-semibold text-lg">Мозжерин Илья Вячеславович</p>
+          <p className="text-white/80 text-sm mb-6">ИНН: 591703749251</p>
+          <div className="space-y-4">
+            <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
+              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Mail" size={20} /></span>
+              mir.shahmat@inbox.ru
+            </a>
+            <a href="tel:+79922281068" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
+              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Phone" size={20} /></span>
+              8-99-222-810-68
+            </a>
+            <a href="https://мир-шахмат.рф" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
+              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Globe" size={20} /></span>
+              мир-шахмат.рф
+            </a>
+            <a href="https://vk.com/mir.shahmat" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 text-white/90 hover:text-secondary transition-colors">
+              <span className="grid place-items-center w-11 h-11 rounded-xl bg-white/10"><Icon name="Users" size={20} /></span>
+              ВКонтакте — vk.com/mir.shahmat
+            </a>
           </div>
         </div>
       </section>
