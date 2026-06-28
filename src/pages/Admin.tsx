@@ -81,6 +81,15 @@ export default function Admin() {
   const [awardOrders, setAwardOrders] = useState<AwardOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
+  // Подраздел внутри awards
+  const [awardsTab, setAwardsTab] = useState<'kits' | 'tournaments'>('kits');
+  const [awardsKitTournaments, setAwardsKitTournaments] = useState<Tournament[]>([]);
+  const [aKitTLoading, setAKitTLoading] = useState(false);
+  const [aKitTForm, setAKitTForm] = useState({ title: '', date: '' });
+  const [aKitTShowForm, setAKitTShowForm] = useState(false);
+  const [aKitTSaving, setAKitTSaving] = useState(false);
+  const [aKitTError, setAKitTError] = useState('');
+
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
     if (saved) { setPassword(saved); loginWith(saved); }
@@ -132,13 +141,44 @@ export default function Admin() {
     setOrdersLoading(false);
   }
 
+  async function fetchAwardKitTournaments() {
+    setAKitTLoading(true);
+    const res = await fetch(TOURNAMENTS_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setAwardsKitTournaments(data.tournaments || []);
+    setAKitTLoading(false);
+  }
+
+  async function handleCreateAwardTournament(e: React.FormEvent) {
+    e.preventDefault();
+    setAKitTSaving(true); setAKitTError('');
+    const res = await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ title: aKitTForm.title, date: aKitTForm.date || null, description: '', location: '', age_category: '', price: null, fsr_id: '' }),
+    });
+    if (res.ok) { setAKitTForm({ title: '', date: '' }); setAKitTShowForm(false); fetchAwardKitTournaments(); }
+    else setAKitTError('Ошибка при сохранении');
+    setAKitTSaving(false);
+  }
+
+  async function handleDeleteAwardTournament(id: number) {
+    if (!confirm('Удалить турнир из списка?')) return;
+    await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'delete', id }),
+    });
+    fetchAwardKitTournaments();
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
 
   useEffect(() => {
     if (authed && section === 'applications') fetchApps();
-    if (authed && section === 'awards') fetchAwardKits();
+    if (authed && section === 'awards') { fetchAwardKits(); fetchAwardKitTournaments(); }
     if (authed && section === 'award-orders') fetchAwardOrders();
   }, [section]);
 
@@ -499,17 +539,35 @@ export default function Admin() {
         {/* === КАТАЛОГ НАГРАД === */}
         {section === 'awards' && (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
                 <Icon name="Award" size={22} /> Каталог наград
               </h2>
-              <Button onClick={() => { setShowKitForm(!showKitForm); setKitError(''); }}>
-                <Icon name={showKitForm ? 'X' : 'Plus'} size={16} className="mr-1" />
-                {showKitForm ? 'Отмена' : 'Добавить комплект'}
-              </Button>
+              {awardsTab === 'kits' && (
+                <Button onClick={() => { setShowKitForm(!showKitForm); setKitError(''); }}>
+                  <Icon name={showKitForm ? 'X' : 'Plus'} size={16} className="mr-1" />
+                  {showKitForm ? 'Отмена' : 'Добавить комплект'}
+                </Button>
+              )}
+              {awardsTab === 'tournaments' && (
+                <Button onClick={() => { setAKitTShowForm(!aKitTShowForm); setAKitTError(''); }}>
+                  <Icon name={aKitTShowForm ? 'X' : 'Plus'} size={16} className="mr-1" />
+                  {aKitTShowForm ? 'Отмена' : 'Добавить турнир'}
+                </Button>
+              )}
             </div>
 
-            {showKitForm && (
+            {/* Вкладки внутри наград */}
+            <div className="flex gap-1 mb-6 border-b border-gray-200">
+              {([['kits', 'LayoutGrid', 'Комплекты'], ['tournaments', 'Trophy', 'Турниры']] as const).map(([key, icon, label]) => (
+                <button key={key} onClick={() => setAwardsTab(key)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${awardsTab === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                  <Icon name={icon} size={15} />{label}
+                </button>
+              ))}
+            </div>
+
+            {awardsTab === 'kits' && showKitForm && (
               <form onSubmit={handleCreateKit} className="bg-white rounded-2xl shadow p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label>Название *</Label>
@@ -559,7 +617,7 @@ export default function Admin() {
               </form>
             )}
 
-            {awardsLoading ? (
+            {awardsTab === 'kits' && (awardsLoading ? (
               <div className="text-center py-12 text-gray-400">Загрузка...</div>
             ) : awardKits.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
@@ -605,6 +663,51 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            ))}
+
+            {/* Вкладка турниров */}
+            {awardsTab === 'tournaments' && (
+              <>
+                {aKitTShowForm && (
+                  <form onSubmit={handleCreateAwardTournament} className="bg-white rounded-2xl shadow p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label>Название турнира *</Label>
+                      <Input className="mt-1" value={aKitTForm.title} onChange={e => setAKitTForm({ ...aKitTForm, title: e.target.value })} required placeholder="Например: Первенство города 2025" />
+                    </div>
+                    <div>
+                      <Label>Дата</Label>
+                      <Input type="date" className="mt-1" value={aKitTForm.date} onChange={e => setAKitTForm({ ...aKitTForm, date: e.target.value })} />
+                    </div>
+                    {aKitTError && <p className="md:col-span-2 text-red-500 text-sm">{aKitTError}</p>}
+                    <div className="md:col-span-2 flex justify-end gap-3">
+                      <Button type="button" variant="outline" onClick={() => setAKitTShowForm(false)}>Отмена</Button>
+                      <Button type="submit" disabled={aKitTSaving}>{aKitTSaving ? 'Сохранение...' : 'Добавить'}</Button>
+                    </div>
+                  </form>
+                )}
+                {aKitTLoading ? (
+                  <div className="text-center py-12 text-gray-400">Загрузка...</div>
+                ) : awardsKitTournaments.length === 0 ? (
+                  <div className="text-center py-16 text-gray-400">
+                    <Icon name="Trophy" size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>Турниров пока нет. Добавьте первый!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {awardsKitTournaments.map(t => (
+                      <div key={t.id} className="bg-white rounded-2xl shadow p-4 flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-primary">{t.title}</p>
+                          {t.date && <p className="text-sm text-gray-400">{new Date(t.date).toLocaleDateString('ru-RU')}</p>}
+                        </div>
+                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 shrink-0" onClick={() => handleDeleteAwardTournament(t.id)}>
+                          <Icon name="Trash2" size={13} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
