@@ -567,17 +567,17 @@ export default function Admin() {
                 <p>Комплектов пока нет. Добавьте первый!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-4">
                 {awardKits.map(kit => (
-                  <div key={kit.id} className={`bg-white rounded-2xl shadow overflow-hidden flex flex-col ${!kit.is_active ? 'opacity-60' : ''}`}>
+                  <div key={kit.id} className={`bg-white rounded-2xl shadow overflow-hidden flex flex-row ${!kit.is_active ? 'opacity-60' : ''}`}>
                     {kit.photo_url ? (
-                      <img src={kit.photo_url} alt={kit.title} className="w-full h-44 object-cover" />
+                      <img src={kit.photo_url} alt={kit.title} className="w-40 shrink-0 object-cover" />
                     ) : (
-                      <div className="w-full h-44 bg-gray-100 flex items-center justify-center">
+                      <div className="w-40 shrink-0 bg-gray-100 flex items-center justify-center">
                         <Icon name="Image" size={32} className="text-gray-300" />
                       </div>
                     )}
-                    <div className="p-4 flex flex-col flex-1">
+                    <div className="p-4 flex flex-col flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h3 className="font-bold text-primary">{kit.title}</h3>
                         {!kit.is_active && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full shrink-0">Скрыт</span>}
