@@ -567,13 +567,13 @@ export default function Admin() {
                 <p>Комплектов пока нет. Добавьте первый!</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {awardKits.map(kit => (
-                  <div key={kit.id} className={`bg-white rounded-2xl shadow overflow-hidden flex flex-row ${!kit.is_active ? 'opacity-60' : ''}`}>
+                  <div key={kit.id} className={`bg-white rounded-2xl shadow overflow-hidden flex flex-col ${!kit.is_active ? 'opacity-60' : ''}`}>
                     {kit.photo_url ? (
-                      <img src={kit.photo_url} alt={kit.title} className="w-40 shrink-0 object-cover" />
+                      <img src={kit.photo_url} alt={kit.title} className="w-full h-48 object-cover" />
                     ) : (
-                      <div className="w-40 shrink-0 bg-gray-100 flex items-center justify-center">
+                      <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
                         <Icon name="Image" size={32} className="text-gray-300" />
                       </div>
                     )}
