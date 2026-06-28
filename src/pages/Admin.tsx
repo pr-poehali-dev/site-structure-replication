@@ -571,9 +571,9 @@ export default function Admin() {
                 {awardKits.map(kit => (
                   <div key={kit.id} className={`bg-white rounded-2xl shadow overflow-hidden flex flex-col ${!kit.is_active ? 'opacity-60' : ''}`}>
                     {kit.photo_url ? (
-                      <img src={kit.photo_url} alt={kit.title} className="w-full h-48 object-cover" />
+                      <img src={kit.photo_url} alt={kit.title} className="w-full h-72 object-cover object-top" />
                     ) : (
-                      <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
+                      <div className="w-full h-72 bg-gray-100 flex items-center justify-center">
                         <Icon name="Image" size={32} className="text-gray-300" />
                       </div>
                     )}
