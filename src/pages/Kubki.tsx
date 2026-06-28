@@ -50,7 +50,7 @@ export default function Kubki() {
       .then(r => r.json())
       .then(d => setCatalog(d.catalog || []));
 
-    fetch(func2url['tournaments-public'])
+    fetch(func2url['award-tournaments'])
       .then(r => r.json())
       .then(d => setTournaments(d.tournaments || []));
   }, []);

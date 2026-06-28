@@ -9,6 +9,7 @@ const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-6
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 const AWARD_CATALOG_ADMIN_URL = 'https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd';
 const AWARD_ORDERS_URL = 'https://functions.poehali.dev/572ab5d3-bfa9-4a78-8d49-a35187da0bb7';
+const AWARD_TOURNAMENTS_URL = 'https://functions.poehali.dev/fd3814c3-2340-45ce-81f9-80e07768efe2';
 
 interface Tournament {
   id: number; title: string; description: string; date: string | null;
@@ -143,7 +144,7 @@ export default function Admin() {
 
   async function fetchAwardKitTournaments() {
     setAKitTLoading(true);
-    const res = await fetch(TOURNAMENTS_URL, { headers: { 'X-Admin-Password': password } });
+    const res = await fetch(AWARD_TOURNAMENTS_URL, { headers: { 'X-Admin-Password': password } });
     const data = await res.json();
     setAwardsKitTournaments(data.tournaments || []);
     setAKitTLoading(false);
@@ -152,10 +153,10 @@ export default function Admin() {
   async function handleCreateAwardTournament(e: React.FormEvent) {
     e.preventDefault();
     setAKitTSaving(true); setAKitTError('');
-    const res = await fetch(TOURNAMENTS_URL, {
+    const res = await fetch(AWARD_TOURNAMENTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ title: aKitTForm.title, date: aKitTForm.date || null, description: '', location: '', age_category: '', price: null, fsr_id: '' }),
+      body: JSON.stringify({ title: aKitTForm.title, date: aKitTForm.date || null }),
     });
     if (res.ok) { setAKitTForm({ title: '', date: '' }); setAKitTShowForm(false); fetchAwardKitTournaments(); }
     else setAKitTError('Ошибка при сохранении');
@@ -164,7 +165,7 @@ export default function Admin() {
 
   async function handleDeleteAwardTournament(id: number) {
     if (!confirm('Удалить турнир из списка?')) return;
-    await fetch(TOURNAMENTS_URL, {
+    await fetch(AWARD_TOURNAMENTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
       body: JSON.stringify({ _action: 'delete', id }),
