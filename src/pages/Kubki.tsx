@@ -40,7 +40,7 @@ export default function Kubki() {
   const [addingKit, setAddingKit] = useState<Kit | null>(null);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
+  const [form, setForm] = useState({ participant_name: '', recipient_name: '', address: '', phone: '', email: '', notes: '' });
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -79,8 +79,8 @@ export default function Kubki() {
   const total = itemsTotal > 0 ? itemsTotal + DELIVERY : 0;
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.phone.trim()) {
-      setError('Заполните имя и телефон');
+    if (!form.participant_name.trim() || !form.phone.trim()) {
+      setError('Заполните ФИО участника и телефон');
       return;
     }
     setSending(true);
@@ -96,10 +96,15 @@ export default function Kubki() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customer_name: form.name,
+        customer_name: form.recipient_name || form.participant_name,
         customer_phone: form.phone,
         customer_email: form.email,
-        notes: form.notes,
+        notes: [
+          form.participant_name ? `Участник: ${form.participant_name}` : '',
+          form.recipient_name ? `Получатель: ${form.recipient_name}` : '',
+          form.address ? `Адрес: ${form.address}` : '',
+          form.notes ? `Доп. информация: ${form.notes}` : '',
+        ].filter(Boolean).join('\n'),
         items,
       }),
     });
@@ -288,39 +293,70 @@ export default function Kubki() {
       {/* Модал: форма заявки */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold text-xl uppercase">Контактные данные</h3>
+          <div className="bg-card rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-heading font-bold text-xl uppercase">Оформление заказа</h3>
               <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
                 <Icon name="X" size={20} />
               </button>
             </div>
-            <div className="space-y-3 mb-4">
-              <input
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                placeholder="Ваше имя *"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              />
-              <input
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                placeholder="Телефон *"
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-              />
-              <input
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                placeholder="Email"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              />
-              <textarea
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background resize-none"
-                placeholder="Комментарий к заказу"
-                rows={3}
-                value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              />
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">ФИО участника турнира *</label>
+                <input
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
+                  placeholder="Иванов Иван Иванович"
+                  value={form.participant_name}
+                  onChange={e => setForm(f => ({ ...f, participant_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">ФИО получателя</label>
+                <input
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
+                  placeholder="Если отличается от участника"
+                  value={form.recipient_name}
+                  onChange={e => setForm(f => ({ ...f, recipient_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Адрес доставки</label>
+                <input
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
+                  placeholder="Город, улица, дом, квартира"
+                  value={form.address}
+                  onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Телефон для связи *</label>
+                <input
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
+                  placeholder="+7 (___) ___-__-__"
+                  value={form.phone}
+                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Адрес электронной почты</label>
+                <input
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
+                  placeholder="example@mail.ru"
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Дополнительная информация</label>
+                <textarea
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background resize-none mt-1"
+                  placeholder="Пожелания, уточнения к заказу..."
+                  rows={3}
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                />
+              </div>
             </div>
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
             <div className="flex gap-3">
