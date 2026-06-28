@@ -154,13 +154,13 @@ export default function Kubki() {
                   <Icon name="Loader2" size={24} className="animate-spin mr-2" /> Загрузка...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {catalog.map(kit => (
                     <div key={kit.id} className="border border-border rounded-xl overflow-hidden flex flex-col bg-card hover:border-secondary transition-colors">
                       {kit.photo_url ? (
-                        <img src={kit.photo_url} alt={kit.title} className="w-full h-40 object-cover" />
+                        <img src={kit.photo_url} alt={kit.title} className="w-full object-contain bg-gray-50" />
                       ) : (
-                        <div className="w-full h-40 bg-muted flex items-center justify-center">
+                        <div className="w-full h-72 bg-muted flex items-center justify-center">
                           <Icon name={ICON_MAP[kit.icon] || 'Award'} size={36} className="text-secondary/40" />
                         </div>
                       )}
