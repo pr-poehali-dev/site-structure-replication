@@ -11,6 +11,7 @@ interface Kit {
   composition: string[];
   price: number | null;
   icon: string;
+  photo_url?: string | null;
 }
 
 interface Tournament {
@@ -155,9 +156,17 @@ export default function Kubki() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {catalog.map(kit => (
-                    <div key={kit.id} className="border border-border rounded-xl p-5 flex flex-col gap-3 bg-card hover:border-secondary transition-colors">
+                    <div key={kit.id} className="border border-border rounded-xl overflow-hidden flex flex-col bg-card hover:border-secondary transition-colors">
+                      {kit.photo_url ? (
+                        <img src={kit.photo_url} alt={kit.title} className="w-full h-40 object-cover" />
+                      ) : (
+                        <div className="w-full h-40 bg-muted flex items-center justify-center">
+                          <Icon name={ICON_MAP[kit.icon] || 'Award'} size={36} className="text-secondary/40" />
+                        </div>
+                      )}
+                      <div className="p-5 flex flex-col gap-3 flex-1">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-secondary/15 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0">
                           <Icon name={ICON_MAP[kit.icon] || 'Award'} size={20} className="text-secondary" />
                         </div>
                         <div>
@@ -180,6 +189,7 @@ export default function Kubki() {
                         <Button size="sm" onClick={() => openAddKit(kit)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
                           <Icon name="Plus" size={14} className="mr-1" /> Добавить
                         </Button>
+                      </div>
                       </div>
                     </div>
                   ))}

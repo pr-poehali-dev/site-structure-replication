@@ -1,45 +1,36 @@
 import json
+import os
+import psycopg2
+
+SCHEMA = os.environ.get('MAIN_DB_SCHEMA', 't_p58220589_site_structure_repli')
 
 
 def handler(event: dict, context) -> dict:
-    """Возвращает каталог комплектов наград."""
+    """Возвращает публичный каталог комплектов наград из базы данных."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
-    catalog = [
-        {
-            "id": "standard",
-            "title": "Стандарт",
-            "description": "Медали для призёров: 1, 2 и 3 место",
-            "composition": ["Медаль 1 место — 1 шт.", "Медаль 2 место — 1 шт.", "Медаль 3 место — 1 шт."],
-            "price": 1500,
-            "icon": "medal"
-        },
-        {
-            "id": "premium",
-            "title": "Премиум",
-            "description": "Кубок победителю и медали для призёров",
-            "composition": ["Кубок 1 место — 1 шт.", "Медаль 2 место — 1 шт.", "Медаль 3 место — 1 шт."],
-            "price": 3500,
-            "icon": "trophy"
-        },
-        {
-            "id": "full",
-            "title": "Полный",
-            "description": "Кубки и медали для топ-3, грамоты для всех участников",
-            "composition": ["Кубок 1 место — 1 шт.", "Кубок 2 место — 1 шт.", "Кубок 3 место — 1 шт.", "Грамоты участника — до 30 шт."],
-            "price": 7500,
-            "icon": "award"
-        },
-        {
-            "id": "custom",
-            "title": "Индивидуальный",
-            "description": "Состав обсуждается отдельно под ваш турнир",
-            "composition": ["Состав по договорённости"],
-            "price": None,
-            "icon": "star"
-        }
-    ]
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT id, title, description, composition, price, icon, photo_url, sort_order FROM {SCHEMA}.award_catalog WHERE is_active=TRUE ORDER BY sort_order, id"
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    catalog = []
+    for r in rows:
+        catalog.append({
+            'id': str(r[0]),
+            'title': r[1],
+            'description': r[2] or '',
+            'composition': list(r[3]) if r[3] else [],
+            'price': float(r[4]) if r[4] is not None else None,
+            'icon': r[5] or 'award',
+            'photo_url': r[6],
+            'sort_order': r[7],
+        })
 
     return {
         'statusCode': 200,
