@@ -1,4 +1,6 @@
 {
+  "robokassa-robokassa-webhook": "https://functions.poehali.dev/e8917545-395a-4b65-a1f0-1cc4bf7cd3dc",
+  "robokassa-robokassa": "https://functions.poehali.dev/21d56bf4-bf1a-4f64-ac1d-bf499b1f88ab",
   "award-tournaments": "https://functions.poehali.dev/fd3814c3-2340-45ce-81f9-80e07768efe2",
   "award-catalog-admin": "https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd",
   "award-catalog": "https://functions.poehali.dev/59751d27-6213-4abf-a9b6-cf59e9341061",

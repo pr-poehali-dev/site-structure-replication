@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
+import { useRobokassa, openPaymentPage } from '@/components/extensions/robokassa/useRobokassa';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
+const ROBOKASSA_URL = 'https://functions.poehali.dev/21d56bf4-bf1a-4f64-ac1d-bf499b1f88ab';
 
 interface Tournament {
   id: number;
@@ -31,6 +33,11 @@ export default function Turnir() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  const { createPayment, isLoading: paymentLoading } = useRobokassa({
+    apiUrl: ROBOKASSA_URL,
+    onError: (err) => setSubmitError(err.message),
+  });
 
   // Модал списка участников
   const [participantsModal, setParticipantsModal] = useState<Tournament | null>(null);
@@ -86,10 +93,25 @@ export default function Turnir() {
           phone: form.phone,
         }),
       });
-      if (res.ok) {
-        setSent(true);
-      } else {
+      if (!res.ok) {
         setSubmitError('Ошибка при отправке. Попробуйте ещё раз.');
+        return;
+      }
+
+      if (modalTournament.price && modalTournament.price > 0) {
+        const payment = await createPayment({
+          amount: modalTournament.price,
+          userName: form.fio,
+          userEmail: form.email,
+          userPhone: form.phone,
+          orderComment: `Турнир: ${modalTournament.title}`,
+          cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price, quantity: 1 }],
+          successUrl: window.location.origin + '/turnir',
+          failUrl: window.location.origin + '/turnir',
+        });
+        openPaymentPage(payment.payment_url);
+      } else {
+        setSent(true);
       }
     } catch {
       setSubmitError('Ошибка сети. Попробуйте ещё раз.');
@@ -224,8 +246,13 @@ export default function Turnir() {
                     <span className="text-sm text-gray-600">Соглашаюсь с условиями проведения соревнования</span>
                   </label>
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
-                  <Button type="submit" disabled={submitting} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
-                    <Icon name="CreditCard" size={16} className="mr-2" /> {submitting ? 'Отправка...' : 'Оплатить и подать заявку'}
+                  <Button type="submit" disabled={submitting || paymentLoading} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
+                    {(submitting || paymentLoading)
+                      ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Обработка...</>
+                      : modalTournament.price && modalTournament.price > 0
+                        ? <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
+                        : <><Icon name="ClipboardCheck" size={16} className="mr-2" />Подать заявку</>
+                    }
                   </Button>
                 </form>
               </>
