@@ -13,18 +13,13 @@ CORS = {
 
 
 def handler(event: dict, context) -> dict:
-    """Управление турнирами для каталога наград (CRUD)."""
+    """Турниры для каталога наград. GET — публичный, POST — только с паролем."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
-    pwd = event.get('headers', {}).get('X-Admin-Password', '')
-    if pwd != ADMIN_PASSWORD:
-        return {'statusCode': 401, 'headers': CORS, 'body': json.dumps({'error': 'Unauthorized'})}
-
+    method = event.get('httpMethod', 'GET')
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
-
-    method = event.get('httpMethod', 'GET')
 
     if method == 'GET':
         cur.execute(f"SELECT id, title, date FROM {SCHEMA}.award_tournaments ORDER BY date DESC NULLS LAST, id DESC")
@@ -34,6 +29,11 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'tournaments': tournaments})}
 
     if method == 'POST':
+        pwd = event.get('headers', {}).get('X-Admin-Password', '')
+        if pwd != ADMIN_PASSWORD:
+            conn.close()
+            return {'statusCode': 401, 'headers': CORS, 'body': json.dumps({'error': 'Unauthorized'})}
+
         body = json.loads(event.get('body') or '{}')
         action = body.get('_action')
 

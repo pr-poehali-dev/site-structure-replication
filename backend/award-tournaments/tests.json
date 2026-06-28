@@ -1,10 +1,10 @@
 {
   "tests": [
     {
-      "name": "GET tournaments list (no auth)",
+      "name": "GET tournaments list (public)",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 401
+      "expectedStatus": 200
     }
   ]
 }
