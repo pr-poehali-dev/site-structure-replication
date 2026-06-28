@@ -74,7 +74,9 @@ export default function Kubki() {
     setCart(prev => prev.filter(i => i.uid !== uid));
   };
 
-  const total = cart.reduce((sum, i) => sum + (i.kit.price || 0), 0);
+  const DELIVERY = 250;
+  const itemsTotal = cart.reduce((sum, i) => sum + (i.kit.price || 0), 0);
+  const total = itemsTotal > 0 ? itemsTotal + DELIVERY : 0;
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.phone.trim()) {
@@ -225,7 +227,15 @@ export default function Kubki() {
                         </button>
                       </div>
                     ))}
-                    <div className="flex justify-between font-bold pt-1">
+                    <div className="flex justify-between text-sm text-muted-foreground pt-1">
+                      <span>Товары:</span>
+                      <span>{itemsTotal > 0 ? `${itemsTotal.toLocaleString('ru')} ₽` : 'По запросу'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Доставка:</span>
+                      <span>{itemsTotal > 0 ? `${DELIVERY.toLocaleString('ru')} ₽` : '—'}</span>
+                    </div>
+                    <div className="flex justify-between font-bold pt-1 border-t border-border">
                       <span>Итого:</span>
                       <span>{total > 0 ? `${total.toLocaleString('ru')} ₽` : 'По запросу'}</span>
                     </div>
