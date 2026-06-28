@@ -359,17 +359,14 @@ export default function Kubki() {
               </div>
             </div>
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Назад</Button>
-              <Button
-                className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                onClick={handleSubmit}
-                disabled={sending}
-              >
-                {sending ? <Icon name="Loader2" size={16} className="animate-spin mr-2" /> : null}
-                Отправить заявку
-              </Button>
-            </div>
+            <Button
+              className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              onClick={handleSubmit}
+              disabled={sending}
+            >
+              {sending ? <Icon name="Loader2" size={16} className="animate-spin mr-2" /> : null}
+              Оплатить и заказать
+            </Button>
           </div>
         </div>
       )}
