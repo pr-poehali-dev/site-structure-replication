@@ -97,6 +97,11 @@ export default function Admin() {
   const [trSaving, setTrSaving] = useState(false);
   const [trError, setTrError] = useState('');
   const [trEdit, setTrEdit] = useState<TournamentResult | null>(null);
+  const [trUploading, setTrUploading] = useState<string | null>(null);
+  const trProtocolRef = useRef<HTMLInputElement>(null);
+  const trRegulationRef = useRef<HTMLInputElement>(null);
+  const trEditProtocolRef = useRef<HTMLInputElement>(null);
+  const trEditRegulationRef = useRef<HTMLInputElement>(null);
 
   // Подраздел внутри awards
   const [awardsTab, setAwardsTab] = useState<'kits' | 'tournaments'>('kits');
@@ -189,6 +194,25 @@ export default function Admin() {
     fetchAwardKitTournaments();
   }
 
+  async function uploadResultFile(file: File, label: string): Promise<string | null> {
+    setTrUploading(label);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const b64 = (reader.result as string).split(',')[1];
+        const res = await fetch(`${RESULTS_URL}?section=upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+          body: JSON.stringify({ file_b64: b64, content_type: file.type, file_name: file.name }),
+        });
+        const data = await res.json();
+        setTrUploading(null);
+        resolve(data.url || null);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function fetchTrResults() {
     setTrLoading(true);
     const res = await fetch(RESULTS_URL, { headers: { 'X-Admin-Password': password } });
@@ -200,13 +224,24 @@ export default function Admin() {
   async function handleCreateTrResult(e: React.FormEvent) {
     e.preventDefault();
     setTrSaving(true); setTrError('');
+    let protocolUrl = trForm.protocol_url;
+    let regulationUrl = trForm.regulation_url;
+    const protocolFile = trProtocolRef.current?.files?.[0];
+    const regulationFile = trRegulationRef.current?.files?.[0];
+    if (protocolFile) protocolUrl = (await uploadResultFile(protocolFile, 'protocol')) || protocolUrl;
+    if (regulationFile) regulationUrl = (await uploadResultFile(regulationFile, 'regulation')) || regulationUrl;
     const res = await fetch(RESULTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ section: 'tournament', ...trForm, number: trForm.number ? parseInt(trForm.number) : null, date: trForm.date || null }),
+      body: JSON.stringify({ section: 'tournament', ...trForm, protocol_url: protocolUrl, regulation_url: regulationUrl, number: trForm.number ? parseInt(trForm.number) : null, date: trForm.date || null }),
     });
-    if (res.ok) { setTrForm(EMPTY_TR_FORM); setTrShowForm(false); fetchTrResults(); }
-    else setTrError('Ошибка при сохранении');
+    if (res.ok) {
+      setTrForm(EMPTY_TR_FORM);
+      setTrShowForm(false);
+      if (trProtocolRef.current) trProtocolRef.current.value = '';
+      if (trRegulationRef.current) trRegulationRef.current.value = '';
+      fetchTrResults();
+    } else setTrError('Ошибка при сохранении');
     setTrSaving(false);
   }
 
@@ -214,11 +249,19 @@ export default function Admin() {
     e.preventDefault();
     if (!trEdit) return;
     setTrSaving(true); setTrError('');
+    let protocolUrl = trEdit.protocol_url;
+    let regulationUrl = trEdit.regulation_url;
+    const protocolFile = trEditProtocolRef.current?.files?.[0];
+    const regulationFile = trEditRegulationRef.current?.files?.[0];
+    if (protocolFile) protocolUrl = await uploadResultFile(protocolFile, 'protocol');
+    if (regulationFile) regulationUrl = await uploadResultFile(regulationFile, 'regulation');
     await fetch(RESULTS_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ section: 'tournament', ...trEdit }),
+      body: JSON.stringify({ section: 'tournament', ...trEdit, protocol_url: protocolUrl, regulation_url: regulationUrl }),
     });
+    if (trEditProtocolRef.current) trEditProtocolRef.current.value = '';
+    if (trEditRegulationRef.current) trEditRegulationRef.current.value = '';
     setTrEdit(null); setTrSaving(false); fetchTrResults();
   }
 
@@ -860,13 +903,23 @@ export default function Admin() {
                   <div><Label>Дата</Label><Input type="date" className="mt-1" value={trForm.date} onChange={e => setTrForm({ ...trForm, date: e.target.value })} /></div>
                   <div className="sm:col-span-2"><Label>Название турнира *</Label><Input required className="mt-1" placeholder="Открытый чемпионат..." value={trForm.title} onChange={e => setTrForm({ ...trForm, title: e.target.value })} /></div>
                   <div><Label>Рейтинг ФШР</Label><Input className="mt-1" placeholder="Рейтинговый / Нерейтинговый" value={trForm.fsr_rating} onChange={e => setTrForm({ ...trForm, fsr_rating: e.target.value })} /></div>
-                  <div><Label>Ссылка — Протокол</Label><Input type="url" className="mt-1" placeholder="https://..." value={trForm.protocol_url} onChange={e => setTrForm({ ...trForm, protocol_url: e.target.value })} /></div>
-                  <div className="sm:col-span-2"><Label>Ссылка — Положение</Label><Input type="url" className="mt-1" placeholder="https://..." value={trForm.regulation_url} onChange={e => setTrForm({ ...trForm, regulation_url: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Протокол (файл)</Label>
+                    <input ref={trProtocolRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20 cursor-pointer" />
+                    {trUploading === 'protocol' && <p className="text-xs text-secondary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+                  </div>
+                  <div>
+                    <Label>Положение (файл)</Label>
+                    <input ref={trRegulationRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                    {trUploading === 'regulation' && <p className="text-xs text-primary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+                  </div>
                 </div>
                 {trError && <p className="text-red-500 text-sm">{trError}</p>}
                 <div className="flex justify-end gap-3">
                   <Button type="button" variant="outline" onClick={() => setTrShowForm(false)}>Отмена</Button>
-                  <Button type="submit" disabled={trSaving}>{trSaving ? 'Сохранение...' : 'Добавить'}</Button>
+                  <Button type="submit" disabled={trSaving || !!trUploading}>{trSaving || trUploading ? 'Загрузка...' : 'Добавить'}</Button>
                 </div>
               </form>
             )}
@@ -947,12 +1000,30 @@ export default function Admin() {
               </div>
               <div><Label>Название *</Label><Input required className="mt-1" value={trEdit.title} onChange={e => setTrEdit({ ...trEdit, title: e.target.value })} /></div>
               <div><Label>Рейтинг ФШР</Label><Input className="mt-1" value={trEdit.fsr_rating || ''} onChange={e => setTrEdit({ ...trEdit, fsr_rating: e.target.value || null })} /></div>
-              <div><Label>Ссылка — Протокол</Label><Input type="url" className="mt-1" value={trEdit.protocol_url || ''} onChange={e => setTrEdit({ ...trEdit, protocol_url: e.target.value || null })} /></div>
-              <div><Label>Ссылка — Положение</Label><Input type="url" className="mt-1" value={trEdit.regulation_url || ''} onChange={e => setTrEdit({ ...trEdit, regulation_url: e.target.value || null })} /></div>
+              <div>
+                <Label>Протокол (файл)</Label>
+                {trEdit.protocol_url && (
+                  <a href={trEdit.protocol_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-secondary hover:underline mt-1 mb-1">
+                    <Icon name="FileText" size={13} /> Текущий файл
+                  </a>
+                )}
+                <input ref={trEditProtocolRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20 cursor-pointer" />
+                {trUploading === 'protocol' && <p className="text-xs text-secondary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+              </div>
+              <div>
+                <Label>Положение (файл)</Label>
+                {trEdit.regulation_url && (
+                  <a href={trEdit.regulation_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary hover:underline mt-1 mb-1">
+                    <Icon name="BookOpen" size={13} /> Текущий файл
+                  </a>
+                )}
+                <input ref={trEditRegulationRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                {trUploading === 'regulation' && <p className="text-xs text-primary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+              </div>
               {trError && <p className="text-red-500 text-sm">{trError}</p>}
               <div className="flex gap-3 justify-end mt-2">
                 <Button type="button" variant="outline" onClick={() => setTrEdit(null)}>Отмена</Button>
-                <Button type="submit" disabled={trSaving}>{trSaving ? 'Сохранение...' : 'Сохранить'}</Button>
+                <Button type="submit" disabled={trSaving || !!trUploading}>{trSaving || trUploading ? 'Загрузка...' : 'Сохранить'}</Button>
               </div>
             </form>
           </div>

@@ -1,6 +1,9 @@
 import json
 import os
+import base64
+import uuid
 import psycopg2
+import boto3
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
@@ -15,8 +18,19 @@ def cors_headers():
 def is_admin(event):
     return event.get('headers', {}).get('X-Admin-Password') == os.environ.get('ADMIN_PASSWORD')
 
+def get_s3():
+    return boto3.client(
+        's3',
+        endpoint_url='https://bucket.poehali.dev',
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    )
+
+def cdn_url(key):
+    return f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
 def handler(event: dict, context) -> dict:
-    """Управление результатами: олимпиады (ссылки) и турниры (таблица). Публичный GET, admin POST/PUT/DELETE."""
+    """Управление результатами: олимпиады (ссылки) и турниры (таблица). Публичный GET, admin POST/PUT/DELETE. Поддерживает загрузку PDF-файлов."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
@@ -56,6 +70,20 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Forbidden'}), 'isBase64Encoded': False}
 
     body = json.loads(event.get('body') or '{}')
+
+    # Загрузка файла (протокол или положение)
+    if method == 'POST' and section == 'upload':
+        file_b64 = body.get('file_b64', '')
+        content_type = body.get('content_type', 'application/pdf')
+        original_name = body.get('file_name', 'file.pdf')
+        ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else 'pdf'
+        key = f"results/{uuid.uuid4().hex[:12]}.{ext}"
+        data = base64.b64decode(file_b64)
+        s3 = get_s3()
+        s3.put_object(Bucket='files', Key=key, Body=data, ContentType=content_type)
+        url = cdn_url(key)
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'url': url}), 'isBase64Encoded': False}
 
     if method == 'POST':
         if section == 'olympiad':
