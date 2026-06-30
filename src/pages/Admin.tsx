@@ -42,8 +42,15 @@ const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700'
 const ORDER_STATUS_LABELS: Record<string, string> = { new: 'Новый', processing: 'В работе', done: 'Выполнен', cancelled: 'Отменён' };
 const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', processing: 'bg-yellow-100 text-yellow-700', done: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };
 const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
+const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 
-type Section = 'tournaments' | 'applications' | 'awards' | 'award-orders';
+interface TournamentResult {
+  id: number; number: number | null; date: string | null; title: string;
+  fsr_rating: string | null; protocol_url: string | null; regulation_url: string | null;
+}
+const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
+
+type Section = 'tournaments' | 'applications' | 'awards' | 'award-orders' | 'results';
 
 export default function Admin() {
   const [password, setPassword] = useState('');
@@ -81,6 +88,15 @@ export default function Admin() {
   // Заказы наград
   const [awardOrders, setAwardOrders] = useState<AwardOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // Результаты турниров
+  const [trResults, setTrResults] = useState<TournamentResult[]>([]);
+  const [trLoading, setTrLoading] = useState(false);
+  const [trForm, setTrForm] = useState(EMPTY_TR_FORM);
+  const [trShowForm, setTrShowForm] = useState(false);
+  const [trSaving, setTrSaving] = useState(false);
+  const [trError, setTrError] = useState('');
+  const [trEdit, setTrEdit] = useState<TournamentResult | null>(null);
 
   // Подраздел внутри awards
   const [awardsTab, setAwardsTab] = useState<'kits' | 'tournaments'>('kits');
@@ -173,6 +189,48 @@ export default function Admin() {
     fetchAwardKitTournaments();
   }
 
+  async function fetchTrResults() {
+    setTrLoading(true);
+    const res = await fetch(RESULTS_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setTrResults(data.tournaments || []);
+    setTrLoading(false);
+  }
+
+  async function handleCreateTrResult(e: React.FormEvent) {
+    e.preventDefault();
+    setTrSaving(true); setTrError('');
+    const res = await fetch(RESULTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ section: 'tournament', ...trForm, number: trForm.number ? parseInt(trForm.number) : null, date: trForm.date || null }),
+    });
+    if (res.ok) { setTrForm(EMPTY_TR_FORM); setTrShowForm(false); fetchTrResults(); }
+    else setTrError('Ошибка при сохранении');
+    setTrSaving(false);
+  }
+
+  async function handleUpdateTrResult(e: React.FormEvent) {
+    e.preventDefault();
+    if (!trEdit) return;
+    setTrSaving(true); setTrError('');
+    await fetch(RESULTS_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ section: 'tournament', ...trEdit }),
+    });
+    setTrEdit(null); setTrSaving(false); fetchTrResults();
+  }
+
+  async function handleDeleteTrResult(id: number) {
+    if (!confirm('Удалить запись?')) return;
+    await fetch(`${RESULTS_URL}?section=tournament&id=${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Password': password },
+    });
+    fetchTrResults();
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
@@ -181,6 +239,7 @@ export default function Admin() {
     if (authed && section === 'applications') fetchApps();
     if (authed && section === 'awards') { fetchAwardKits(); fetchAwardKitTournaments(); }
     if (authed && section === 'award-orders') fetchAwardOrders();
+    if (authed && section === 'results') fetchTrResults();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -373,6 +432,7 @@ export default function Admin() {
             ['applications', 'ClipboardList', 'Заявки'],
             ['awards', 'Award', 'Каталог наград'],
             ['award-orders', 'ShoppingCart', 'Заказы наград'],
+            ['results', 'ListChecks', 'Результаты'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -779,7 +839,125 @@ export default function Admin() {
           </>
         )}
 
+        {/* === РЕЗУЛЬТАТЫ ТУРНИРОВ === */}
+        {section === 'results' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+                <Icon name="ListChecks" size={22} /> Результаты турниров
+              </h2>
+              <Button onClick={() => { setTrShowForm(f => !f); setTrError(''); }} className="bg-primary text-white">
+                <Icon name={trShowForm ? 'X' : 'Plus'} size={16} className="mr-2" />
+                {trShowForm ? 'Закрыть' : 'Добавить запись'}
+              </Button>
+            </div>
+
+            {trShowForm && (
+              <form onSubmit={handleCreateTrResult} className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 flex flex-col gap-4">
+                <h3 className="font-semibold text-gray-700">Новая запись</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div><Label>№</Label><Input type="number" className="mt-1" placeholder="1" value={trForm.number} onChange={e => setTrForm({ ...trForm, number: e.target.value })} /></div>
+                  <div><Label>Дата</Label><Input type="date" className="mt-1" value={trForm.date} onChange={e => setTrForm({ ...trForm, date: e.target.value })} /></div>
+                  <div className="sm:col-span-2"><Label>Название турнира *</Label><Input required className="mt-1" placeholder="Открытый чемпионат..." value={trForm.title} onChange={e => setTrForm({ ...trForm, title: e.target.value })} /></div>
+                  <div><Label>Рейтинг ФШР</Label><Input className="mt-1" placeholder="Рейтинговый / Нерейтинговый" value={trForm.fsr_rating} onChange={e => setTrForm({ ...trForm, fsr_rating: e.target.value })} /></div>
+                  <div><Label>Ссылка — Протокол</Label><Input type="url" className="mt-1" placeholder="https://..." value={trForm.protocol_url} onChange={e => setTrForm({ ...trForm, protocol_url: e.target.value })} /></div>
+                  <div className="sm:col-span-2"><Label>Ссылка — Положение</Label><Input type="url" className="mt-1" placeholder="https://..." value={trForm.regulation_url} onChange={e => setTrForm({ ...trForm, regulation_url: e.target.value })} /></div>
+                </div>
+                {trError && <p className="text-red-500 text-sm">{trError}</p>}
+                <div className="flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setTrShowForm(false)}>Отмена</Button>
+                  <Button type="submit" disabled={trSaving}>{trSaving ? 'Сохранение...' : 'Добавить'}</Button>
+                </div>
+              </form>
+            )}
+
+            {trLoading ? (
+              <div className="flex items-center gap-2 text-gray-400 py-8"><Icon name="Loader2" size={20} className="animate-spin" /> Загрузка...</div>
+            ) : trResults.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Icon name="FileSearch" size={48} className="mx-auto mb-3 opacity-20" />
+                <p>Записей пока нет</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600 w-12">№</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Дата</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Название</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Рейтинг ФШР</th>
+                      <th className="px-4 py-3 text-center font-semibold text-gray-600">Протокол</th>
+                      <th className="px-4 py-3 text-center font-semibold text-gray-600">Положение</th>
+                      <th className="px-4 py-3 text-center font-semibold text-gray-600">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trResults.map((tr, idx) => (
+                      <tr key={tr.id} className={`border-b border-gray-100 last:border-0 hover:bg-gray-50 ${idx % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                        <td className="px-4 py-3 text-gray-500">{tr.number ?? idx + 1}</td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                          {tr.date ? new Date(tr.date).toLocaleDateString('ru-RU') : '—'}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-800">{tr.title}</td>
+                        <td className="px-4 py-3 text-gray-500">{tr.fsr_rating || '—'}</td>
+                        <td className="px-4 py-3 text-center">
+                          {tr.protocol_url
+                            ? <a href={tr.protocol_url} target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline text-xs font-medium">Открыть</a>
+                            : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {tr.regulation_url
+                            ? <a href={tr.regulation_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">Открыть</a>
+                            : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => setTrEdit(tr)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors" title="Редактировать">
+                              <Icon name="Pencil" size={15} />
+                            </button>
+                            <button onClick={() => handleDeleteTrResult(tr.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Удалить">
+                              <Icon name="Trash2" size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
       </div>
+
+      {/* Модал редактирования результата турнира */}
+      {trEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setTrEdit(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-xl text-primary">Редактирование записи</h2>
+              <button onClick={() => setTrEdit(null)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
+            </div>
+            <form onSubmit={handleUpdateTrResult} className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>№</Label><Input type="number" className="mt-1" value={trEdit.number ?? ''} onChange={e => setTrEdit({ ...trEdit, number: e.target.value ? parseInt(e.target.value) : null })} /></div>
+                <div><Label>Дата</Label><Input type="date" className="mt-1" value={trEdit.date || ''} onChange={e => setTrEdit({ ...trEdit, date: e.target.value || null })} /></div>
+              </div>
+              <div><Label>Название *</Label><Input required className="mt-1" value={trEdit.title} onChange={e => setTrEdit({ ...trEdit, title: e.target.value })} /></div>
+              <div><Label>Рейтинг ФШР</Label><Input className="mt-1" value={trEdit.fsr_rating || ''} onChange={e => setTrEdit({ ...trEdit, fsr_rating: e.target.value || null })} /></div>
+              <div><Label>Ссылка — Протокол</Label><Input type="url" className="mt-1" value={trEdit.protocol_url || ''} onChange={e => setTrEdit({ ...trEdit, protocol_url: e.target.value || null })} /></div>
+              <div><Label>Ссылка — Положение</Label><Input type="url" className="mt-1" value={trEdit.regulation_url || ''} onChange={e => setTrEdit({ ...trEdit, regulation_url: e.target.value || null })} /></div>
+              {trError && <p className="text-red-500 text-sm">{trError}</p>}
+              <div className="flex gap-3 justify-end mt-2">
+                <Button type="button" variant="outline" onClick={() => setTrEdit(null)}>Отмена</Button>
+                <Button type="submit" disabled={trSaving}>{trSaving ? 'Сохранение...' : 'Сохранить'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Модал редактирования заявки */}
       {editApp && (
