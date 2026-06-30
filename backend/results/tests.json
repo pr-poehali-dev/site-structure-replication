@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "GET results",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"olympiads": [], "tournaments": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
