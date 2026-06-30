@@ -36,7 +36,7 @@ def handler(event: dict, context) -> dict:
 
     method = event.get('httpMethod', 'GET')
     params = event.get('queryStringParameters') or {}
-    section = params.get('section', '')
+    section = params.get('section', '')  # будет уточнён из тела после парсинга
 
     conn = get_conn()
     cur = conn.cursor()
@@ -70,6 +70,9 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Forbidden'}), 'isBase64Encoded': False}
 
     body = json.loads(event.get('body') or '{}')
+    # section может приходить и в теле запроса
+    if not section:
+        section = body.get('section', '')
 
     # Загрузка файла (протокол или положение)
     if method == 'POST' and section == 'upload':

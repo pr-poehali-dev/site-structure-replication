@@ -195,20 +195,33 @@ export default function Admin() {
   }
 
   async function uploadResultFile(file: File, label: string): Promise<string | null> {
+    if (file.size > 8 * 1024 * 1024) {
+      throw new Error(`Файл "${file.name}" слишком большой (максимум 8 МБ)`);
+    }
     setTrUploading(label);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async () => {
-        const b64 = (reader.result as string).split(',')[1];
-        const res = await fetch(`${RESULTS_URL}?section=upload`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-          body: JSON.stringify({ file_b64: b64, content_type: file.type, file_name: file.name }),
-        });
-        const data = await res.json();
-        setTrUploading(null);
-        resolve(data.url || null);
+        try {
+          const b64 = (reader.result as string).split(',')[1];
+          const res = await fetch(`${RESULTS_URL}?section=upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+            body: JSON.stringify({ file_b64: b64, content_type: file.type, file_name: file.name }),
+          });
+          setTrUploading(null);
+          if (!res.ok) {
+            reject(new Error(`Ошибка загрузки файла: ${file.name} (${res.status})`));
+            return;
+          }
+          const data = await res.json();
+          resolve(data.url || null);
+        } catch (err) {
+          setTrUploading(null);
+          reject(err);
+        }
       };
+      reader.onerror = () => { setTrUploading(null); reject(new Error('Не удалось прочитать файл')); };
       reader.readAsDataURL(file);
     });
   }
@@ -224,24 +237,28 @@ export default function Admin() {
   async function handleCreateTrResult(e: React.FormEvent) {
     e.preventDefault();
     setTrSaving(true); setTrError('');
-    let protocolUrl = trForm.protocol_url;
-    let regulationUrl = trForm.regulation_url;
-    const protocolFile = trProtocolRef.current?.files?.[0];
-    const regulationFile = trRegulationRef.current?.files?.[0];
-    if (protocolFile) protocolUrl = (await uploadResultFile(protocolFile, 'protocol')) || protocolUrl;
-    if (regulationFile) regulationUrl = (await uploadResultFile(regulationFile, 'regulation')) || regulationUrl;
-    const res = await fetch(RESULTS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ section: 'tournament', ...trForm, protocol_url: protocolUrl, regulation_url: regulationUrl, number: trForm.number ? parseInt(trForm.number) : null, date: trForm.date || null }),
-    });
-    if (res.ok) {
-      setTrForm(EMPTY_TR_FORM);
-      setTrShowForm(false);
-      if (trProtocolRef.current) trProtocolRef.current.value = '';
-      if (trRegulationRef.current) trRegulationRef.current.value = '';
-      fetchTrResults();
-    } else setTrError('Ошибка при сохранении');
+    try {
+      let protocolUrl = trForm.protocol_url;
+      let regulationUrl = trForm.regulation_url;
+      const protocolFile = trProtocolRef.current?.files?.[0];
+      const regulationFile = trRegulationRef.current?.files?.[0];
+      if (protocolFile) protocolUrl = (await uploadResultFile(protocolFile, 'protocol')) || protocolUrl;
+      if (regulationFile) regulationUrl = (await uploadResultFile(regulationFile, 'regulation')) || regulationUrl;
+      const res = await fetch(RESULTS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ section: 'tournament', ...trForm, protocol_url: protocolUrl, regulation_url: regulationUrl, number: trForm.number ? parseInt(trForm.number) : null, date: trForm.date || null }),
+      });
+      if (res.ok) {
+        setTrForm(EMPTY_TR_FORM);
+        setTrShowForm(false);
+        if (trProtocolRef.current) trProtocolRef.current.value = '';
+        if (trRegulationRef.current) trRegulationRef.current.value = '';
+        fetchTrResults();
+      } else setTrError('Ошибка при сохранении');
+    } catch (err) {
+      setTrError(err instanceof Error ? err.message : 'Ошибка при загрузке файла');
+    }
     setTrSaving(false);
   }
 
@@ -249,20 +266,25 @@ export default function Admin() {
     e.preventDefault();
     if (!trEdit) return;
     setTrSaving(true); setTrError('');
-    let protocolUrl = trEdit.protocol_url;
-    let regulationUrl = trEdit.regulation_url;
-    const protocolFile = trEditProtocolRef.current?.files?.[0];
-    const regulationFile = trEditRegulationRef.current?.files?.[0];
-    if (protocolFile) protocolUrl = await uploadResultFile(protocolFile, 'protocol');
-    if (regulationFile) regulationUrl = await uploadResultFile(regulationFile, 'regulation');
-    await fetch(RESULTS_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ section: 'tournament', ...trEdit, protocol_url: protocolUrl, regulation_url: regulationUrl }),
-    });
-    if (trEditProtocolRef.current) trEditProtocolRef.current.value = '';
-    if (trEditRegulationRef.current) trEditRegulationRef.current.value = '';
-    setTrEdit(null); setTrSaving(false); fetchTrResults();
+    try {
+      let protocolUrl = trEdit.protocol_url;
+      let regulationUrl = trEdit.regulation_url;
+      const protocolFile = trEditProtocolRef.current?.files?.[0];
+      const regulationFile = trEditRegulationRef.current?.files?.[0];
+      if (protocolFile) protocolUrl = await uploadResultFile(protocolFile, 'protocol');
+      if (regulationFile) regulationUrl = await uploadResultFile(regulationFile, 'regulation');
+      await fetch(RESULTS_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ section: 'tournament', ...trEdit, protocol_url: protocolUrl, regulation_url: regulationUrl }),
+      });
+      if (trEditProtocolRef.current) trEditProtocolRef.current.value = '';
+      if (trEditRegulationRef.current) trEditRegulationRef.current.value = '';
+      setTrEdit(null); fetchTrResults();
+    } catch (err) {
+      setTrError(err instanceof Error ? err.message : 'Ошибка при загрузке файла');
+    }
+    setTrSaving(false);
   }
 
   async function handleDeleteTrResult(id: number) {
