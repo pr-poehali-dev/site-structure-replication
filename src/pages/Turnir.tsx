@@ -143,30 +143,28 @@ export default function Turnir() {
       </section>
 
       {/* Правила и регламент */}
-      <section className="container px-4 pt-12">
-        <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="grid place-items-center w-11 h-11 rounded-xl bg-primary text-secondary shrink-0">
-              <Icon name="ScrollText" size={22} />
-            </span>
-            <h2 className="font-heading font-bold text-xl md:text-2xl text-primary uppercase">Правила и регламент участия</h2>
+      <section className="container px-4 pt-8">
+        <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 md:px-6 md:py-5">
+          <div className="flex items-center gap-2.5 mb-3">
+            <Icon name="ScrollText" size={16} className="text-secondary shrink-0" />
+            <h2 className="font-heading font-semibold text-sm md:text-base text-primary uppercase tracking-wide">Правила и регламент участия</h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 text-sm text-muted-foreground leading-relaxed">
+          <div className="grid md:grid-cols-2 gap-x-6 gap-y-3 text-xs md:text-[13px] text-muted-foreground leading-relaxed">
             <div>
-              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Monitor" size={16} className="text-secondary" /> Формат проведения</h3>
+              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Monitor" size={13} className="text-secondary" /> Формат проведения</h3>
               <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7). Контроль времени на партию — 10 минут без добавления секунд. Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Users" size={16} className="text-secondary" /> Участники и группы</h3>
+              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Users" size={13} className="text-secondary" /> Участники и группы</h3>
               <p>К участию допускаются дети, зарегистрированные на Lichess.org и состоящие в клубе центра «Мир шахмат». Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="ClipboardCheck" size={16} className="text-secondary" /> Подача заявки</h3>
+              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="ClipboardCheck" size={13} className="text-secondary" /> Подача заявки</h3>
               <p>Заявка подаётся через форму на сайте до указанного в положении турнира времени. Ссылка на игру и код доступа направляются на электронную почту за 30 минут до начала. Авторизоваться на платформе нужно за 10 минут до старта.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Award" size={16} className="text-secondary" /> Итоги и награждение</h3>
+              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Award" size={13} className="text-secondary" /> Итоги и награждение</h3>
               <p>Официальные результаты публикуются в разделе «Результаты» в течение 3 дней после турнира. Победители и призёры получают дипломы I–III степени, все участники — диплом об участии, тренеры — благодарственные письма. Предусмотрены и специальные номинации.</p>
             </div>
           </div>
@@ -174,7 +172,11 @@ export default function Turnir() {
       </section>
 
       {/* Tournaments */}
-      <section className="container px-4 py-12">
+      <section className="container px-4 pt-10 pb-12">
+        <div className="flex items-center gap-3 mb-7">
+          <h2 className="font-heading font-bold text-2xl md:text-3xl text-primary uppercase shrink-0">Список турниров</h2>
+          <div className="h-px flex-1 bg-border" />
+        </div>
         {loading ? (
           <div className="text-center py-20 text-gray-400">
             <Icon name="Loader" size={36} className="mx-auto mb-3 opacity-40 animate-spin" />
