@@ -195,10 +195,10 @@ export default function Result() {
             </div>
           ) : (
             <>
-              <div className="overflow-auto rounded-xl border border-border max-h-[65vh]">
+              <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-white border-b border-border shadow-sm">
+                  <thead>
+                    <tr className="bg-primary/5 border-b border-border">
                       <th className="px-4 py-3 text-left font-semibold text-primary w-12">№</th>
                       <th className="px-4 py-3 text-left font-semibold text-primary">Дата</th>
                       <th className="px-4 py-3 text-left font-semibold text-primary">Название турнира</th>
