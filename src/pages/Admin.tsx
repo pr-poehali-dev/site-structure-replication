@@ -65,6 +65,7 @@ export default function Admin() {
   const [tSaving, setTSaving] = useState(false);
   const [tShowForm, setTShowForm] = useState(false);
   const [tError, setTError] = useState('');
+  const [tEditId, setTEditId] = useState<number | null>(null);
 
   // Заявки
   const [apps, setApps] = useState<Application[]>([]);
@@ -316,14 +317,41 @@ export default function Admin() {
   async function handleCreateTournament(e: React.FormEvent) {
     e.preventDefault();
     setTSaving(true); setTError('');
+    const isEdit = tEditId !== null;
     const res = await fetch(TOURNAMENTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ ...tForm, price: tForm.price ? parseFloat(tForm.price) : null }),
+      body: JSON.stringify({
+        ...tForm,
+        price: tForm.price ? parseFloat(tForm.price) : null,
+        ...(isEdit ? { _action: 'update', id: tEditId } : {}),
+      }),
     });
-    if (res.ok) { setTForm(EMPTY_T_FORM); setTShowForm(false); fetchTournaments(); }
+    if (res.ok) { setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments(); }
     else setTError('Ошибка при сохранении');
     setTSaving(false);
+  }
+
+  function handleEditTournament(t: Tournament) {
+    setTEditId(t.id);
+    setTForm({
+      title: t.title || '',
+      description: t.description || '',
+      date: t.date ? t.date.slice(0, 10) : '',
+      location: t.location || '',
+      age_category: t.age_category || '',
+      price: t.price != null ? String(t.price) : '',
+      fsr_id: t.fsr_id || '',
+    });
+    setTError('');
+    setTShowForm(true);
+  }
+
+  function handleCancelTournamentForm() {
+    setTShowForm(false);
+    setTEditId(null);
+    setTForm(EMPTY_T_FORM);
+    setTError('');
   }
 
   async function handleDeleteTournament(id: number) {
@@ -522,7 +550,7 @@ export default function Admin() {
               <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
                 <Icon name="Swords" size={22} /> Турниры
               </h2>
-              <Button onClick={() => setTShowForm(!tShowForm)}>
+              <Button onClick={() => (tShowForm ? handleCancelTournamentForm() : setTShowForm(true))}>
                 <Icon name={tShowForm ? 'X' : 'Plus'} size={16} className="mr-1" />
                 {tShowForm ? 'Отмена' : 'Добавить турнир'}
               </Button>
@@ -530,6 +558,7 @@ export default function Admin() {
 
             {tShowForm && (
               <form onSubmit={handleCreateTournament} className="bg-white rounded-2xl shadow p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="md:col-span-2 font-bold text-lg text-primary -mb-2">{tEditId !== null ? 'Редактирование турнира' : 'Новый турнир'}</h3>
                 <div className="md:col-span-2"><Label>Название *</Label><Input className="mt-1" value={tForm.title} onChange={e => setTForm({ ...tForm, title: e.target.value })} required /></div>
                 <div className="md:col-span-2"><Label>Описание</Label><Textarea className="mt-1" rows={3} value={tForm.description} onChange={e => setTForm({ ...tForm, description: e.target.value })} /></div>
                 <div><Label>Дата</Label><Input type="date" className="mt-1" value={tForm.date} onChange={e => setTForm({ ...tForm, date: e.target.value })} /></div>
@@ -539,8 +568,8 @@ export default function Admin() {
                 <div><Label>ID ФШР</Label><Input className="mt-1" value={tForm.fsr_id} onChange={e => setTForm({ ...tForm, fsr_id: e.target.value })} /></div>
                 {tError && <p className="md:col-span-2 text-red-500 text-sm">{tError}</p>}
                 <div className="md:col-span-2 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setTShowForm(false)}>Отмена</Button>
-                  <Button type="submit" disabled={tSaving}>{tSaving ? 'Сохранение...' : 'Создать турнир'}</Button>
+                  <Button type="button" variant="outline" onClick={handleCancelTournamentForm}>Отмена</Button>
+                  <Button type="submit" disabled={tSaving}>{tSaving ? 'Сохранение...' : tEditId !== null ? 'Сохранить изменения' : 'Создать турнир'}</Button>
                 </div>
               </form>
             )}
@@ -574,6 +603,9 @@ export default function Admin() {
                             {t.location && <p className="text-sm text-gray-500">{t.location}</p>}
                           </div>
                           <div className="flex gap-2 flex-wrap shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => handleEditTournament(t)}>
+                              <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => handleToggleStatus(t)}>
                               <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
                               {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}

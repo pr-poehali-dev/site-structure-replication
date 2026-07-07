@@ -49,6 +49,17 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
+        if action == 'update':
+            cur.execute(
+                "UPDATE tournaments SET title = %s, description = %s, date = %s, location = %s, age_category = %s, price = %s, fsr_id = %s WHERE id = %s",
+                (body.get('title'), body.get('description'), body.get('date') or None,
+                 body.get('location'), body.get('age_category'), body.get('price') or None, body.get('fsr_id'),
+                 body.get('id'))
+            )
+            conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
+
         cur.execute(
             "INSERT INTO tournaments (title, description, date, location, age_category, price, fsr_id) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (body.get('title'), body.get('description'), body.get('date') or None,
