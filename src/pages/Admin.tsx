@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import * as XLSX from 'xlsx';
 
 const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
@@ -364,6 +365,34 @@ export default function Admin() {
     fetchTournaments();
   }
 
+  function handleExportApps(t: Tournament) {
+    const tApps = apps.filter(a => a.tournament_id === t.id);
+    if (tApps.length === 0) return;
+    const rows = tApps.map((a, i) => ({
+      '№': i + 1,
+      'ФИО участника': a.fio,
+      'Возраст': a.age,
+      'ID ФШР': a.fsr_id,
+      'ФИО тренера': a.coach,
+      'Страна / Город': a.country_city,
+      'Учебное заведение': a.school,
+      'Email': a.email,
+      'Телефон': a.phone,
+      'Статус': STATUS_LABELS[a.status] || a.status,
+      'Заметки': a.notes,
+      'Дата подачи': new Date(a.created_at).toLocaleString('ru-RU'),
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet['!cols'] = [
+      { wch: 4 }, { wch: 28 }, { wch: 8 }, { wch: 12 }, { wch: 28 },
+      { wch: 20 }, { wch: 24 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 30 }, { wch: 18 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Заявки');
+    const safeTitle = t.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 60);
+    XLSX.writeFile(workbook, `Заявки — ${safeTitle}.xlsx`);
+  }
+
   async function handleToggleStatus(t: Tournament) {
     const newStatus = t.status === 'open' ? 'closed' : 'open';
     await fetch(TOURNAMENTS_URL, {
@@ -619,6 +648,9 @@ export default function Admin() {
                             <Button variant="outline" size="sm" onClick={() => handleToggleStatus(t)}>
                               <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
                               {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}
+                            </Button>
+                            <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>
+                              <Icon name="FileSpreadsheet" size={14} className="mr-1" /> Экспорт в Excel
                             </Button>
                             <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteTournament(t.id)}>
                               <Icon name="Trash2" size={14} className="mr-1" /> Удалить
