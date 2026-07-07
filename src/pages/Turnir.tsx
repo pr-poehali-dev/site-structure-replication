@@ -16,7 +16,7 @@ interface Tournament {
   location: string;
   age_category: string;
   price: number | null;
-  fsr_id: string;
+  time_control: string;
   status: string;
   diploma_sample_url: string | null;
   regulation_url: string | null;
@@ -194,7 +194,7 @@ export default function Turnir() {
                         {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
                         {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
                         {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
-                        {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
+                        {t.time_control && <span className="flex items-center gap-2"><Icon name="Timer" size={14} className="text-secondary" />Контроль времени: {t.time_control}</span>}
                         {t.regulation_url && (
                           <a href={t.regulation_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-medium text-primary hover:underline">
                             <Icon name="ScrollText" size={14} /> Положение (PDF)

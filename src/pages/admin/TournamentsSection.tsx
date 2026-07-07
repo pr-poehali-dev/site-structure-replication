@@ -130,7 +130,7 @@ export default function TournamentsSection({
       location: t.location || '',
       age_category: t.age_category || '',
       price: t.price != null ? String(t.price) : '',
-      fsr_id: t.fsr_id || '',
+      time_control: t.time_control || '',
       diploma_sample_url: t.diploma_sample_url || '',
       regulation_url: t.regulation_url || '',
       announcement_url: t.announcement_url || '',
@@ -218,7 +218,7 @@ export default function TournamentsSection({
           <div><Label>Место проведения</Label><Input className="mt-1" value={tForm.location} onChange={e => setTForm({ ...tForm, location: e.target.value })} /></div>
           <div><Label>Возрастная категория</Label><Input className="mt-1" value={tForm.age_category} onChange={e => setTForm({ ...tForm, age_category: e.target.value })} /></div>
           <div><Label>Стоимость участия (₽)</Label><Input type="number" className="mt-1" value={tForm.price} onChange={e => setTForm({ ...tForm, price: e.target.value })} /></div>
-          <div><Label>ID ФШР</Label><Input className="mt-1" value={tForm.fsr_id} onChange={e => setTForm({ ...tForm, fsr_id: e.target.value })} /></div>
+          <div><Label>Контроль времени</Label><Input className="mt-1" placeholder="10+0" value={tForm.time_control} onChange={e => setTForm({ ...tForm, time_control: e.target.value })} /></div>
 
           <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-1">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Документы турнира</p>
