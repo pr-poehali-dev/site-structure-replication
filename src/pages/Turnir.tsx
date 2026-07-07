@@ -257,11 +257,11 @@ export default function Turnir() {
             <div className="flex flex-col gap-4 text-xs md:text-[13px] text-muted-foreground leading-relaxed">
               <div>
                 <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Monitor" size={13} className="text-secondary" /> Формат проведения</h3>
-                <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7). Контроль времени на партию — 10 минут без добавления секунд. Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
+                <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7).  Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
               </div>
               <div>
                 <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Users" size={13} className="text-secondary" /> Участники и группы</h3>
-                <p>К участию допускаются дети, зарегистрированные на Lichess.org и состоящие в клубе центра «Мир шахмат». Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
+                <p>К участию допускаются дети, зарегистрированные на Lichess.org. Перед участием каждый ребенок должен вступить в клуб "Мир шахмат" на площадке lichess.org. Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
               </div>
               <div>
                 <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="ClipboardCheck" size={13} className="text-secondary" /> Подача заявки</h3>
