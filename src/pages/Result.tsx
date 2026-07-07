@@ -197,8 +197,8 @@ export default function Result() {
             <>
               <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-primary/5 border-b border-border">
+                  <thead className="sticky top-16 z-10">
+                    <tr className="bg-white border-b border-border shadow-sm">
                       <th className="px-4 py-3 text-left font-semibold text-primary w-12">№</th>
                       <th className="px-4 py-3 text-left font-semibold text-primary">Дата</th>
                       <th className="px-4 py-3 text-left font-semibold text-primary">Название турнира</th>
