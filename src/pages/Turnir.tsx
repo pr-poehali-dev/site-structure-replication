@@ -47,6 +47,9 @@ export default function Turnir() {
   const [participants, setParticipants] = useState<{fio: string; age: string}[]>([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
 
+  // Модал просмотра изображения (анонс / образец диплома)
+  const [imagePreview, setImagePreview] = useState<{ url: string; title: string } | null>(null);
+
   useEffect(() => {
     fetch(API_URL)
       .then(r => r.json())
@@ -218,20 +221,20 @@ export default function Turnir() {
                   {hasPreviews && (
                     <div className="flex flex-row md:flex-col gap-4 p-4 md:w-64 shrink-0 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100">
                       {t.announcement_url && (
-                        <a href={t.announcement_url} target="_blank" rel="noopener noreferrer" className="flex-1 flex flex-col gap-1.5 group">
+                        <button type="button" onClick={() => setImagePreview({ url: t.announcement_url as string, title: `Анонс — ${t.title}` })} className="flex-1 flex flex-col gap-1.5 group text-left">
                           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Анонс</span>
-                          <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors">
+                          <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
                             <img src={t.announcement_url} alt={`Анонс турнира: ${t.title}`} className="max-w-full max-h-40 object-contain" />
                           </div>
-                        </a>
+                        </button>
                       )}
                       {t.diploma_sample_url && (
-                        <a href={t.diploma_sample_url} target="_blank" rel="noopener noreferrer" className="flex-1 flex flex-col gap-1.5 group">
+                        <button type="button" onClick={() => setImagePreview({ url: t.diploma_sample_url as string, title: `Образец диплома — ${t.title}` })} className="flex-1 flex flex-col gap-1.5 group text-left">
                           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Образец диплома</span>
-                          <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors">
+                          <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
                             <img src={t.diploma_sample_url} alt={`Образец диплома турнира: ${t.title}`} className="max-w-full max-h-40 object-contain" />
                           </div>
-                        </a>
+                        </button>
                       )}
                     </div>
                   )}
@@ -381,6 +384,19 @@ export default function Turnir() {
               </>
             )}
             <Button className="mt-4 w-full" variant="outline" onClick={() => setParticipantsModal(null)}>Закрыть</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal просмотра изображения (анонс / образец диплома) */}
+      {imagePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-8" onClick={() => setImagePreview(null)}>
+          <div className="relative max-w-4xl w-full max-h-full flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <button className="absolute -top-10 right-0 text-white/80 hover:text-white" onClick={() => setImagePreview(null)}>
+              <Icon name="X" size={26} />
+            </button>
+            <p className="text-white/90 text-sm font-medium mb-3 text-center">{imagePreview.title}</p>
+            <img src={imagePreview.url} alt={imagePreview.title} className="max-w-full max-h-[80vh] object-contain rounded-lg bg-white" />
           </div>
         </div>
       )}
