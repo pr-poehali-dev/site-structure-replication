@@ -37,7 +37,7 @@ YOOKASSA_API_URL = "https://api.yookassa.ru/v3/payments"
 
 HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
 }
@@ -141,6 +141,45 @@ def handler(event, context):
     # CORS preflight
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
+
+    # Проверка статуса заказа по order_number (для страницы результата оплаты)
+    if event.get('httpMethod') == 'GET':
+        params = event.get('queryStringParameters') or {}
+        order_number = params.get('order_number', '').strip()
+        if not order_number:
+            return {
+                'statusCode': 400,
+                'headers': HEADERS,
+                'body': json.dumps({'error': 'order_number required'})
+            }
+
+        S = get_schema()
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(f"""
+                SELECT order_number, status, amount
+                FROM {S}orders
+                WHERE order_number = %s
+            """, (order_number,))
+            row = cur.fetchone()
+            if not row:
+                return {
+                    'statusCode': 404,
+                    'headers': HEADERS,
+                    'body': json.dumps({'error': 'Order not found'})
+                }
+            return {
+                'statusCode': 200,
+                'headers': HEADERS,
+                'body': json.dumps({
+                    'order_number': row[0],
+                    'status': row[1],
+                    'amount': float(row[2]) if row[2] is not None else None
+                })
+            }
+        finally:
+            conn.close()
 
     if event.get('httpMethod') != 'POST':
         return {
