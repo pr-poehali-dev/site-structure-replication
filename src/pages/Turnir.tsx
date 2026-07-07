@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
-import { useRobokassa, openPaymentPage } from '@/components/extensions/robokassa/useRobokassa';
+import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
-const ROBOKASSA_URL = 'https://functions.poehali.dev/21d56bf4-bf1a-4f64-ac1d-bf499b1f88ab';
+const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
 
 interface Tournament {
   id: number;
@@ -34,8 +34,8 @@ export default function Turnir() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const { createPayment, isLoading: paymentLoading } = useRobokassa({
-    apiUrl: ROBOKASSA_URL,
+  const { createPayment, isLoading: paymentLoading } = useYookassa({
+    apiUrl: YOOKASSA_URL,
     onError: (err) => setSubmitError(err.message),
   });
 
@@ -104,12 +104,15 @@ export default function Turnir() {
           userName: form.fio,
           userEmail: form.email,
           userPhone: form.phone,
-          orderComment: `Турнир: ${modalTournament.title}`,
+          description: `Турнир: ${modalTournament.title}`,
           cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price, quantity: 1 }],
-          successUrl: window.location.origin + '/turnir',
-          failUrl: window.location.origin + '/turnir',
+          returnUrl: window.location.origin + '/order-status',
         });
-        openPaymentPage(payment.payment_url);
+        if (payment?.payment_url) {
+          openPaymentPage(payment.payment_url);
+        } else {
+          setSubmitError('Не удалось создать платёж. Попробуйте ещё раз.');
+        }
       } else {
         setSent(true);
       }

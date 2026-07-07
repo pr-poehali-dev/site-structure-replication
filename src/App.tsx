@@ -10,6 +10,7 @@ import Turnir from "./pages/Turnir";
 import OlimpiadPage from "./pages/OlimpiadPage";
 import Result from "./pages/Result";
 import Kubki from "./pages/Kubki";
+import OrderStatus from "./pages/OrderStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/olimpiad/:slug" element={<OlimpiadPage />} />
           <Route path="/result" element={<Result />} />
           <Route path="/kubki" element={<Kubki />} />
+          <Route path="/order-status" element={<OrderStatus />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
