@@ -33,8 +33,10 @@ export default function TournamentsSection({
 }: TournamentsSectionProps) {
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [uploadingRegulation, setUploadingRegulation] = useState(false);
+  const [uploadingAnnouncement, setUploadingAnnouncement] = useState(false);
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const regulationInputRef = useRef<HTMLInputElement>(null);
+  const announcementInputRef = useRef<HTMLInputElement>(null);
 
   async function uploadTournamentFile(file: File): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -83,6 +85,19 @@ export default function TournamentsSection({
     setUploadingRegulation(false);
   }
 
+  async function handleAnnouncementFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAnnouncement(true);
+    try {
+      const url = await uploadTournamentFile(file);
+      if (url) setTForm({ ...tForm, announcement_url: url });
+    } catch {
+      setTError('Не удалось загрузить изображение анонса');
+    }
+    setUploadingAnnouncement(false);
+  }
+
   async function handleCreateTournament(e: React.FormEvent) {
     e.preventDefault();
     setTSaving(true); setTError('');
@@ -100,6 +115,7 @@ export default function TournamentsSection({
       setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments();
       if (diplomaInputRef.current) diplomaInputRef.current.value = '';
       if (regulationInputRef.current) regulationInputRef.current.value = '';
+      if (announcementInputRef.current) announcementInputRef.current.value = '';
     }
     else setTError('Ошибка при сохранении');
     setTSaving(false);
@@ -128,6 +144,9 @@ export default function TournamentsSection({
     setTEditId(null);
     setTForm(EMPTY_T_FORM);
     setTError('');
+    if (diplomaInputRef.current) diplomaInputRef.current.value = '';
+    if (regulationInputRef.current) regulationInputRef.current.value = '';
+    if (announcementInputRef.current) announcementInputRef.current.value = '';
   }
 
   async function handleDeleteTournament(id: number) {
@@ -216,8 +235,8 @@ export default function TournamentsSection({
                 )}
               </div>
               <div>
-                <Label>Положение (файл)</Label>
-                <input ref={regulationInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleRegulationFileChange}
+                <Label>Положение (PDF-файл)</Label>
+                <input ref={regulationInputRef} type="file" accept="application/pdf,.pdf" onChange={handleRegulationFileChange}
                   className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
                 {uploadingRegulation && <p className="text-xs text-primary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
                 {tForm.regulation_url && !uploadingRegulation && (
@@ -227,8 +246,13 @@ export default function TournamentsSection({
                 )}
               </div>
               <div className="md:col-span-2">
-                <Label>Официальный анонс (ссылка)</Label>
-                <Input className="mt-1" placeholder="https://vk.com/wall..." value={tForm.announcement_url} onChange={e => setTForm({ ...tForm, announcement_url: e.target.value })} />
+                <Label>Официальный анонс (изображение)</Label>
+                <input ref={announcementInputRef} type="file" accept="image/*" onChange={handleAnnouncementFileChange}
+                  className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer" />
+                {uploadingAnnouncement && <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+                {tForm.announcement_url && !uploadingAnnouncement && (
+                  <img src={tForm.announcement_url} alt="Анонс" className="mt-2 w-full max-h-40 object-contain rounded-lg border border-gray-100" />
+                )}
               </div>
             </div>
           </div>
