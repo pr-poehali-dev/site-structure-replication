@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +31,58 @@ export default function TournamentsSection({
   password, tournaments, apps, tLoading, tForm, setTForm, tSaving, setTSaving,
   tShowForm, setTShowForm, tError, setTError, tEditId, setTEditId, fetchTournaments,
 }: TournamentsSectionProps) {
+  const [uploadingDiploma, setUploadingDiploma] = useState(false);
+  const [uploadingRegulation, setUploadingRegulation] = useState(false);
+  const diplomaInputRef = useRef<HTMLInputElement>(null);
+  const regulationInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadTournamentFile(file: File): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const b64 = (reader.result as string).split(',')[1];
+          const res = await fetch(TOURNAMENTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+            body: JSON.stringify({ _action: 'upload_file', file_b64: b64, content_type: file.type, file_name: file.name }),
+          });
+          if (!res.ok) { reject(new Error('Ошибка загрузки файла')); return; }
+          const data = await res.json();
+          resolve(data.url || null);
+        } catch (err) { reject(err); }
+      };
+      reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleDiplomaFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDiploma(true);
+    try {
+      const url = await uploadTournamentFile(file);
+      if (url) setTForm({ ...tForm, diploma_sample_url: url });
+    } catch {
+      setTError('Не удалось загрузить файл образца диплома');
+    }
+    setUploadingDiploma(false);
+  }
+
+  async function handleRegulationFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRegulation(true);
+    try {
+      const url = await uploadTournamentFile(file);
+      if (url) setTForm({ ...tForm, regulation_url: url });
+    } catch {
+      setTError('Не удалось загрузить файл положения');
+    }
+    setUploadingRegulation(false);
+  }
+
   async function handleCreateTournament(e: React.FormEvent) {
     e.preventDefault();
     setTSaving(true); setTError('');
@@ -44,7 +96,11 @@ export default function TournamentsSection({
         ...(isEdit ? { _action: 'update', id: tEditId } : {}),
       }),
     });
-    if (res.ok) { setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments(); }
+    if (res.ok) {
+      setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments();
+      if (diplomaInputRef.current) diplomaInputRef.current.value = '';
+      if (regulationInputRef.current) regulationInputRef.current.value = '';
+    }
     else setTError('Ошибка при сохранении');
     setTSaving(false);
   }
@@ -59,6 +115,9 @@ export default function TournamentsSection({
       age_category: t.age_category || '',
       price: t.price != null ? String(t.price) : '',
       fsr_id: t.fsr_id || '',
+      diploma_sample_url: t.diploma_sample_url || '',
+      regulation_url: t.regulation_url || '',
+      announcement_url: t.announcement_url || '',
     });
     setTError('');
     setTShowForm(true);
@@ -141,6 +200,39 @@ export default function TournamentsSection({
           <div><Label>Возрастная категория</Label><Input className="mt-1" value={tForm.age_category} onChange={e => setTForm({ ...tForm, age_category: e.target.value })} /></div>
           <div><Label>Стоимость участия (₽)</Label><Input type="number" className="mt-1" value={tForm.price} onChange={e => setTForm({ ...tForm, price: e.target.value })} /></div>
           <div><Label>ID ФШР</Label><Input className="mt-1" value={tForm.fsr_id} onChange={e => setTForm({ ...tForm, fsr_id: e.target.value })} /></div>
+
+          <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Документы турнира</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Образец диплома (файл)</Label>
+                <input ref={diplomaInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleDiplomaFileChange}
+                  className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20 cursor-pointer" />
+                {uploadingDiploma && <p className="text-xs text-secondary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+                {tForm.diploma_sample_url && !uploadingDiploma && (
+                  <a href={tForm.diploma_sample_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-secondary hover:underline mt-1">
+                    <Icon name="FileCheck" size={13} /> Файл загружен
+                  </a>
+                )}
+              </div>
+              <div>
+                <Label>Положение (файл)</Label>
+                <input ref={regulationInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleRegulationFileChange}
+                  className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                {uploadingRegulation && <p className="text-xs text-primary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
+                {tForm.regulation_url && !uploadingRegulation && (
+                  <a href={tForm.regulation_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary hover:underline mt-1">
+                    <Icon name="FileCheck" size={13} /> Файл загружен
+                  </a>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <Label>Официальный анонс (ссылка)</Label>
+                <Input className="mt-1" placeholder="https://vk.com/wall..." value={tForm.announcement_url} onChange={e => setTForm({ ...tForm, announcement_url: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
           {tError && <p className="md:col-span-2 text-red-500 text-sm">{tError}</p>}
           <div className="md:col-span-2 flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={handleCancelTournamentForm}>Отмена</Button>

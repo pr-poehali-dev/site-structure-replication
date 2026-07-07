@@ -18,6 +18,9 @@ interface Tournament {
   price: number | null;
   fsr_id: string;
   status: string;
+  diploma_sample_url: string | null;
+  regulation_url: string | null;
+  announcement_url: string | null;
 }
 
 function formatDate(dateStr: string) {
@@ -188,6 +191,25 @@ export default function Turnir() {
                       {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
                       {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
                     </div>
+                    {(t.diploma_sample_url || t.regulation_url || t.announcement_url) && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-2 border-t border-gray-100">
+                        {t.diploma_sample_url && (
+                          <a href={t.diploma_sample_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-medium text-secondary hover:underline">
+                            <Icon name="FileCheck" size={13} /> Образец диплома
+                          </a>
+                        )}
+                        {t.regulation_url && (
+                          <a href={t.regulation_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                            <Icon name="ScrollText" size={13} /> Положение
+                          </a>
+                        )}
+                        {t.announcement_url && (
+                          <a href={t.announcement_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:underline">
+                            <Icon name="Megaphone" size={13} /> Официальный анонс
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="px-6 pb-5 flex flex-col gap-2">
                     {isOpen ? (
