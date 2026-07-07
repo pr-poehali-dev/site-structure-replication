@@ -142,99 +142,102 @@ export default function Turnir() {
         </div>
       </section>
 
-      {/* Правила и регламент */}
-      <section className="container px-4 pt-8">
-        <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 md:px-6 md:py-5">
-          <div className="flex items-center gap-2.5 mb-3">
-            <Icon name="ScrollText" size={16} className="text-secondary shrink-0" />
-            <h2 className="font-heading font-semibold text-sm md:text-base text-primary uppercase tracking-wide">Правила и регламент участия</h2>
+      {/* Tournaments + Правила */}
+      <section className="container px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Список турниров */}
+        <div className="lg:col-span-2">
+          <div className="flex items-center gap-3 mb-7">
+            <h2 className="font-heading font-bold text-2xl md:text-3xl text-primary uppercase shrink-0">Список турниров</h2>
+            <div className="h-px flex-1 bg-border" />
           </div>
-
-          <div className="grid md:grid-cols-2 gap-x-6 gap-y-3 text-xs md:text-[13px] text-muted-foreground leading-relaxed">
-            <div>
-              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Monitor" size={13} className="text-secondary" /> Формат проведения</h3>
-              <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7). Контроль времени на партию — 10 минут без добавления секунд. Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
+          {loading ? (
+            <div className="text-center py-20 text-gray-400">
+              <Icon name="Loader" size={36} className="mx-auto mb-3 opacity-40 animate-spin" />
+              <p>Загрузка турниров...</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Users" size={13} className="text-secondary" /> Участники и группы</h3>
-              <p>К участию допускаются дети, зарегистрированные на Lichess.org и состоящие в клубе центра «Мир шахмат». Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
+          ) : tournaments.length === 0 ? (
+            <div className="text-center py-20 text-gray-400">
+              <Icon name="Swords" size={48} className="mx-auto mb-4 opacity-20" />
+              <p className="text-xl font-medium">Турниров пока нет</p>
+              <p className="mt-2 text-sm">Следите за обновлениями — скоро появятся новые соревнования</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="ClipboardCheck" size={13} className="text-secondary" /> Подача заявки</h3>
-              <p>Заявка подаётся через форму на сайте до указанного в положении турнира времени. Ссылка на игру и код доступа направляются на электронную почту за 30 минут до начала. Авторизоваться на платформе нужно за 10 минут до старта.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Award" size={13} className="text-secondary" /> Итоги и награждение</h3>
-              <p>Официальные результаты публикуются в разделе «Результаты» в течение 3 дней после турнира. Победители и призёры получают дипломы I–III степени, все участники — диплом об участии, тренеры — благодарственные письма. Предусмотрены и специальные номинации.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Tournaments */}
-      <section className="container px-4 pt-10 pb-12">
-        <div className="flex items-center gap-3 mb-7">
-          <h2 className="font-heading font-bold text-2xl md:text-3xl text-primary uppercase shrink-0">Список турниров</h2>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-        {loading ? (
-          <div className="text-center py-20 text-gray-400">
-            <Icon name="Loader" size={36} className="mx-auto mb-3 opacity-40 animate-spin" />
-            <p>Загрузка турниров...</p>
-          </div>
-        ) : tournaments.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <Icon name="Swords" size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-xl font-medium">Турниров пока нет</p>
-            <p className="mt-2 text-sm">Следите за обновлениями — скоро появятся новые соревнования</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tournaments.map(t => {
-              const isOpen = t.status !== 'closed';
-              return (
-              <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
-                <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
-                    <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                      {isOpen ? 'Приём открыт' : 'Приём закрыт'}
-                    </span>
-                  </div>
-                  {t.date && (
-                    <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
-                      <Icon name="Calendar" size={14} /> {formatDate(t.date)}
-                    </p>
-                  )}
-                </div>
-                <div className="px-6 py-4 flex-1 flex flex-col gap-3">
-                  {t.description && <p className="text-gray-600 text-sm leading-relaxed">{t.description}</p>}
-                  <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
-                    {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
-                    {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
-                    {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
-                    {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
-                  </div>
-                </div>
-                <div className="px-6 pb-5 flex flex-col gap-2">
-                  {isOpen ? (
-                    <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
-                      <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
-                    </Button>
-                  ) : (
-                    <div className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 text-gray-400 font-semibold py-2.5 text-sm">
-                      <Icon name="Lock" size={15} /> Приём заявок завершён
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {tournaments.map(t => {
+                const isOpen = t.status !== 'closed';
+                return (
+                <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
+                  <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+                      <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {isOpen ? 'Приём открыт' : 'Приём закрыт'}
+                      </span>
                     </div>
-                  )}
-                  <Button variant="outline" className="w-full text-primary border-primary/30 hover:bg-primary/5" onClick={() => openParticipants(t)}>
-                    <Icon name="Users" size={16} className="mr-2" /> Список участников
-                  </Button>
+                    {t.date && (
+                      <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
+                        <Icon name="Calendar" size={14} /> {formatDate(t.date)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="px-6 py-4 flex-1 flex flex-col gap-3">
+                    {t.description && <p className="text-gray-600 text-sm leading-relaxed">{t.description}</p>}
+                    <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
+                      {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
+                      {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
+                      {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
+                      {t.fsr_id && <span className="flex items-center gap-2"><Icon name="Hash" size={14} className="text-secondary" />ФШР: {t.fsr_id}</span>}
+                    </div>
+                  </div>
+                  <div className="px-6 pb-5 flex flex-col gap-2">
+                    {isOpen ? (
+                      <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => openModal(t)}>
+                        <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
+                      </Button>
+                    ) : (
+                      <div className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 text-gray-400 font-semibold py-2.5 text-sm">
+                        <Icon name="Lock" size={15} /> Приём заявок завершён
+                      </div>
+                    )}
+                    <Button variant="outline" className="w-full text-primary border-primary/30 hover:bg-primary/5" onClick={() => openParticipants(t)}>
+                      <Icon name="Users" size={16} className="mr-2" /> Список участников
+                    </Button>
+                  </div>
                 </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Правила и регламент */}
+        <div className="lg:col-span-1 lg:sticky lg:top-6">
+          <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 md:px-6 md:py-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <Icon name="ScrollText" size={16} className="text-secondary shrink-0" />
+              <h2 className="font-heading font-semibold text-sm md:text-base text-primary uppercase tracking-wide">Правила и регламент участия</h2>
+            </div>
+
+            <div className="flex flex-col gap-4 text-xs md:text-[13px] text-muted-foreground leading-relaxed">
+              <div>
+                <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Monitor" size={13} className="text-secondary" /> Формат проведения</h3>
+                <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7). Контроль времени на партию — 10 минут без добавления секунд. Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
               </div>
-              );
-            })}
+              <div>
+                <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Users" size={13} className="text-secondary" /> Участники и группы</h3>
+                <p>К участию допускаются дети, зарегистрированные на Lichess.org и состоящие в клубе центра «Мир шахмат». Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="ClipboardCheck" size={13} className="text-secondary" /> Подача заявки</h3>
+                <p>Заявка подаётся через форму на сайте до указанного в положении турнира времени. Ссылка на игру и код доступа направляются на электронную почту за 30 минут до начала. Авторизоваться на платформе нужно за 10 минут до старта.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Award" size={13} className="text-secondary" /> Итоги и награждение</h3>
+                <p>Официальные результаты публикуются в разделе «Результаты» в течение 3 дней после турнира. Победители и призёры получают дипломы I–III степени, все участники — диплом об участии, тренеры — благодарственные письма. Предусмотрены и специальные номинации.</p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </section>
 
       {/* Modal */}
