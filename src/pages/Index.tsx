@@ -74,11 +74,11 @@ const Index = () => {
               Турниры, фестивали и праздники шахмат для детей. Мы растим чемпионов, развиваем мышление и дарим радость победы каждому юному игроку.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base h-12 px-7">
-                <Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться на турнир
+              <Button asChild size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base h-12 px-7">
+                <a href="/turnir"><Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться на турнир</a>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 h-12 px-7 bg-transparent">
-                <a href="#festivali">Наши фестивали</a>
+                <a href="#olimpiady">Олимпиады</a>
               </Button>
             </div>
           </div>
