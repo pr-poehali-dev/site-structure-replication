@@ -89,6 +89,16 @@ def handler(event: dict, context) -> dict:
             a['created_at'] = str(a['created_at'])
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'applications': apps})}
 
+    # Удаление заявки (_action: delete)
+    if method == 'POST' and action == 'delete':
+        app_id = body.get('id')
+        # Сначала удаляем связанные заказы, иначе внешний ключ не даст удалить заявку
+        cur.execute("DELETE FROM orders WHERE application_id = %s", (app_id,))
+        cur.execute("DELETE FROM applications WHERE id = %s", (app_id,))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
     # Редактирование заявки (_action: update)
     if method == 'POST' and action == 'update':
         cur.execute(

@@ -388,6 +388,16 @@ export default function Admin() {
     fetchApps();
   }
 
+  async function handleDeleteApp(id: number) {
+    if (!confirm('Удалить заявку?')) return;
+    await fetch(APPS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'delete', id }),
+    });
+    fetchApps();
+  }
+
   // --- Каталог наград ---
   async function uploadPhoto(file: File, kitId?: number): Promise<string | null> {
     return new Promise((resolve) => {
@@ -684,9 +694,14 @@ export default function Admin() {
                         {a.notes && <p className="mt-2 text-sm text-gray-500 italic">💬 {a.notes}</p>}
                         <p className="text-xs text-gray-400 mt-2">{new Date(a.created_at).toLocaleString('ru-RU')}</p>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => setEditApp({ ...a })}>
-                        <Icon name="Pencil" size={14} className="mr-1" /> Изменить
-                      </Button>
+                      <div className="flex gap-2 shrink-0">
+                        <Button variant="outline" size="sm" onClick={() => setEditApp({ ...a })}>
+                          <Icon name="Pencil" size={14} className="mr-1" /> Изменить
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteApp(a.id)}>
+                          <Icon name="Trash2" size={14} className="mr-1" /> Удалить
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
