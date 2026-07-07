@@ -17,6 +17,7 @@ interface Tournament {
   age_category: string;
   price: number | null;
   time_control: string;
+  time_msk: string;
   status: string;
   diploma_sample_url: string | null;
   regulation_url: string | null;
@@ -184,7 +185,7 @@ export default function Turnir() {
                       </div>
                       {t.date && (
                         <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
-                          <Icon name="Calendar" size={14} /> {formatDate(t.date)}
+                          <Icon name="Calendar" size={14} /> {formatDate(t.date)}{t.time_msk && `, ${t.time_msk} МСК`}
                         </p>
                       )}
                     </div>

@@ -34,7 +34,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
 
     if method == 'GET':
-        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url FROM tournaments ORDER BY created_at DESC")
+        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
         for r in rows:
@@ -44,6 +44,7 @@ def handler(event: dict, context) -> dict:
                 'age_category': r[5], 'price': float(r[6]) if r[6] else None,
                 'time_control': r[7], 'created_at': str(r[8]), 'status': r[9],
                 'diploma_sample_url': r[10], 'regulation_url': r[11], 'announcement_url': r[12],
+                'time_msk': r[13],
             })
         conn.close()
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
@@ -86,21 +87,22 @@ def handler(event: dict, context) -> dict:
 
         if action == 'update':
             cur.execute(
-                "UPDATE tournaments SET title = %s, description = %s, date = %s, location = %s, age_category = %s, price = %s, time_control = %s, diploma_sample_url = %s, regulation_url = %s, announcement_url = %s WHERE id = %s",
+                "UPDATE tournaments SET title = %s, description = %s, date = %s, location = %s, age_category = %s, price = %s, time_control = %s, diploma_sample_url = %s, regulation_url = %s, announcement_url = %s, time_msk = %s WHERE id = %s",
                 (body.get('title'), body.get('description'), body.get('date') or None,
                  body.get('location'), body.get('age_category'), body.get('price') or None, body.get('time_control'),
                  body.get('diploma_sample_url') or None, body.get('regulation_url') or None, body.get('announcement_url') or None,
-                 body.get('id'))
+                 body.get('time_msk'), body.get('id'))
             )
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
         cur.execute(
-            "INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, diploma_sample_url, regulation_url, announcement_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, diploma_sample_url, regulation_url, announcement_url, time_msk) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (body.get('title'), body.get('description'), body.get('date') or None,
              body.get('location'), body.get('age_category'), body.get('price') or None, body.get('time_control'),
-             body.get('diploma_sample_url') or None, body.get('regulation_url') or None, body.get('announcement_url') or None)
+             body.get('diploma_sample_url') or None, body.get('regulation_url') or None, body.get('announcement_url') or None,
+             body.get('time_msk'))
         )
         new_id = cur.fetchone()[0]
         conn.commit()

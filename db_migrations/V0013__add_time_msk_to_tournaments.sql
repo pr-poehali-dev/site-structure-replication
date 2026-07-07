@@ -1,0 +1,1 @@
+ALTER TABLE tournaments ADD COLUMN time_msk TEXT;
