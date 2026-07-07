@@ -195,9 +195,9 @@ export default function Result() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto rounded-xl border border-border">
+              <div className="overflow-auto rounded-xl border border-border max-h-[65vh]">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-16 z-10">
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-white border-b border-border shadow-sm">
                       <th className="px-4 py-3 text-left font-semibold text-primary w-12">№</th>
                       <th className="px-4 py-3 text-left font-semibold text-primary">Дата</th>
