@@ -224,14 +224,12 @@ export default function TournamentsSection({
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Документы турнира</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Образец диплома (файл)</Label>
-                <input ref={diplomaInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleDiplomaFileChange}
+                <Label>Образец диплома (изображение)</Label>
+                <input ref={diplomaInputRef} type="file" accept="image/*" onChange={handleDiplomaFileChange}
                   className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20 cursor-pointer" />
                 {uploadingDiploma && <p className="text-xs text-secondary mt-1 flex items-center gap-1"><Icon name="Loader2" size={12} className="animate-spin" /> Загрузка...</p>}
                 {tForm.diploma_sample_url && !uploadingDiploma && (
-                  <a href={tForm.diploma_sample_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-secondary hover:underline mt-1">
-                    <Icon name="FileCheck" size={13} /> Файл загружен
-                  </a>
+                  <img src={tForm.diploma_sample_url} alt="Образец диплома" className="mt-2 w-full max-h-40 object-contain rounded-lg border border-gray-100" />
                 )}
               </div>
               <div>
