@@ -154,12 +154,13 @@ const OlimpiadPage = () => {
             <div className="rounded-2xl bg-primary text-white p-7 flex flex-col gap-4">
               <h3 className="font-heading font-bold text-xl uppercase">Готовы участвовать?</h3>
               <p className="text-white/75 text-sm leading-relaxed">Принять участие в олимпиаде «{o.name}» можно в любое время суток и в любой день недели.</p>
-              <a
-                href="/#pay"
-                className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-3 text-sm hover:bg-secondary/90 transition-colors"
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 bg-secondary/40 text-secondary-foreground/70 font-semibold rounded-xl px-5 py-3 text-sm cursor-not-allowed"
               >
                 <Icon name="CreditCard" size={16} /> Оплатить и принять участие
-              </a>
+              </button>
+              <p className="text-white/60 text-xs text-center">Участие в олимпиаде скоро станет доступным</p>
             </div>
           </div>
 
