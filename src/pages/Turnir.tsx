@@ -142,6 +142,37 @@ export default function Turnir() {
         </div>
       </section>
 
+      {/* Правила и регламент */}
+      <section className="container px-4 pt-12">
+        <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="grid place-items-center w-11 h-11 rounded-xl bg-primary text-secondary shrink-0">
+              <Icon name="ScrollText" size={22} />
+            </span>
+            <h2 className="font-heading font-bold text-xl md:text-2xl text-primary uppercase">Правила и регламент участия</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 text-sm text-muted-foreground leading-relaxed">
+            <div>
+              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Monitor" size={16} className="text-secondary" /> Формат проведения</h3>
+              <p>Турниры проводятся онлайн на платформе Lichess.org по швейцарской системе. Количество туров зависит от числа участников (максимум 7). Контроль времени на партию — 10 минут без добавления секунд. Жеребьёвка каждого тура выполняется автоматически средствами платформы.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Users" size={16} className="text-secondary" /> Участники и группы</h3>
+              <p>К участию допускаются дети, зарегистрированные на Lichess.org и состоящие в клубе центра «Мир шахмат». Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="ClipboardCheck" size={16} className="text-secondary" /> Подача заявки</h3>
+              <p>Заявка подаётся через форму на сайте до указанного в положении турнира времени. Ссылка на игру и код доступа направляются на электронную почту за 30 минут до начала. Авторизоваться на платформе нужно за 10 минут до старта.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary flex items-center gap-2 mb-2"><Icon name="Award" size={16} className="text-secondary" /> Итоги и награждение</h3>
+              <p>Официальные результаты публикуются в разделе «Результаты» в течение 3 дней после турнира. Победители и призёры получают дипломы I–III степени, все участники — диплом об участии, тренеры — благодарственные письма. Предусмотрены и специальные номинации.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Tournaments */}
       <section className="container px-4 py-12">
         {loading ? (
