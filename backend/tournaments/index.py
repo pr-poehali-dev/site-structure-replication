@@ -38,7 +38,15 @@ def handler(event: dict, context) -> dict:
         action = body.get('_action', '')
 
         if action == 'delete':
-            cur.execute("DELETE FROM tournaments WHERE id = %s", (body.get('id'),))
+            tournament_id = body.get('id')
+            # Сначала удаляем заказы, связанные с заявками этого турнира,
+            # затем сами заявки — иначе внешние ключи не дадут удалить турнир
+            cur.execute(
+                "DELETE FROM orders WHERE application_id IN (SELECT id FROM applications WHERE tournament_id = %s)",
+                (tournament_id,)
+            )
+            cur.execute("DELETE FROM applications WHERE tournament_id = %s", (tournament_id,))
+            cur.execute("DELETE FROM tournaments WHERE id = %s", (tournament_id,))
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
