@@ -261,7 +261,7 @@ export default function Turnir() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="Users" size={13} className="text-secondary" /> Участники и группы</h3>
-                <p>К участию допускаются дети, зарегистрированные на Lichess.org. Перед участием каждый ребенок должен вступить в клуб "Мир шахмат" на площадке lichess.org. Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
+                <p>К участию допускаются дети, зарегистрированные на Lichess.org. Перед участием каждый ребенок должен вступить в клуб <a href="https://lichess.org/team/weMlgSjB" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">«Мир шахмат»</a> на площадке lichess.org. Участники делятся на группы по рейтингу ФШР и возрасту — количество подгрупп зависит от общего числа заявок.</p>
               </div>
               <div>
                 <h3 className="font-semibold text-foreground/80 flex items-center gap-1.5 mb-1"><Icon name="ClipboardCheck" size={13} className="text-secondary" /> Подача заявки</h3>
