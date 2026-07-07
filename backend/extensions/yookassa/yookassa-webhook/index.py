@@ -130,7 +130,7 @@ def handler(event, context):
 
         # Find order by payment_id
         cur.execute(f"""
-            SELECT id, status FROM {S}orders
+            SELECT id, status, application_id FROM {S}orders
             WHERE yookassa_payment_id = %s
         """, (payment_id,))
 
@@ -141,7 +141,7 @@ def handler(event, context):
             order_id_meta = metadata.get('order_id')
             if order_id_meta:
                 cur.execute(f"""
-                    SELECT id, status FROM {S}orders WHERE id = %s
+                    SELECT id, status, application_id FROM {S}orders WHERE id = %s
                 """, (int(order_id_meta),))
                 row = cur.fetchone()
 
@@ -152,7 +152,7 @@ def handler(event, context):
                 'body': json.dumps({'error': 'Order not found'})
             }
 
-        order_id, current_status = row
+        order_id, current_status, application_id = row
 
         # Update based on verified payment status
         if payment_status == 'succeeded':
@@ -162,6 +162,13 @@ def handler(event, context):
                     SET status = 'paid', paid_at = %s, updated_at = %s
                     WHERE id = %s
                 """, (now, now, order_id))
+                # Заявка на турнир подтверждается только после успешной оплаты
+                if application_id:
+                    cur.execute(f"""
+                        UPDATE {S}applications
+                        SET status = 'paid'
+                        WHERE id = %s AND status = 'pending_payment'
+                    """, (application_id,))
                 conn.commit()
 
         elif payment_status == 'canceled':
@@ -171,6 +178,13 @@ def handler(event, context):
                     SET status = 'canceled', updated_at = %s
                     WHERE id = %s
                 """, (now, order_id))
+                # Отменённая оплата — отменяем и заявку, чтобы она не висела вечно в ожидании
+                if application_id:
+                    cur.execute(f"""
+                        UPDATE {S}applications
+                        SET status = 'cancelled'
+                        WHERE id = %s AND status = 'pending_payment'
+                    """, (application_id,))
                 conn.commit()
 
         return {

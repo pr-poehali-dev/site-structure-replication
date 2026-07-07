@@ -37,8 +37,8 @@ interface AwardOrder {
 
 const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', fsr_id: '' };
 const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
-const STATUS_LABELS: Record<string, string> = { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачена', cancelled: 'Отменена' };
-const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', confirmed: 'bg-green-100 text-green-700', paid: 'bg-yellow-100 text-yellow-700', cancelled: 'bg-red-100 text-red-700' };
+const STATUS_LABELS: Record<string, string> = { new: 'Новая', pending_payment: 'Ждёт оплаты', confirmed: 'Подтверждена', paid: 'Оплачена', cancelled: 'Отменена' };
+const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', pending_payment: 'bg-orange-100 text-orange-700', confirmed: 'bg-green-100 text-green-700', paid: 'bg-yellow-100 text-yellow-700', cancelled: 'bg-red-100 text-red-700' };
 const ORDER_STATUS_LABELS: Record<string, string> = { new: 'Новый', processing: 'В работе', done: 'Выполнен', cancelled: 'Отменён' };
 const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', processing: 'bg-yellow-100 text-yellow-700', done: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };
 const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
@@ -1074,6 +1074,7 @@ export default function Admin() {
                 <select value={editApp.status} onChange={e => setEditApp({ ...editApp, status: e.target.value })}
                   className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="new">Новая</option>
+                  <option value="pending_payment">Ждёт оплаты</option>
                   <option value="confirmed">Подтверждена</option>
                   <option value="paid">Оплачена</option>
                   <option value="cancelled">Отменена</option>

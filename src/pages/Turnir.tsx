@@ -76,6 +76,7 @@ export default function Turnir() {
     if (!modalTournament) return;
     setSubmitting(true);
     setSubmitError('');
+    const isPaid = !!(modalTournament.price && modalTournament.price > 0);
     try {
       const res = await fetch(APPS_URL, {
         method: 'POST',
@@ -91,22 +92,26 @@ export default function Turnir() {
           school: form.school,
           email: form.email,
           phone: form.phone,
+          requires_payment: isPaid,
         }),
       });
       if (!res.ok) {
         setSubmitError('Ошибка при отправке. Попробуйте ещё раз.');
         return;
       }
+      const data = await res.json();
+      const applicationId = data.id;
 
-      if (modalTournament.price && modalTournament.price > 0) {
+      if (isPaid) {
         const payment = await createPayment({
-          amount: modalTournament.price,
+          amount: modalTournament.price as number,
           userName: form.fio,
           userEmail: form.email,
           userPhone: form.phone,
           description: `Турнир: ${modalTournament.title}`,
-          cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price, quantity: 1 }],
+          cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price as number, quantity: 1 }],
           returnUrl: window.location.origin + '/order-status',
+          applicationId,
         });
         if (payment?.payment_url) {
           openPaymentPage(payment.payment_url);

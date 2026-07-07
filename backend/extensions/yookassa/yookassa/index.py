@@ -171,6 +171,7 @@ def handler(event, context):
     return_url = data.get('return_url', '').strip()
     description = data.get('description', 'Оплата заказа')
     cart_items = data.get('cart_items', [])
+    application_id = data.get('application_id')
 
     if amount < MIN_AMOUNT or amount > MAX_AMOUNT:
         return {
@@ -223,13 +224,13 @@ def handler(event, context):
         # Generate order number
         order_number = f"YK-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
 
-        # Create order in DB
+        # Create order in DB (application_id связывает заказ с заявкой на турнир, если она есть)
         cur.execute(f"""
             INSERT INTO {S}orders
-            (order_number, user_name, user_email, user_phone, amount, status, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s)
+            (order_number, user_name, user_email, user_phone, amount, status, application_id, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s, %s)
             RETURNING id
-        """, (order_number, user_name, user_email, user_phone, amount, now, now))
+        """, (order_number, user_name, user_email, user_phone, amount, application_id, now, now))
 
         order_id = cur.fetchone()[0]
 

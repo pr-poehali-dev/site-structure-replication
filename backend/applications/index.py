@@ -33,11 +33,12 @@ def handler(event: dict, context) -> dict:
         tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
         if not is_admin:
             # Публичный: только ФИО и возраст, tournament_id обязателен
+            # Заявки, ожидающие оплаты, в список участников не попадают
             if not tournament_id:
                 conn.close()
                 return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'tournament_id required'})}
             cur.execute(
-                "SELECT fio, age FROM applications WHERE tournament_id = %s AND status != 'cancelled' ORDER BY created_at ASC",
+                "SELECT fio, age FROM applications WHERE tournament_id = %s AND status NOT IN ('cancelled', 'pending_payment') ORDER BY created_at ASC",
                 (tournament_id,)
             )
             rows = cur.fetchall()
@@ -46,13 +47,17 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'participants': participants, 'count': len(participants)})}
 
     # Публичное создание заявки (POST без _action и без пароля)
+    # Если турнир платный (передан флаг requires_payment) — заявка создаётся со статусом pending_payment
+    # и попадёт в список участников только после подтверждения оплаты через webhook
     if method == 'POST' and action != 'update' and not is_admin:
+        initial_status = 'pending_payment' if body.get('requires_payment') else 'new'
         cur.execute(
-            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (body.get('tournament_id'), body.get('tournament_title'), body.get('fio'),
              body.get('age'), body.get('fsr_id'), body.get('coach'),
-             body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'))
+             body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
+             initial_status)
         )
         new_id = cur.fetchone()[0]
         conn.commit()
