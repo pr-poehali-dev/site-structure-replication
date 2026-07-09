@@ -176,9 +176,9 @@ export default function Kubki() {
                         <div className="w-10 h-10 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0">
                           <Icon name={ICON_MAP[kit.icon] || 'Award'} size={20} className="text-secondary" />
                         </div>
-                        <div>
-                          <div className="font-heading font-bold text-lg uppercase">{kit.title}</div>
-                          <div className="text-sm text-muted-foreground">{kit.description}</div>
+                        <div className="min-w-0">
+                          <div className="font-heading font-bold text-sm uppercase truncate">{kit.title}</div>
+                          <div className="text-xs text-muted-foreground truncate">{kit.description}</div>
                         </div>
                       </div>
                       <ul className="text-sm text-muted-foreground space-y-1 border-t border-border pt-3">
@@ -190,10 +190,10 @@ export default function Kubki() {
                         ))}
                       </ul>
                       <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
-                        <span className="font-bold text-lg">
+                        <span className="font-bold text-base whitespace-nowrap">
                           {kit.price ? `${kit.price.toLocaleString('ru')} ₽` : 'По запросу'}
                         </span>
-                        <Button size="sm" onClick={() => openAddKit(kit)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                        <Button size="sm" onClick={() => openAddKit(kit)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 whitespace-nowrap">
                           <Icon name="Plus" size={14} className="mr-1" /> Добавить
                         </Button>
                       </div>
