@@ -246,9 +246,7 @@ const Index = () => {
                   <h3 className="font-heading font-semibold text-xl uppercase text-primary">{s.title}</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
-                <a href="#contacts" className="inline-flex items-center gap-1 mt-5 text-sm font-semibold text-primary hover:text-secondary transition-colors">
-                  Подробнее <Icon name="ArrowRight" size={16} />
-                </a>
+                <a href="#contacts" className="inline-flex items-center gap-1 mt-5 text-sm font-semibold text-primary hover:text-secondary transition-colors"></a>
               </div>
             ))}
           </div>
