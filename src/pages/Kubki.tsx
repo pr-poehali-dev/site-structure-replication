@@ -189,12 +189,12 @@ export default function Kubki() {
                           </li>
                         ))}
                       </ul>
-                      <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
+                      <div className="flex items-center justify-between gap-2 mt-auto pt-3 border-t border-border">
                         <span className="font-bold text-base whitespace-nowrap">
                           {kit.price ? `${kit.price.toLocaleString('ru')} ₽` : 'По запросу'}
                         </span>
-                        <Button size="sm" onClick={() => openAddKit(kit)} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 whitespace-nowrap">
-                          <Icon name="Plus" size={14} className="mr-1" /> Добавить
+                        <Button size="sm" onClick={() => openAddKit(kit)} className="h-7 px-2.5 text-xs bg-secondary text-secondary-foreground hover:bg-secondary/90 whitespace-nowrap">
+                          <Icon name="Plus" size={12} className="mr-1" /> Добавить
                         </Button>
                       </div>
                       </div>
