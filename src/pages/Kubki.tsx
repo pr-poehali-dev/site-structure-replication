@@ -161,7 +161,7 @@ export default function Kubki() {
                   <Icon name="Loader2" size={24} className="animate-spin mr-2" /> Загрузка...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {catalog.map(kit => (
                     <div key={kit.id} className="border border-border rounded-xl overflow-hidden flex flex-col bg-card hover:border-secondary transition-colors">
                       {kit.photo_url ? (
