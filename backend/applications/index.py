@@ -92,7 +92,8 @@ def handler(event: dict, context) -> dict:
     # Удаление заявки (_action: delete)
     if method == 'POST' and action == 'delete':
         app_id = body.get('id')
-        # Сначала удаляем связанные заказы, иначе внешний ключ не даст удалить заявку
+        # Сначала удаляем позиции заказов, затем сами заказы, иначе внешний ключ не даст удалить заявку
+        cur.execute("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE application_id = %s)", (app_id,))
         cur.execute("DELETE FROM orders WHERE application_id = %s", (app_id,))
         cur.execute("DELETE FROM applications WHERE id = %s", (app_id,))
         conn.commit()
