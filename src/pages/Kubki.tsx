@@ -172,14 +172,14 @@ export default function Kubki() {
                         </div>
                       )}
                       <div className="p-5 flex flex-col gap-3 flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0">
-                          <Icon name={ICON_MAP[kit.icon] || 'Award'} size={20} className="text-secondary" />
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0">
+                            <Icon name={ICON_MAP[kit.icon] || 'Award'} size={20} className="text-secondary" />
+                          </div>
+                          <div className="font-heading font-bold text-sm uppercase line-clamp-2 min-w-0">{kit.title}</div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-heading font-bold text-sm uppercase truncate">{kit.title}</div>
-                          <div className="text-xs text-muted-foreground truncate">{kit.description}</div>
-                        </div>
+                        <div className="text-xs text-muted-foreground truncate">{kit.description}</div>
                       </div>
                       <ul className="text-sm text-muted-foreground space-y-1 border-t border-border pt-3">
                         {kit.composition.map((c, i) => (
