@@ -329,7 +329,21 @@ export default function Turnir() {
                   </div>
                   <label className="flex items-start gap-2 cursor-pointer mt-1">
                     <input required type="checkbox" className="mt-0.5 accent-secondary w-4 h-4 shrink-0" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
-                    <span className="text-sm text-gray-600">Соглашаюсь с условиями проведения соревнования</span>
+                    <span className="text-sm text-gray-600">
+                      Соглашаюсь с{' '}
+                      {modalTournament.regulation_url ? (
+                        <a
+                          href={modalTournament.regulation_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-secondary underline hover:no-underline"
+                        >
+                          условиями
+                        </a>
+                      ) : 'условиями'}
+                      {' '}проведения соревнования
+                    </span>
                   </label>
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
                   <Button type="submit" disabled={submitting || paymentLoading} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
