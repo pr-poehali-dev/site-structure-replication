@@ -196,7 +196,7 @@ export default function Turnir() {
                       )}
                     </div>
                     <div className="px-6 py-4 flex-1 flex flex-col gap-3">
-                      {t.description && <p className="text-gray-600 text-sm leading-relaxed">{t.description}</p>}
+                      {t.description && <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{t.description}</p>}
                       <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
                         {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
                         {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
