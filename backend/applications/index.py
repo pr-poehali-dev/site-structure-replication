@@ -1,6 +1,7 @@
 import json
 import os
 import psycopg2
+from push_utils import notify_admins_new_application
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
@@ -61,6 +62,10 @@ def handler(event: dict, context) -> dict:
         )
         new_id = cur.fetchone()[0]
         conn.commit()
+        try:
+            notify_admins_new_application(conn, body.get('tournament_title') or '', body.get('fio') or '')
+        except Exception:
+            pass
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'id': new_id})}
 

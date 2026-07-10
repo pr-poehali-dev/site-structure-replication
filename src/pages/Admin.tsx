@@ -12,6 +12,7 @@ import TournamentsSection from './admin/TournamentsSection';
 import ApplicationsSection from './admin/ApplicationsSection';
 import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
+import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
   const [password, setPassword] = useState('');
@@ -187,10 +188,13 @@ export default function Admin() {
           <Icon name="Crown" size={20} />
           <span className="font-bold text-lg">Мир шахмат — Админка</span>
         </div>
-        <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 bg-transparent"
-          onClick={() => { sessionStorage.removeItem('admin_password'); setAuthed(false); setPassword(''); }}>
-          <Icon name="LogOut" size={16} className="mr-1" /> Выйти
-        </Button>
+        <div className="flex items-center gap-2">
+          <PushNotificationsButton password={password} />
+          <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 bg-transparent"
+            onClick={() => { sessionStorage.removeItem('admin_password'); setAuthed(false); setPassword(''); }}>
+            <Icon name="LogOut" size={16} className="mr-1" /> Выйти
+          </Button>
+        </div>
       </header>
 
       {/* Nav tabs */}
