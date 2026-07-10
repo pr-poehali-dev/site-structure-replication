@@ -183,12 +183,12 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-primary text-white px-6 py-4 flex items-center justify-between">
+      <header className="bg-primary text-white px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Icon name="Crown" size={20} />
           <span className="font-bold text-lg">Мир шахмат — Админка</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <PushNotificationsButton password={password} />
           <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 bg-transparent"
             onClick={() => { sessionStorage.removeItem('admin_password'); setAuthed(false); setPassword(''); }}>
