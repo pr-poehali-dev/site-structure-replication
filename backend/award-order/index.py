@@ -30,6 +30,26 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}, 'body': json.dumps({'orders': orders})}
 
     body = json.loads(event.get('body') or '{}')
+    action = body.get('_action', '')
+
+    if action == 'delete':
+        headers_in = event.get('headers', {}) or {}
+        admin_password = headers_in.get('X-Admin-Password') or headers_in.get('x-admin-password', '')
+        if admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+            return {'statusCode': 401, 'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'Unauthorized'})}
+
+        order_id = body.get('id')
+        if not order_id:
+            return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'id required'})}
+
+        conn = psycopg2.connect(os.environ['DATABASE_URL'])
+        cur = conn.cursor()
+        cur.execute("DELETE FROM t_p58220589_site_structure_repli.award_orders WHERE id = %s", (order_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}, 'body': json.dumps({'success': True})}
+
     customer_name = body.get('customer_name', '').strip()
     customer_phone = body.get('customer_phone', '').strip()
     customer_email = body.get('customer_email', '').strip()

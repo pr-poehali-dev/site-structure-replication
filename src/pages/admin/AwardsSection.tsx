@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import {
-  Tournament, AwardKit, AwardOrder, AWARD_CATALOG_ADMIN_URL, AWARD_TOURNAMENTS_URL,
+  Tournament, AwardKit, AwardOrder, AWARD_CATALOG_ADMIN_URL, AWARD_TOURNAMENTS_URL, AWARD_ORDERS_URL,
   EMPTY_KIT_FORM, ICON_OPTIONS, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
 } from './adminTypes';
 
@@ -392,12 +392,23 @@ export default function AwardsSection({
 }
 
 interface AwardOrdersSectionProps {
+  password: string;
   awardOrders: AwardOrder[];
   ordersLoading: boolean;
   fetchAwardOrders: () => Promise<void>;
 }
 
-export function AwardOrdersSection({ awardOrders, ordersLoading, fetchAwardOrders }: AwardOrdersSectionProps) {
+export function AwardOrdersSection({ password, awardOrders, ordersLoading, fetchAwardOrders }: AwardOrdersSectionProps) {
+  async function handleDeleteOrder(id: number) {
+    if (!confirm('Удалить заказ?')) return;
+    await fetch(AWARD_ORDERS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'delete', id }),
+    });
+    fetchAwardOrders();
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-6">
@@ -437,6 +448,9 @@ export function AwardOrdersSection({ awardOrders, ordersLoading, fetchAwardOrder
                     {order.total_price ? `${order.total_price.toLocaleString('ru')} ₽` : 'По запросу'}
                   </div>
                   <div className="text-xs text-gray-400">{new Date(order.created_at).toLocaleString('ru-RU')}</div>
+                  <button onClick={() => handleDeleteOrder(order.id)} className="text-red-500 hover:text-red-700 mt-1 inline-flex items-center gap-1 text-xs">
+                    <Icon name="Trash2" size={13} /> Удалить
+                  </button>
                 </div>
               </div>
               <div className="border-t border-gray-100 pt-3">

@@ -297,6 +297,7 @@ export default function Admin() {
         {/* === ЗАКАЗЫ НАГРАД === */}
         {section === 'award-orders' && (
           <AwardOrdersSection
+            password={password}
             awardOrders={awardOrders}
             ordersLoading={ordersLoading}
             fetchAwardOrders={fetchAwardOrders}

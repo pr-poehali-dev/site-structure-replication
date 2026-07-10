@@ -20,6 +20,15 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "Unauthorized"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Delete order without password is unauthorized",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "delete", "id": 1},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Unauthorized"},
+      "bodyMatcher": "partial"
     }
   ]
 }
