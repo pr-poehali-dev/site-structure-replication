@@ -211,6 +211,10 @@ def handler(event, context):
     description = data.get('description', 'Оплата заказа')
     cart_items = data.get('cart_items', [])
     application_id = data.get('application_id')
+    order_type = data.get('order_type') or 'general'
+    items_data = data.get('items_data')
+    delivery_address = data.get('delivery_address', '').strip()
+    order_comment = data.get('order_comment', '').strip()
 
     if amount < MIN_AMOUNT or amount > MAX_AMOUNT:
         return {
@@ -266,10 +270,10 @@ def handler(event, context):
         # Create order in DB (application_id связывает заказ с заявкой на турнир, если она есть)
         cur.execute(f"""
             INSERT INTO {S}orders
-            (order_number, user_name, user_email, user_phone, amount, status, application_id, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s, %s)
+            (order_number, user_name, user_email, user_phone, amount, status, application_id, order_type, items_data, delivery_address, order_comment, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, 'pending', %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (order_number, user_name, user_email, user_phone, amount, application_id, now, now))
+        """, (order_number, user_name, user_email, user_phone, amount, application_id, order_type, json.dumps(items_data, ensure_ascii=False) if items_data is not None else None, delivery_address or None, order_comment or None, now, now))
 
         order_id = cur.fetchone()[0]
 

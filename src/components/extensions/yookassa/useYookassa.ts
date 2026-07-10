@@ -25,6 +25,8 @@ export interface PaymentPayload {
   returnUrl: string;
   cartItems?: CartItem[];
   applicationId?: number;
+  orderType?: string;
+  itemsData?: unknown;
 }
 
 export interface PaymentResponse {
@@ -123,6 +125,8 @@ export function useYookassa(options: UseYookassaOptions): UseYookassaReturn {
           return_url: payload.returnUrl,
           cart_items: payload.cartItems || [],
           application_id: payload.applicationId,
+          order_type: payload.orderType,
+          items_data: payload.itemsData,
         };
 
         const response = await fetch(apiUrl, {

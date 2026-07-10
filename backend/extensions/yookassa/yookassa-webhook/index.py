@@ -130,7 +130,8 @@ def handler(event, context):
 
         # Find order by payment_id
         cur.execute(f"""
-            SELECT id, status, application_id FROM {S}orders
+            SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount
+            FROM {S}orders
             WHERE yookassa_payment_id = %s
         """, (payment_id,))
 
@@ -141,7 +142,8 @@ def handler(event, context):
             order_id_meta = metadata.get('order_id')
             if order_id_meta:
                 cur.execute(f"""
-                    SELECT id, status, application_id FROM {S}orders WHERE id = %s
+                    SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount
+                    FROM {S}orders WHERE id = %s
                 """, (int(order_id_meta),))
                 row = cur.fetchone()
 
@@ -152,7 +154,8 @@ def handler(event, context):
                 'body': json.dumps({'error': 'Order not found'})
             }
 
-        order_id, current_status, application_id = row
+        (order_id, current_status, application_id, order_type, items_data,
+         user_name, user_phone, user_email, delivery_address, order_comment, amount) = row
 
         # Update based on verified payment status
         if payment_status == 'succeeded':
@@ -169,6 +172,27 @@ def handler(event, context):
                         SET status = 'paid'
                         WHERE id = %s AND status = 'pending_payment'
                     """, (application_id,))
+                # Заказ наград создаётся в базе только после успешной оплаты
+                if order_type == 'award' and items_data is not None:
+                    parsed_items = json.loads(items_data) if isinstance(items_data, str) else items_data
+                    order_items = parsed_items.get('items', [])
+                    order_notes = parsed_items.get('notes') or order_comment
+                    cur.execute(f"""
+                        INSERT INTO {S}award_orders
+                        (customer_name, customer_phone, customer_email, items, total_price, notes, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, 'new')
+                        RETURNING id
+                    """, (
+                        parsed_items.get('customer_name') or user_name,
+                        parsed_items.get('customer_phone') or user_phone,
+                        parsed_items.get('customer_email') or user_email or None,
+                        json.dumps(order_items, ensure_ascii=False),
+                        amount, order_notes or None
+                    ))
+                    award_order_id = cur.fetchone()[0]
+                    cur.execute(f"""
+                        UPDATE {S}orders SET award_order_id = %s WHERE id = %s
+                    """, (award_order_id, order_id))
                 conn.commit()
 
         elif payment_status == 'canceled':

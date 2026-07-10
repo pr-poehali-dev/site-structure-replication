@@ -3,6 +3,7 @@ import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import func2url from '../../backend/func2url.json';
+import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 
 interface Kit {
   id: string;
@@ -45,6 +46,11 @@ export default function Kubki() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  const { createPayment } = useYookassa({
+    apiUrl: func2url['yookassa-yookassa'],
+    onError: (err) => setError(err.message),
+  });
+
   useEffect(() => {
     fetch(func2url['award-catalog'])
       .then(r => r.json())
@@ -83,6 +89,14 @@ export default function Kubki() {
       setError('Заполните ФИО участника и телефон');
       return;
     }
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Укажите корректный email — на него придёт чек об оплате');
+      return;
+    }
+    if (total <= 0) {
+      setError('Стоимость заказа не определена, свяжитесь с нами для оформления');
+      return;
+    }
     setSending(true);
     setError('');
     const items = cart.map(i => ({
@@ -92,30 +106,32 @@ export default function Kubki() {
       tournament_title: i.tournament?.title || 'Не указан',
       price: i.kit.price,
     }));
-    const res = await fetch(func2url['award-order'], {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer_name: form.recipient_name || form.participant_name,
-        customer_phone: form.phone,
-        customer_email: form.email,
-        notes: [
-          form.participant_name ? `Участник: ${form.participant_name}` : '',
-          form.recipient_name ? `Получатель: ${form.recipient_name}` : '',
-          form.address ? `Адрес: ${form.address}` : '',
-          form.notes ? `Доп. информация: ${form.notes}` : '',
-        ].filter(Boolean).join('\n'),
-        items,
-      }),
+    const notes = [
+      form.participant_name ? `Участник: ${form.participant_name}` : '',
+      form.recipient_name ? `Получатель: ${form.recipient_name}` : '',
+      form.address ? `Адрес: ${form.address}` : '',
+      form.notes ? `Доп. информация: ${form.notes}` : '',
+    ].filter(Boolean).join('\n');
+
+    const payment = await createPayment({
+      amount: total,
+      userName: form.recipient_name || form.participant_name,
+      userEmail: form.email,
+      userPhone: form.phone,
+      description: 'Заказ наградной атрибутики',
+      cartItems: [
+        ...items.map(i => ({ id: i.kit_id, name: i.kit_title, price: i.price || 0, quantity: 1 })),
+        { id: 'delivery', name: 'Доставка', price: DELIVERY, quantity: 1 },
+      ],
+      returnUrl: window.location.origin + '/order-status',
+      orderType: 'award',
+      itemsData: { customer_name: form.recipient_name || form.participant_name, customer_phone: form.phone, customer_email: form.email, items, notes },
     });
-    const data = await res.json();
     setSending(false);
-    if (data.success) {
-      setSuccess(true);
-      setCart([]);
-      setShowForm(false);
+    if (payment?.payment_url) {
+      openPaymentPage(payment.payment_url);
     } else {
-      setError(data.error || 'Ошибка отправки');
+      setError('Не удалось создать платёж. Попробуйте ещё раз.');
     }
   };
 
