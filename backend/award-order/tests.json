@@ -14,11 +14,11 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Get orders list",
+      "name": "Get orders list without password is unauthorized",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {"orders": [{"id": 1}]},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Unauthorized"},
       "bodyMatcher": "partial"
     }
   ]

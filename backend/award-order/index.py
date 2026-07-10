@@ -4,11 +4,16 @@ import psycopg2
 
 
 def handler(event: dict, context) -> dict:
-    """Сохраняет заказ наград в базу данных."""
+    """Сохраняет заказ наград в базу данных. GET — только для администратора."""
     if event.get('httpMethod') == 'OPTIONS':
-        return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400'}, 'body': ''}
+        return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password', 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
     if event.get('httpMethod') == 'GET':
+        headers_in = event.get('headers', {}) or {}
+        admin_password = headers_in.get('X-Admin-Password') or headers_in.get('x-admin-password', '')
+        if admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+            return {'statusCode': 401, 'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'Unauthorized'})}
+
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cur = conn.cursor()
         cur.execute("SELECT id, customer_name, customer_phone, customer_email, items, total_price, status, notes, created_at FROM t_p58220589_site_structure_repli.award_orders ORDER BY created_at DESC")
