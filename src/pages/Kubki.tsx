@@ -80,7 +80,7 @@ export default function Kubki() {
     setCart(prev => prev.filter(i => i.uid !== uid));
   };
 
-  const DELIVERY = 250;
+  const DELIVERY = 1;
   const itemsTotal = cart.reduce((sum, i) => sum + (i.kit.price || 0), 0);
   const total = itemsTotal > 0 ? itemsTotal + DELIVERY : 0;
 
