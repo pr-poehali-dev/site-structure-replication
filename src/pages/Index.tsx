@@ -2,6 +2,7 @@
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Header, Footer } from '@/components/Layout';
+import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 
 const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/76b32a6f-e433-447e-98e3-d7bfa6e19bb3.png';
 
@@ -58,6 +59,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
+      <PublicPushSubscribe hideTrigger />
 
       {/* Hero */}
       <section id="top" className="relative overflow-hidden bg-primary text-white">
