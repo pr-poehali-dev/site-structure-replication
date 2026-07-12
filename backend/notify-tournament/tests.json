@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST without admin password rejected",
+      "method": "POST",
+      "path": "/",
+      "body": {"tournament_id": 1, "tournament_title": "Test"},
+      "expectedStatus": 401
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import {
   Tournament, Application, TOURNAMENTS_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
 } from './adminTypes';
+import NotifyTournamentButton from './NotifyTournamentButton';
 
 interface TournamentsSectionProps {
   password: string;
@@ -301,6 +302,7 @@ export default function TournamentsSection({
                         <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
                         {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}
                       </Button>
+                      <NotifyTournamentButton password={password} tournament={t} />
                       <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>
                         <Icon name="FileSpreadsheet" size={14} className="mr-1" /> Экспорт в Excel
                       </Button>

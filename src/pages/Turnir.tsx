@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
+import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
@@ -152,6 +153,9 @@ export default function Turnir() {
           <p className="mt-5 text-white/75 text-lg max-w-2xl mx-auto">
             Выберите турнир и подайте заявку на участие онлайн
           </p>
+          <div className="mt-6 flex justify-center">
+            <PublicPushSubscribe />
+          </div>
         </div>
       </section>
 

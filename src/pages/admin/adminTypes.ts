@@ -35,6 +35,7 @@ export const AWARD_ORDERS_URL = 'https://functions.poehali.dev/572ab5d3-bfa9-4a7
 export const AWARD_TOURNAMENTS_URL = 'https://functions.poehali.dev/fd3814c3-2340-45ce-81f9-80e07768efe2';
 export const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 export const PUSH_SUBSCRIBE_URL = 'https://functions.poehali.dev/ec05f680-fd6f-4b72-9dde-b032cc114102';
+export const NOTIFY_TOURNAMENT_URL = 'https://functions.poehali.dev/efe18ff0-5db6-4664-9dd2-df3d8a045430';
 
 export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
