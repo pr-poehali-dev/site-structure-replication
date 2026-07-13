@@ -44,6 +44,12 @@ def handler(event: dict, context) -> dict:
 
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM t_p58220589_site_structure_repli.order_items WHERE order_id IN "
+            "(SELECT id FROM t_p58220589_site_structure_repli.orders WHERE award_order_id = %s)",
+            (order_id,)
+        )
+        cur.execute("DELETE FROM t_p58220589_site_structure_repli.orders WHERE award_order_id = %s", (order_id,))
         cur.execute("DELETE FROM t_p58220589_site_structure_repli.award_orders WHERE id = %s", (order_id,))
         conn.commit()
         cur.close()
