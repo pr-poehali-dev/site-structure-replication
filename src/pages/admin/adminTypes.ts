@@ -28,6 +28,10 @@ export interface TournamentResult {
   fsr_rating: string | null; protocol_url: string | null; regulation_url: string | null;
 }
 
+export interface PushSubscription {
+  id: number; endpoint: string; created_at: string;
+}
+
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';
 export const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 export const AWARD_CATALOG_ADMIN_URL = 'https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd';
@@ -36,6 +40,7 @@ export const AWARD_TOURNAMENTS_URL = 'https://functions.poehali.dev/fd3814c3-234
 export const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 export const PUSH_SUBSCRIBE_URL = 'https://functions.poehali.dev/ec05f680-fd6f-4b72-9dde-b032cc114102';
 export const NOTIFY_TOURNAMENT_URL = 'https://functions.poehali.dev/efe18ff0-5db6-4664-9dd2-df3d8a045430';
+export const PUSH_SUBSCRIPTIONS_LIST_URL = 'https://functions.poehali.dev/d647d59e-6434-4c62-bfc9-0c177ac3cf50';
 
 export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
@@ -46,4 +51,4 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'applications' | 'awards' | 'award-orders' | 'results';
+export type Section = 'tournaments' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions';

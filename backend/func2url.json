@@ -1,4 +1,5 @@
 {
+  "push-subscriptions-list": "https://functions.poehali.dev/d647d59e-6434-4c62-bfc9-0c177ac3cf50",
   "notify-tournament": "https://functions.poehali.dev/efe18ff0-5db6-4664-9dd2-df3d8a045430",
   "public-push-subscribe": "https://functions.poehali.dev/0283b8d1-cf35-4020-abe4-ff1a3aa17308",
   "push-subscribe": "https://functions.poehali.dev/ec05f680-fd6f-4b72-9dde-b032cc114102",

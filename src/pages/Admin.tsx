@@ -4,14 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import {
-  Tournament, Application, AwardKit, AwardOrder, TournamentResult,
-  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL,
+  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription,
+  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
 import ApplicationsSection from './admin/ApplicationsSection';
 import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
+import SubscriptionsSection from './admin/SubscriptionsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
@@ -74,6 +75,10 @@ export default function Admin() {
   const [aKitTShowForm, setAKitTShowForm] = useState(false);
   const [aKitTSaving, setAKitTSaving] = useState(false);
   const [aKitTError, setAKitTError] = useState('');
+
+  // Подписки на push-уведомления
+  const [subs, setSubs] = useState<PushSubscription[]>([]);
+  const [subsLoading, setSubsLoading] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
@@ -142,6 +147,14 @@ export default function Admin() {
     setTrLoading(false);
   }
 
+  async function fetchSubs() {
+    setSubsLoading(true);
+    const res = await fetch(PUSH_SUBSCRIPTIONS_LIST_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setSubs(data.subscriptions || []);
+    setSubsLoading(false);
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
@@ -151,6 +164,7 @@ export default function Admin() {
     if (authed && section === 'awards') { fetchAwardKits(); fetchAwardKitTournaments(); }
     if (authed && section === 'award-orders') fetchAwardOrders();
     if (authed && section === 'results') fetchTrResults();
+    if (authed && section === 'subscriptions') fetchSubs();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -206,6 +220,7 @@ export default function Admin() {
             ['awards', 'Award', 'Каталог наград'],
             ['award-orders', 'ShoppingCart', 'Заказы наград'],
             ['results', 'ListChecks', 'Результаты'],
+            ['subscriptions', 'Bell', 'Подписки'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -331,6 +346,17 @@ export default function Admin() {
             trEditProtocolRef={trEditProtocolRef}
             trEditRegulationRef={trEditRegulationRef}
             fetchTrResults={fetchTrResults}
+          />
+        )}
+
+        {/* === ПОДПИСКИ === */}
+        {section === 'subscriptions' && (
+          <SubscriptionsSection
+            password={password}
+            subs={subs}
+            subsLoading={subsLoading}
+            setSubs={setSubs}
+            fetchSubs={fetchSubs}
           />
         )}
 
