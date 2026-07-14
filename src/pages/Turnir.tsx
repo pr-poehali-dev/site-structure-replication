@@ -314,8 +314,8 @@ export default function Turnir() {
                     <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Например: 10 лет" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">ID ФШР</label>
-                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Номер в системе ФШР" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} />
+                    <label className="text-sm font-medium text-gray-700">ID ФШР *</label>
+                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Номер в системе ФШР" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700">ФИО тренера</label>
