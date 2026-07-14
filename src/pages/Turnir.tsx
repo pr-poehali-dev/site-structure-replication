@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
+import Seo from '@/components/Seo';
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
@@ -138,6 +139,11 @@ export default function Turnir() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Турниры по шахматам для детей"
+        description="Расписание детских шахматных турниров, онлайн-регистрация и подача заявки на участие. Турниры для всех уровней подготовки."
+        path="/turnir"
+      />
       <Header />
 
       {/* Hero */}

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import Seo from '@/components/Seo';
 import {
   Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription,
   TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL,
@@ -176,6 +177,7 @@ export default function Admin() {
   if (!authed) {
     return (
       <div className="min-h-screen bg-primary flex items-center justify-center px-4">
+        <Seo title="Админка" description="Панель управления" noindex />
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
           <div className="flex items-center gap-2 mb-6">
             <Icon name="ShieldCheck" size={24} className="text-primary" />
@@ -196,6 +198,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Seo title="Админка" description="Панель управления" noindex />
       {/* Header */}
       <header className="bg-primary text-white px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">

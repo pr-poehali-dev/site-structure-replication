@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
+import Seo from '@/components/Seo';
 
 const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 const PAGE_SIZE = 20;
@@ -71,6 +72,11 @@ export default function Result() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Результаты шахматных турниров"
+        description="Итоговые таблицы, протоколы и положения прошедших детских шахматных турниров и олимпиад центра «Мир шахмат»."
+        path="/result"
+      />
       <Header />
 
       {/* Hero */}

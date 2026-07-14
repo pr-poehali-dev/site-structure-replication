@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
+import Seo from '@/components/Seo';
 
 const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
 const POLL_ATTEMPTS = 5;
@@ -79,6 +80,7 @@ export default function OrderStatus() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <Seo title="Статус заказа" description="Статус оплаты заказа" path="/order-status" noindex />
       <Header />
 
       <section className="flex-1 flex items-center justify-center px-4 py-16">

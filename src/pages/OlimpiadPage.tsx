@@ -3,6 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import Seo from '@/components/Seo';
 
 const OLIMPIADS: Record<string, {
   name: string;
@@ -74,6 +75,11 @@ const OlimpiadPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title={`Олимпиада «${o.name}» по шахматам`}
+        description={o.desc}
+        path={`/olimpiad/${slug}`}
+      />
       <Header />
 
       {diplom && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import Seo from '@/components/Seo';
 import func2url from '../../backend/func2url.json';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 
@@ -137,6 +138,11 @@ export default function Kubki() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Заказать награды для победителей турниров"
+        description="Кубки, медали и памятные подарки для победителей и призёров детских шахматных турниров. Заказ наградной атрибутики онлайн."
+        path="/kubki"
+      />
       <Header />
 
       {/* Hero */}

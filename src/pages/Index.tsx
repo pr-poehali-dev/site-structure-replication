@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Header, Footer } from '@/components/Layout';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
+import Seo from '@/components/Seo';
 
 const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/76b32a6f-e433-447e-98e3-d7bfa6e19bb3.png';
 
@@ -58,6 +59,11 @@ const SERVICES = [
 const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Мир шахмат — центр поддержки детского шахматного спорта"
+        description="Турниры, фестивали и олимпиады по шахматам для детей. Дипломы, кубки и награды для юных шахматистов со всей России и стран СНГ."
+        path="/"
+      />
       <Header />
       <PublicPushSubscribe hideTrigger />
 
