@@ -54,11 +54,16 @@ export default function ApplicationsSection({
         <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
           <Icon name="ClipboardList" size={22} /> Заявки
         </h2>
-        <select value={filterTournament} onChange={e => setFilterTournament(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-          <option value="">Все турниры</option>
-          {tournaments.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          <select value={filterTournament} onChange={e => setFilterTournament(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="">Все турниры</option>
+            {tournaments.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
+          <Button variant="outline" size="sm" onClick={() => fetchApps()} disabled={appsLoading}>
+            <Icon name="RefreshCw" size={14} className={`mr-1 ${appsLoading ? 'animate-spin' : ''}`} /> Обновить
+          </Button>
+        </div>
       </div>
       {appsLoading ? <div className="text-center py-12 text-gray-400">Загрузка...</div>
         : apps.length === 0 ? (
