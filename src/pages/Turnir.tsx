@@ -117,7 +117,7 @@ export default function Turnir() {
           userName: form.fio,
           userEmail: form.email,
           userPhone: form.phone,
-          description: `Турнир: ${modalTournament.title}`,
+          description: `${form.fio} — ${modalTournament.title}`,
           cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price as number, quantity: 1 }],
           returnUrl: window.location.origin + '/order-status',
           applicationId,

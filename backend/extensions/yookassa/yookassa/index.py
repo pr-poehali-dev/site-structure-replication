@@ -302,7 +302,7 @@ def handler(event, context):
             shop_id=shop_id,
             secret_key=secret_key,
             amount=amount,
-            description=f"{description} ({order_number})",
+            description=description,
             return_url=return_url,
             customer_email=user_email,
             cart_items=cart_items,
