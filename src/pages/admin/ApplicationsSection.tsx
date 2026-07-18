@@ -1,10 +1,14 @@
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { Tournament, Application, APPS_URL, STATUS_LABELS, STATUS_COLORS } from './adminTypes';
+
+const EMPTY_NEW_APP = {
+  tournament_id: '', fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', notes: '',
+};
 
 interface ApplicationsSectionProps {
   password: string;
@@ -24,6 +28,31 @@ export default function ApplicationsSection({
   password, tournaments, apps, appsLoading, editApp, setEditApp, editSaving, setEditSaving,
   filterTournament, setFilterTournament, fetchApps,
 }: ApplicationsSectionProps) {
+  const [showCreate, setShowCreate] = useState(false);
+  const [newApp, setNewApp] = useState(EMPTY_NEW_APP);
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreateApp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newApp.tournament_id || !newApp.fio) return;
+    setCreating(true);
+    const tournament = tournaments.find(t => String(t.id) === newApp.tournament_id);
+    await fetch(APPS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({
+        ...newApp,
+        tournament_id: Number(newApp.tournament_id),
+        tournament_title: tournament?.title || '',
+        _action: 'create',
+      }),
+    });
+    setCreating(false);
+    setShowCreate(false);
+    setNewApp(EMPTY_NEW_APP);
+    fetchApps();
+  }
+
   async function handleSaveApp(e: React.FormEvent) {
     e.preventDefault();
     if (!editApp) return;
@@ -62,6 +91,9 @@ export default function ApplicationsSection({
           </select>
           <Button variant="outline" size="sm" onClick={() => fetchApps()} disabled={appsLoading}>
             <Icon name="RefreshCw" size={14} className={`mr-1 ${appsLoading ? 'animate-spin' : ''}`} /> Обновить
+          </Button>
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Icon name="Plus" size={14} className="mr-1" /> Добавить заявку
           </Button>
         </div>
       </div>
@@ -107,6 +139,42 @@ export default function ApplicationsSection({
             ))}
           </div>
         )}
+
+      {/* Модал создания заявки администратором */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-xl text-primary">Добавить заявку</h2>
+              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
+            </div>
+            <form onSubmit={handleCreateApp} className="flex flex-col gap-3">
+              <div>
+                <Label>Турнир</Label>
+                <select required value={newApp.tournament_id} onChange={e => setNewApp({ ...newApp, tournament_id: e.target.value })}
+                  className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">Выберите турнир</option>
+                  {tournaments.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                </select>
+              </div>
+              <div><Label>ФИО участника</Label><Input required className="mt-1" value={newApp.fio} onChange={e => setNewApp({ ...newApp, fio: e.target.value })} /></div>
+              <div><Label>Возраст</Label><Input className="mt-1" value={newApp.age} onChange={e => setNewApp({ ...newApp, age: e.target.value })} /></div>
+              <div><Label>ID ФШР</Label><Input className="mt-1" value={newApp.fsr_id} onChange={e => setNewApp({ ...newApp, fsr_id: e.target.value })} /></div>
+              <div><Label>ФИО тренера</Label><Input className="mt-1" value={newApp.coach} onChange={e => setNewApp({ ...newApp, coach: e.target.value })} /></div>
+              <div><Label>Страна / Город</Label><Input className="mt-1" value={newApp.country_city} onChange={e => setNewApp({ ...newApp, country_city: e.target.value })} /></div>
+              <div><Label>Учебное заведение</Label><Input className="mt-1" value={newApp.school} onChange={e => setNewApp({ ...newApp, school: e.target.value })} /></div>
+              <div><Label>Email</Label><Input type="email" className="mt-1" value={newApp.email} onChange={e => setNewApp({ ...newApp, email: e.target.value })} /></div>
+              <div><Label>Телефон</Label><Input className="mt-1" value={newApp.phone} onChange={e => setNewApp({ ...newApp, phone: e.target.value })} /></div>
+              <div><Label>Заметки</Label><Textarea className="mt-1" rows={3} value={newApp.notes} onChange={e => setNewApp({ ...newApp, notes: e.target.value })} placeholder="Внутренние заметки..." /></div>
+              <p className="text-xs text-gray-400">Заявка будет создана со статусом «Оплачена»</p>
+              <div className="flex gap-3 justify-end mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Отмена</Button>
+                <Button type="submit" disabled={creating}>{creating ? 'Создание...' : 'Создать заявку'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Модал редактирования заявки */}
       {editApp && (

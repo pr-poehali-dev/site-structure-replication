@@ -94,6 +94,21 @@ def handler(event: dict, context) -> dict:
             a['created_at'] = str(a['created_at'])
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'applications': apps})}
 
+    # Ручное создание заявки администратором (_action: create) — статус сразу "оплачена"
+    if method == 'POST' and action == 'create':
+        cur.execute(
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            (body.get('tournament_id'), body.get('tournament_title'), body.get('fio'),
+             body.get('age'), body.get('fsr_id'), body.get('coach'),
+             body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
+             'paid', body.get('notes', ''))
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'id': new_id})}
+
     # Удаление заявки (_action: delete)
     if method == 'POST' and action == 'delete':
         app_id = body.get('id')
