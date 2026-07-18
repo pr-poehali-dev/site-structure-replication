@@ -10,6 +10,7 @@ import {
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
+import ArchiveSection from './admin/ArchiveSection';
 import ApplicationsSection from './admin/ApplicationsSection';
 import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
@@ -219,6 +220,7 @@ export default function Admin() {
         <div className="max-w-6xl mx-auto flex gap-1 min-w-max">
           {([
             ['tournaments', 'Swords', 'Турниры'],
+            ['archive', 'Archive', 'Архив'],
             ['applications', 'ClipboardList', 'Заявки'],
             ['awards', 'Award', 'Каталог наград'],
             ['award-orders', 'ShoppingCart', 'Заказы наград'],
@@ -258,6 +260,17 @@ export default function Admin() {
             setTError={setTError}
             tEditId={tEditId}
             setTEditId={setTEditId}
+            fetchTournaments={fetchTournaments}
+          />
+        )}
+
+        {/* === АРХИВ === */}
+        {section === 'archive' && (
+          <ArchiveSection
+            password={password}
+            tournaments={tournaments}
+            apps={apps}
+            tLoading={tLoading}
             fetchTournaments={fetchTournaments}
           />
         )}

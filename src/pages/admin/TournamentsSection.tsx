@@ -199,6 +199,18 @@ export default function TournamentsSection({
     fetchTournaments();
   }
 
+  async function handleArchiveTournament(t: Tournament) {
+    if (!confirm(`Перенести турнир «${t.title}» в архив? Он исчезнет из публичного раздела «Турниры».`)) return;
+    await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'set_status', id: t.id, status: 'archived' }),
+    });
+    fetchTournaments();
+  }
+
+  const visibleTournaments = tournaments.filter(t => t.status !== 'archived');
+
   return (
     <>
       <div className="flex items-center justify-between mb-6">
@@ -267,14 +279,14 @@ export default function TournamentsSection({
       )}
 
       {tLoading ? <div className="text-center py-12 text-gray-400">Загрузка...</div>
-        : tournaments.length === 0 ? (
+        : visibleTournaments.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <Icon name="Swords" size={40} className="mx-auto mb-3 opacity-30" />
             <p>Турниров пока нет</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {tournaments.map(t => {
+            {visibleTournaments.map(t => {
               const tApps = apps.filter(a => a.tournament_id === t.id);
               return (
                 <div key={t.id} className="bg-white rounded-2xl shadow p-5">
@@ -305,6 +317,9 @@ export default function TournamentsSection({
                       <NotifyTournamentButton password={password} tournament={t} />
                       <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>
                         <Icon name="FileSpreadsheet" size={14} className="mr-1" /> Экспорт в Excel
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50" onClick={() => handleArchiveTournament(t)}>
+                        <Icon name="Archive" size={14} className="mr-1" /> В архив
                       </Button>
                       <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDeleteTournament(t.id)}>
                         <Icon name="Trash2" size={14} className="mr-1" /> Удалить

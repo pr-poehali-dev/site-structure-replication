@@ -12,7 +12,7 @@ def handler(event: dict, context) -> dict:
 
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, status, diploma_sample_url, regulation_url, announcement_url, time_msk FROM tournaments ORDER BY date ASC NULLS LAST, created_at DESC")
+    cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, status, diploma_sample_url, regulation_url, announcement_url, time_msk FROM tournaments WHERE status != 'archived' ORDER BY date ASC NULLS LAST, created_at DESC")
     rows = cur.fetchall()
     conn.close()
 

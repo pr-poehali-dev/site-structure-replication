@@ -51,4 +51,4 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions';
