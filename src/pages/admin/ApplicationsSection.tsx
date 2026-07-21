@@ -105,14 +105,21 @@ export default function ApplicationsSection({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {apps.map(a => (
-              <div key={a.id} className="bg-white rounded-2xl shadow p-5 flex flex-col md:flex-row md:items-start gap-4">
+            {apps.map(a => {
+              const isArchived = tournaments.find(t => t.id === a.tournament_id)?.status === 'archived';
+              return (
+              <div key={a.id} className={`rounded-2xl shadow p-5 flex flex-col md:flex-row md:items-start gap-4 ${isArchived ? 'bg-gray-100' : 'bg-white'}`}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h3 className="font-bold text-base text-primary">{a.fio}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-600'}`}>
                       {STATUS_LABELS[a.status] || a.status}
                     </span>
+                    {isArchived && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-200 text-gray-600 flex items-center gap-1">
+                        <Icon name="Archive" size={11} /> Турнир в архиве
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-secondary font-medium mb-2">{a.tournament_title}</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-sm text-gray-500">
@@ -136,7 +143,8 @@ export default function ApplicationsSection({
                   </Button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
