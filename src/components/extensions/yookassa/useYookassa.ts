@@ -55,15 +55,16 @@ interface UseYookassaReturn {
 // =============================================================================
 
 /**
- * Open payment page (new tab on mobile, same tab on desktop)
+ * Open payment page.
+ *
+ * Всегда переходим в текущей вкладке: window.open() после нескольких
+ * асинхронных запросов (создание заявки + создание платежа) браузеры на
+ * мобильных устройствах блокируют как всплывающее окно, так как вызов
+ * происходит не синхронно в обработчике клика. Из-за этого казалось, что
+ * платёж не создаётся, хотя на сервере он создавался успешно.
  */
 export function openPaymentPage(url: string): void {
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    window.open(url, "_blank");
-  } else {
-    window.location.href = url;
-  }
+  window.location.href = url;
 }
 
 /**
