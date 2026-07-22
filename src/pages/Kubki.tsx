@@ -81,7 +81,7 @@ export default function Kubki() {
     setCart(prev => prev.filter(i => i.uid !== uid));
   };
 
-  const DELIVERY = 1;
+  const DELIVERY = 250;
   const itemsTotal = cart.reduce((sum, i) => sum + (i.kit.price || 0), 0);
   const total = itemsTotal > 0 ? itemsTotal + DELIVERY : 0;
 
@@ -259,7 +259,7 @@ export default function Kubki() {
                       <span>{itemsTotal > 0 ? `${itemsTotal.toLocaleString('ru')} ₽` : 'По запросу'}</span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Доставка:</span>
+                      <span>Доставка (Почта России):</span>
                       <span>{itemsTotal > 0 ? `${DELIVERY.toLocaleString('ru')} ₽` : '—'}</span>
                     </div>
                     <div className="flex justify-between font-bold pt-1 border-t border-border">
@@ -342,13 +342,14 @@ export default function Kubki() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Адрес доставки</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Адрес доставки (Почта России)</label>
                 <input
                   className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background mt-1"
-                  placeholder="Город, улица, дом, квартира"
+                  placeholder="Город, улица, дом, квартира, индекс"
                   value={form.address}
                   onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                 />
+                <p className="text-xs text-muted-foreground mt-1">Заказ будет отправлен Почтой России по указанному адресу</p>
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Телефон для связи *</label>
