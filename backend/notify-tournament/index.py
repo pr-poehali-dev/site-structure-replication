@@ -50,7 +50,7 @@ def handler(event: dict, context) -> dict:
     payload = json.dumps({
         'title': f'Турнир «{tournament_title}»',
         'body': message or 'Открыта регистрация — успейте подать заявку!',
-        'url': '/tournaments' + (f'?tournament_id={tournament_id}' if tournament_id else ''),
+        'url': 'https://мир-шахмат.рф/turnir',
     })
 
     sent = 0
