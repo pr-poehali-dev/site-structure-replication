@@ -70,8 +70,8 @@ def handler(event: dict, context) -> dict:
             (now, application_id, promo_id)
         )
         cur.execute(
-            "UPDATE applications SET status = 'paid' WHERE id = %s AND status = 'pending_payment'",
-            (application_id,)
+            "UPDATE applications SET status = 'paid', promo_code = %s WHERE id = %s AND status = 'pending_payment'",
+            (code, application_id)
         )
         conn.commit()
         conn.close()
@@ -84,11 +84,15 @@ def handler(event: dict, context) -> dict:
 
     if method == 'GET':
         cur.execute(
-            "SELECT id, code, active, expires_at, used_at, used_by_application_id, created_at FROM promo_codes ORDER BY created_at DESC"
+            """SELECT pc.id, pc.code, pc.active, pc.expires_at, pc.used_at, pc.used_by_application_id, pc.created_at,
+                      a.fio, a.tournament_title
+               FROM promo_codes pc
+               LEFT JOIN applications a ON a.id = pc.used_by_application_id
+               ORDER BY pc.created_at DESC"""
         )
         rows = cur.fetchall()
         conn.close()
-        cols = ['id', 'code', 'active', 'expires_at', 'used_at', 'used_by_application_id', 'created_at']
+        cols = ['id', 'code', 'active', 'expires_at', 'used_at', 'used_by_application_id', 'created_at', 'used_by_fio', 'used_by_tournament_title']
         items = [dict(zip(cols, r)) for r in rows]
         for it in items:
             it['created_at'] = str(it['created_at'])

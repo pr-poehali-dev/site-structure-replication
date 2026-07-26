@@ -120,6 +120,11 @@ export default function ApplicationsSection({
                         <Icon name="Archive" size={11} /> Турнир в архиве
                       </span>
                     )}
+                    {a.promo_code && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
+                        <Icon name="Gift" size={11} /> По промокоду {a.promo_code}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-secondary font-medium mb-2">{a.tournament_title}</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-sm text-gray-500">

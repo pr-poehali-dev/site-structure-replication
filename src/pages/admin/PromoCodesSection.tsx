@@ -108,6 +108,13 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
                       {pc.expires_at && <span>Действует до: {new Date(pc.expires_at).toLocaleString('ru-RU')}</span>}
                       {pc.used_at && <span>Использован: {new Date(pc.used_at).toLocaleString('ru-RU')}</span>}
                     </div>
+                    {pc.used_at && (pc.used_by_fio || pc.used_by_tournament_title) && (
+                      <div className="mt-2 text-sm bg-purple-50 text-purple-700 rounded-lg px-3 py-2 flex items-center gap-2">
+                        <Icon name="User" size={14} />
+                        {pc.used_by_fio && <span className="font-medium">{pc.used_by_fio}</span>}
+                        {pc.used_by_tournament_title && <span>— {pc.used_by_tournament_title}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 shrink-0">
                     {!pc.used_at && (

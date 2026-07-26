@@ -9,6 +9,7 @@ export interface Application {
   id: number; tournament_id: number | null; tournament_title: string;
   fio: string; age: string; fsr_id: string; coach: string; country_city: string;
   school: string; email: string; phone: string; status: string; notes: string; created_at: string;
+  promo_code: string | null;
 }
 
 export interface AwardKit {
@@ -36,6 +37,7 @@ export interface PromoCode {
   id: number; code: string; active: boolean;
   expires_at: string | null; used_at: string | null;
   used_by_application_id: number | null; created_at: string;
+  used_by_fio: string | null; used_by_tournament_title: string | null;
 }
 
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';

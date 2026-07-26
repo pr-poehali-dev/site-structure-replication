@@ -79,16 +79,16 @@ def handler(event: dict, context) -> dict:
         tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
         if tournament_id:
             cur.execute(
-                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at FROM applications WHERE tournament_id = %s ORDER BY created_at DESC",
+                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at, promo_code FROM applications WHERE tournament_id = %s ORDER BY created_at DESC",
                 (tournament_id,)
             )
         else:
             cur.execute(
-                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at FROM applications ORDER BY created_at DESC"
+                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at, promo_code FROM applications ORDER BY created_at DESC"
             )
         rows = cur.fetchall()
         conn.close()
-        cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'fsr_id', 'coach', 'country_city', 'school', 'email', 'phone', 'status', 'notes', 'created_at']
+        cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'fsr_id', 'coach', 'country_city', 'school', 'email', 'phone', 'status', 'notes', 'created_at', 'promo_code']
         apps = [dict(zip(cols, r)) for r in rows]
         for a in apps:
             a['created_at'] = str(a['created_at'])
