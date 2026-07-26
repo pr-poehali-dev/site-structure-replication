@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET without admin password rejected",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401
+    },
+    {
+      "name": "POST apply without code rejected",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "apply"},
+      "expectedStatus": 400
+    }
+  ]
+}

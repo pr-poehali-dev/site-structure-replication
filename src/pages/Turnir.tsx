@@ -9,6 +9,7 @@ import Seo from '@/components/Seo';
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
+const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420-9983-d32c3d1b6524';
 
 interface Tournament {
   id: number;
@@ -35,10 +36,11 @@ export default function Turnir() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
-  const [form, setForm] = useState({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
+  const [form, setForm] = useState({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [promoApplying, setPromoApplying] = useState(false);
 
   const { createPayment, isLoading: paymentLoading } = useYookassa({
     apiUrl: YOOKASSA_URL,
@@ -62,7 +64,7 @@ export default function Turnir() {
 
   function openModal(t: Tournament) {
     setModalTournament(t);
-    setForm({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
+    setForm({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' });
     setSent(false);
   }
 
@@ -110,6 +112,23 @@ export default function Turnir() {
       }
       const data = await res.json();
       const applicationId = data.id;
+
+      if (isPaid && form.promo_code.trim()) {
+        setPromoApplying(true);
+        const promoRes = await fetch(PROMO_CODES_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ _action: 'apply', code: form.promo_code.trim(), application_id: applicationId }),
+        });
+        setPromoApplying(false);
+        if (promoRes.ok) {
+          setSent(true);
+          return;
+        }
+        const promoData = await promoRes.json().catch(() => ({}));
+        setSubmitError(promoData.error || 'Не удалось применить промокод');
+        return;
+      }
 
       if (isPaid) {
         const payment = await createPayment({
@@ -337,6 +356,12 @@ export default function Turnir() {
                     <label className="text-sm font-medium text-gray-700">Телефон представителя *</label>
                     <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                   </div>
+                  {modalTournament.price && modalTournament.price > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Промокод на бесплатное участие</label>
+                      <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Необязательно" value={form.promo_code} onChange={e => setForm({ ...form, promo_code: e.target.value.toUpperCase() })} />
+                    </div>
+                  )}
                   <label className="flex items-start gap-2 cursor-pointer mt-1">
                     <input required type="checkbox" className="mt-0.5 accent-secondary w-4 h-4 shrink-0" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
                     <span className="text-sm text-gray-600">
@@ -356,11 +381,13 @@ export default function Turnir() {
                     </span>
                   </label>
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
-                  <Button type="submit" disabled={submitting || paymentLoading} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
-                    {(submitting || paymentLoading)
+                  <Button type="submit" disabled={submitting || paymentLoading || promoApplying} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
+                    {(submitting || paymentLoading || promoApplying)
                       ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Обработка...</>
                       : modalTournament.price && modalTournament.price > 0
-                        ? <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
+                        ? form.promo_code.trim()
+                          ? <><Icon name="Gift" size={16} className="mr-2" />Подать заявку по промокоду</>
+                          : <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
                         : <><Icon name="ClipboardCheck" size={16} className="mr-2" />Подать заявку</>
                     }
                   </Button>
