@@ -182,6 +182,7 @@ def handler(event: dict, context) -> dict:
 
         sent_count = 0
         failed_count = 0
+        errors = []
         for email, name in contacts:
             try:
                 result = unisender_send_email(list_id, email, name or '', subject, html_body)
@@ -189,8 +190,13 @@ def handler(event: dict, context) -> dict:
                     sent_count += 1
                 else:
                     failed_count += 1
-            except Exception:
+                    errors.append(f"{email}: {result.get('error') or result}")
+            except Exception as e:
                 failed_count += 1
+                errors.append(f"{email}: {e}")
+
+        if errors:
+            print('MAILING ERRORS:', errors)
 
         cur.execute(
             f"INSERT INTO {SCHEMA}.mailing_campaigns (subject, body, sent_count, failed_count) VALUES (%s, %s, %s, %s) RETURNING id",
@@ -200,6 +206,6 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         cur.close()
         conn.close()
-        return cors_response(200, {'success': True, 'campaign_id': campaign_id, 'sent_count': sent_count, 'failed_count': failed_count})
+        return cors_response(200, {'success': True, 'campaign_id': campaign_id, 'sent_count': sent_count, 'failed_count': failed_count, 'errors': errors})
 
     return cors_response(405, {'error': 'Method not allowed'})
