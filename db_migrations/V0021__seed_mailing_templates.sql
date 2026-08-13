@@ -1,0 +1,608 @@
+INSERT INTO t_p58220589_site_structure_repli.mailing_templates (name, subject, html_body) VALUES
+('Королевский блиц — Лига субботы', '♟️ Королевский блиц: суббота — успей записаться!', '<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Королевский блиц — Лига субботы</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:24px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:16px; overflow:hidden; max-width:600px; width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#141414; padding:28px 32px; text-align:center;">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" width="160" height="63" style="display:block; margin:0 auto 12px;">
+            <div style="color:#E8B600; font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Онлайн-регистрация открыта</div>
+          </td>
+        </tr>
+
+        <!-- Announcement image -->
+        <tr>
+          <td>
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/5a718abb8557.png" alt="Королевский блиц" width="600" style="display:block; width:100%; height:auto;">
+          </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+          <td style="padding:32px 32px 8px;">
+            <h1 style="margin:0; color:#141414; font-size:26px; line-height:1.3;">♟️ Королевский блиц</h1>
+            <p style="margin:6px 0 0; color:#E8B600; font-size:16px; font-weight:bold;">Лига субботы</p>
+          </td>
+        </tr>
+
+        <!-- Description -->
+        <tr>
+          <td style="padding:8px 32px 0;">
+            <p style="margin:0; color:#444444; font-size:15px; line-height:1.6;">
+              Всероссийский онлайн-блицтурнир (8+4) для детей до 13 лет. Участников распределят по турнирам согласно рейтингу ФШР, а внутри каждого — отдельный зачёт по возрастным подгруппам. Готовьтесь к молниеносным партиям! ⚡
+            </p>
+          </td>
+        </tr>
+
+        <!-- Key facts -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 8px;">
+              <tr>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Дата и время</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">15 августа 2026, 14:00 МСК</div>
+                </td>
+                <td style="width:12px;"></td>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Контроль времени</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">8+4</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Возрастная категория</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">до 13 лет</div>
+                </td>
+                <td style="width:12px;"></td>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Взнос за участие</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">250 ₽</div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="3" style="background-color:#faf7ec; border-radius:10px; padding:14px 16px;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Платформа проведения</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">Lichess.org, клуб «Мир шахмат»</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Conditions -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <h2 style="margin:0 0 10px; color:#141414; font-size:17px;">Условия участия</h2>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ребёнок должен быть зарегистрирован на Lichess.org и вступить в клуб «Мир шахмат»</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Заявка подаётся через форму на сайте до начала турнира</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ссылка на игру и код доступа приходят на почту за 30 минут до старта</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Авторизоваться на платформе нужно за 10 минут до начала</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">🏆 Все участники получают дипломы, тренеры — благодарственные письма</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:28px 32px 8px;" align="center">
+            <a href="https://мир-шахмат.рф/turnir" target="_blank" style="display:inline-block; background-color:#E8B600; color:#141414; text-decoration:none; font-weight:bold; font-size:16px; padding:14px 36px; border-radius:10px;">Подать заявку на турнир</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 24px;" align="center">
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/aca872c6be88.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Скачать полное положение о турнире (PDF)</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#141414; padding:24px 32px; text-align:center;">
+            <p style="margin:0 0 6px; color:#ffffff; font-size:14px; font-weight:bold;">Мир шахмат</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">Центр поддержки детского шахматного спорта</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">
+              <a href="mailto:mir.shahmat@inbox.ru" style="color:#E8B600; text-decoration:none;">mir.shahmat@inbox.ru</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+79922281068" style="color:#E8B600; text-decoration:none;">+7 99 222-810-68</a>
+            </p>
+            <p style="margin:0; color:#666666; font-size:11px;">
+              <a href="https://мир-шахмат.рф" style="color:#666666; text-decoration:none;">мир-шахмат.рф</a>
+              &nbsp;·&nbsp;
+              <a href="https://vk.com/mir.shahmat" style="color:#666666; text-decoration:none;">VK</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>'),
+('Королевский блиц — Лига воскресенья', '♟️ Королевский блиц: воскресенье — жди приглашения на турнир!', '<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Королевский блиц — Лига воскресенья</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:24px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:16px; overflow:hidden; max-width:600px; width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#141414; padding:28px 32px; text-align:center;">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" width="160" height="63" style="display:block; margin:0 auto 12px;">
+            <div style="color:#E8B600; font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Онлайн-регистрация открыта</div>
+          </td>
+        </tr>
+
+        <!-- Announcement image -->
+        <tr>
+          <td>
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/1b5f2bae6e87.png" alt="Королевский блиц" width="600" style="display:block; width:100%; height:auto;">
+          </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+          <td style="padding:32px 32px 8px;">
+            <h1 style="margin:0; color:#141414; font-size:26px; line-height:1.3;">♟️ Королевский блиц</h1>
+            <p style="margin:6px 0 0; color:#E8B600; font-size:16px; font-weight:bold;">Лига воскресенья</p>
+          </td>
+        </tr>
+
+        <!-- Description -->
+        <tr>
+          <td style="padding:8px 32px 0;">
+            <p style="margin:0; color:#444444; font-size:15px; line-height:1.6;">
+              Всероссийский блицтурнир онлайн (8+4) для юных шахматистов до 13 лет. Распределение по рейтингу ФШР и зачёт по возрастным подгруппам — играйте на равных! Пусть победит сильнейший! 🏆
+            </p>
+          </td>
+        </tr>
+
+        <!-- Key facts -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 8px;">
+              <tr>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Дата и время</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">16 августа 2026, 14:00 МСК</div>
+                </td>
+                <td style="width:12px;"></td>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Контроль времени</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">8+4</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Возрастная категория</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">до 13 лет</div>
+                </td>
+                <td style="width:12px;"></td>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Взнос за участие</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">250 ₽</div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="3" style="background-color:#faf7ec; border-radius:10px; padding:14px 16px;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Платформа проведения</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">Lichess.org, клуб «Мир шахмат»</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Conditions -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <h2 style="margin:0 0 10px; color:#141414; font-size:17px;">Условия участия</h2>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ребёнок должен быть зарегистрирован на Lichess.org и вступить в клуб «Мир шахмат»</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Заявка подаётся через форму на сайте до начала турнира</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ссылка на игру и код доступа приходят на почту за 30 минут до старта</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Авторизоваться на платформе нужно за 10 минут до начала</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">🏆 Все участники получают дипломы, тренеры — благодарственные письма</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:28px 32px 8px;" align="center">
+            <a href="https://мир-шахмат.рф/turnir" target="_blank" style="display:inline-block; background-color:#E8B600; color:#141414; text-decoration:none; font-weight:bold; font-size:16px; padding:14px 36px; border-radius:10px;">Подать заявку на турнир</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 24px;" align="center">
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/15bd4884dd36.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Скачать полное положение о турнире (PDF)</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#141414; padding:24px 32px; text-align:center;">
+            <p style="margin:0 0 6px; color:#ffffff; font-size:14px; font-weight:bold;">Мир шахмат</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">Центр поддержки детского шахматного спорта</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">
+              <a href="mailto:mir.shahmat@inbox.ru" style="color:#E8B600; text-decoration:none;">mir.shahmat@inbox.ru</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+79922281068" style="color:#E8B600; text-decoration:none;">+7 99 222-810-68</a>
+            </p>
+            <p style="margin:0; color:#666666; font-size:11px;">
+              <a href="https://мир-шахмат.рф" style="color:#666666; text-decoration:none;">мир-шахмат.рф</a>
+              &nbsp;·&nbsp;
+              <a href="https://vk.com/mir.shahmat" style="color:#666666; text-decoration:none;">VK</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>'),
+('Королевский блиц — Оба турнира', '♟️ Королевский блиц: два дня — два шанса на победу!', '<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Королевский блиц — Лига субботы и Лига воскресенья</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:24px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:16px; overflow:hidden; max-width:600px; width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#141414; padding:28px 32px; text-align:center;">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" width="160" height="63" style="display:block; margin:0 auto 12px;">
+            <div style="color:#E8B600; font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Онлайн-регистрация открыта</div>
+          </td>
+        </tr>
+
+        <!-- Announcement image -->
+        <tr>
+          <td>
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/5a718abb8557.png" alt="Королевский блиц" width="600" style="display:block; width:100%; height:auto;">
+          </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+          <td style="padding:32px 32px 8px;">
+            <h1 style="margin:0; color:#141414; font-size:26px; line-height:1.3;">♟️ Королевский блиц</h1>
+            <p style="margin:6px 0 0; color:#E8B600; font-size:16px; font-weight:bold;">Выбирай удобный день — суббота или воскресенье</p>
+          </td>
+        </tr>
+
+        <!-- Description -->
+        <tr>
+          <td style="padding:8px 32px 0;">
+            <p style="margin:0; color:#444444; font-size:15px; line-height:1.6;">
+              Всероссийский онлайн-блицтурнир (8+4) для детей до 13 лет. Участников распределят по турнирам согласно рейтингу ФШР, а внутри каждого — отдельный зачёт по возрастным подгруппам. Играй в удобный день — участвуй хоть в одном, хоть в обоих! Готовьтесь к молниеносным партиям! ⚡
+            </p>
+          </td>
+        </tr>
+
+        <!-- Tournament 1: Saturday -->
+        <tr>
+          <td style="padding:28px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #E8B600; border-radius:14px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <div style="color:#E8B600; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Турнир 1</div>
+                  <h2 style="margin:0 0 12px; color:#141414; font-size:19px;">Лига субботы</h2>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 6px;">
+                    <tr>
+                      <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
+                        <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Дата и время</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">15 августа, 14:00 МСК</div>
+                      </td>
+                      <td style="width:10px;"></td>
+                      <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
+                        <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Взнос</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">250 ₽</div>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="text-align:center; margin-top:14px;">
+                    <a href="https://мир-шахмат.рф/turnir" target="_blank" style="display:inline-block; background-color:#E8B600; color:#141414; text-decoration:none; font-weight:bold; font-size:14px; padding:10px 28px; border-radius:8px;">Записаться на субботу</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Tournament 2: Sunday -->
+        <tr>
+          <td style="padding:14px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #E8B600; border-radius:14px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <div style="color:#E8B600; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Турнир 2</div>
+                  <h2 style="margin:0 0 12px; color:#141414; font-size:19px;">Лига воскресенья</h2>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 6px;">
+                    <tr>
+                      <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
+                        <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Дата и время</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">16 августа, 14:00 МСК</div>
+                      </td>
+                      <td style="width:10px;"></td>
+                      <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
+                        <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Взнос</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">250 ₽</div>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="text-align:center; margin-top:14px;">
+                    <a href="https://мир-шахмат.рф/turnir" target="_blank" style="display:inline-block; background-color:#E8B600; color:#141414; text-decoration:none; font-weight:bold; font-size:14px; padding:10px 28px; border-radius:8px;">Записаться на воскресенье</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Common facts -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 8px;">
+              <tr>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Контроль времени</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">8+4</div>
+                </td>
+                <td style="width:12px;"></td>
+                <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Возрастная категория</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">до 13 лет</div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="3" style="background-color:#faf7ec; border-radius:10px; padding:14px 16px;" valign="top">
+                  <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Платформа проведения</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">Lichess.org, клуб «Мир шахмат»</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Conditions -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <h2 style="margin:0 0 10px; color:#141414; font-size:17px;">Условия участия</h2>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ребёнок должен быть зарегистрирован на Lichess.org и вступить в клуб «Мир шахмат»</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Заявка подаётся через форму на сайте — отдельно на каждый турнир</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Ссылка на игру и код доступа приходят на почту за 30 минут до старта</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">✅ Авторизоваться на платформе нужно за 10 минут до начала</td></tr>
+              <tr><td style="padding:4px 0; color:#444444; font-size:14px; line-height:1.6;">🏆 Все участники получают дипломы, тренеры — благодарственные письма</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Regulations links -->
+        <tr>
+          <td style="padding:24px 32px 8px;" align="center">
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/aca872c6be88.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига субботы (PDF)</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 24px;" align="center">
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/15bd4884dd36.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига воскресенья (PDF)</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#141414; padding:24px 32px; text-align:center;">
+            <p style="margin:0 0 6px; color:#ffffff; font-size:14px; font-weight:bold;">Мир шахмат</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">Центр поддержки детского шахматного спорта</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">
+              <a href="mailto:mir.shahmat@inbox.ru" style="color:#E8B600; text-decoration:none;">mir.shahmat@inbox.ru</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+79922281068" style="color:#E8B600; text-decoration:none;">+7 99 222-810-68</a>
+            </p>
+            <p style="margin:0; color:#666666; font-size:11px;">
+              <a href="https://мир-шахмат.рф" style="color:#666666; text-decoration:none;">мир-шахмат.рф</a>
+              &nbsp;·&nbsp;
+              <a href="https://vk.com/mir.shahmat" style="color:#666666; text-decoration:none;">VK</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+'),
+('Расписание турниров на месяц', '♟️ Расписание турниров по шахматам на месяц вперёд — для тренеров и педагогов', '<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание турниров «Мир шахмат» — ближайший месяц</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:24px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:16px; overflow:hidden; max-width:600px; width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#141414; padding:28px 32px; text-align:center;">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png" alt="Мир шахмат" width="160" height="63" style="display:block; margin:0 auto 12px;">
+            <div style="color:#E8B600; font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Расписание онлайн-турниров</div>
+          </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+          <td style="padding:32px 32px 8px;">
+            <h1 style="margin:0; color:#141414; font-size:24px; line-height:1.3;">♟️ Турниры на ближайший месяц</h1>
+            <p style="margin:6px 0 0; color:#E8B600; font-size:15px; font-weight:bold;">15 августа — 6 сентября 2026</p>
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="padding:12px 32px 0;">
+            <p style="margin:0; color:#444444; font-size:15px; line-height:1.6;">
+              Уважаемые тренеры и руководители учреждений дополнительного образования!
+            </p>
+            <p style="margin:10px 0 0; color:#444444; font-size:15px; line-height:1.6;">
+              Направляем актуальное расписание всероссийских онлайн-турниров по шахматам клуба «Мир шахмат» для детей до 13 лет. Приглашаем передать информацию воспитанникам и организовать групповую регистрацию — каждый турнир проходит в двух лигах, суббота и воскресенье, что удобно для планирования занятий.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Schedule table -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0 10px;">
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Королевский блиц — Лига субботы</div>
+                  <div style="color:#666666; font-size:13px;">15 августа, сб · 14:00 МСК · контроль 8+4</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Королевский блиц — Лига воскресенья</div>
+                  <div style="color:#666666; font-size:13px;">16 августа, вс · 14:00 МСК · контроль 8+4</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Гордо реет флаг — Лига субботы</div>
+                  <div style="color:#666666; font-size:13px;">22 августа, сб · 14:00 МСК · контроль 10+5</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Гордо реет флаг — Лига воскресенья</div>
+                  <div style="color:#666666; font-size:13px;">23 августа, вс · 12:00 МСК · контроль 10+5</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Лето! Ах, Лето! — Лига субботы</div>
+                  <div style="color:#666666; font-size:13px;">29 августа, сб · 14:00 МСК · контроль 10+0</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Лето! Ах, Лето! — Лига воскресенья</div>
+                  <div style="color:#666666; font-size:13px;">30 августа, вс · 12:00 МСК · контроль 10+0</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Снова в школу — Лига субботы</div>
+                  <div style="color:#666666; font-size:13px;">5 сентября, сб · 14:00 МСК · контроль 10+5</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background-color:#faf7ec; border-left:4px solid #E8B600; border-radius:10px; padding:14px 16px;">
+                  <div style="color:#141414; font-size:15px; font-weight:bold; margin-bottom:4px;">Снова в школу — Лига воскресенья</div>
+                  <div style="color:#666666; font-size:13px;">6 сентября, вс · 12:00 МСК · контроль 10+5</div>
+                  <div style="color:#666666; font-size:13px;">Взнос: 250 ₽ · возраст: до 13 лет</div>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:28px 32px 0;" align="center">
+            <a href="https://мир-шахмат.рф/turnir" target="_blank" style="display:inline-block; background-color:#E8B600; color:#141414; text-decoration:none; font-weight:bold; font-size:15px; padding:14px 36px; border-radius:8px;">Открыть регистрацию на турниры</a>
+          </td>
+        </tr>
+
+        <!-- For coaches block -->
+        <tr>
+          <td style="padding:28px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #E8B600; border-radius:14px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <h2 style="margin:0 0 10px; color:#141414; font-size:16px;">Для тренеров и учреждений</h2>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr><td style="padding:3px 0; color:#444444; font-size:14px; line-height:1.6;">📋 Заявки подаются онлайн, отдельно на каждый турнир</td></tr>
+                    <tr><td style="padding:3px 0; color:#444444; font-size:14px; line-height:1.6;">🏅 Все участники получают дипломы, тренеры — благодарственные письма</td></tr>
+                    <tr><td style="padding:3px 0; color:#444444; font-size:14px; line-height:1.6;">💻 Турниры проходят на Lichess.org в клубе «Мир шахмат»</td></tr>
+                    <tr><td style="padding:3px 0; color:#444444; font-size:14px; line-height:1.6;">✉️ По вопросам групповой регистрации пишите на почту ниже</td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#141414; padding:24px 32px; text-align:center; margin-top:24px;">
+            <p style="margin:0 0 6px; color:#ffffff; font-size:14px; font-weight:bold;">Мир шахмат</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">Центр поддержки детского шахматного спорта</p>
+            <p style="margin:0 0 4px; color:#aaaaaa; font-size:12px;">
+              <a href="mailto:mir.shahmat@inbox.ru" style="color:#E8B600; text-decoration:none;">mir.shahmat@inbox.ru</a>
+              &nbsp;·&nbsp;
+              <a href="tel:+79922281068" style="color:#E8B600; text-decoration:none;">+7 99 222-810-68</a>
+            </p>
+            <p style="margin:0; color:#666666; font-size:11px;">
+              <a href="https://мир-шахмат.рф" style="color:#666666; text-decoration:none;">мир-шахмат.рф</a>
+              &nbsp;·&nbsp;
+              <a href="https://vk.com/mir.shahmat" style="color:#666666; text-decoration:none;">VK</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>');

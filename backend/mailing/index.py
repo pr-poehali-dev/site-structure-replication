@@ -91,9 +91,14 @@ def handler(event: dict, context) -> dict:
         campaigns = [{
             'id': r[0], 'subject': r[1], 'sent_count': r[2], 'failed_count': r[3], 'created_at': str(r[4])
         } for r in rows2]
+        cur.execute(f"SELECT id, name, subject, html_body, created_at FROM {SCHEMA}.mailing_templates ORDER BY id")
+        rows3 = cur.fetchall()
+        templates = [{
+            'id': r[0], 'name': r[1], 'subject': r[2], 'html_body': r[3], 'created_at': str(r[4])
+        } for r in rows3]
         cur.close()
         conn.close()
-        return cors_response(200, {'contacts': contacts, 'campaigns': campaigns})
+        return cors_response(200, {'contacts': contacts, 'campaigns': campaigns, 'templates': templates})
 
     body = json.loads(event.get('body') or '{}')
     action = body.get('_action', '')

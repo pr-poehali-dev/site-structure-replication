@@ -48,6 +48,10 @@ export interface MailingCampaign {
   id: number; subject: string; sent_count: number; failed_count: number; created_at: string;
 }
 
+export interface MailingTemplate {
+  id: number; name: string; subject: string; html_body: string; created_at: string;
+}
+
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';
 export const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 export const AWARD_CATALOG_ADMIN_URL = 'https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd';

@@ -5,17 +5,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
-import { MailingContact, MailingCampaign, MAILING_URL } from './adminTypes';
+import { MailingContact, MailingCampaign, MailingTemplate, MAILING_URL } from './adminTypes';
 
 interface MailingSectionProps {
   password: string;
   contacts: MailingContact[];
   campaigns: MailingCampaign[];
+  templates: MailingTemplate[];
   loading: boolean;
   fetchMailing: () => Promise<void>;
 }
 
-export default function MailingSection({ password, contacts, campaigns, loading, fetchMailing }: MailingSectionProps) {
+export default function MailingSection({ password, contacts, campaigns, templates, loading, fetchMailing }: MailingSectionProps) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContact, setNewContact] = useState({ email: '', name: '', organization: '', role: '' });
   const [addingContact, setAddingContact] = useState(false);
@@ -25,9 +26,19 @@ export default function MailingSection({ password, contacts, campaigns, loading,
   const [importing, setImporting] = useState(false);
 
   const [showSend, setShowSend] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sending, setSending] = useState(false);
+
+  function handleSelectTemplate(id: string) {
+    setSelectedTemplateId(id);
+    const tpl = templates.find(t => String(t.id) === id);
+    if (tpl) {
+      setSubject(tpl.subject);
+      setEmailBody(tpl.html_body);
+    }
+  }
 
   async function handleAddContact(e: React.FormEvent) {
     e.preventDefault();
@@ -94,6 +105,7 @@ export default function MailingSection({ password, contacts, campaigns, loading,
       toast.success(`Отправлено: ${data.sent_count}, ошибок: ${data.failed_count}`);
       setSubject('');
       setEmailBody('');
+      setSelectedTemplateId('');
       setShowSend(false);
       fetchMailing();
     } else {
@@ -234,6 +246,22 @@ export default function MailingSection({ password, contacts, campaigns, loading,
               <button onClick={() => setShowSend(false)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
             </div>
             <form onSubmit={handleSendCampaign} className="flex flex-col gap-3">
+              {templates.length > 0 && (
+                <div>
+                  <Label>Готовое письмо-приглашение</Label>
+                  <select
+                    className="mt-1 w-full border border-gray-200 rounded-md h-9 px-3 text-sm bg-white"
+                    value={selectedTemplateId}
+                    onChange={e => handleSelectTemplate(e.target.value)}
+                  >
+                    <option value="">— выбрать шаблон —</option>
+                    {templates.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Выберите готовое письмо, тема и текст заполнятся автоматически</p>
+                </div>
+              )}
               <div><Label>Тема письма *</Label><Input required className="mt-1" value={subject} onChange={e => setSubject(e.target.value)} /></div>
               <div>
                 <Label>Текст письма (HTML) *</Label>

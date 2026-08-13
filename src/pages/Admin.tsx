@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
-  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode, MailingContact, MailingCampaign,
+  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode, MailingContact, MailingCampaign, MailingTemplate,
   TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, MAILING_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
@@ -91,6 +91,7 @@ export default function Admin() {
   // Рассылки
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>([]);
   const [mailingCampaigns, setMailingCampaigns] = useState<MailingCampaign[]>([]);
+  const [mailingTemplates, setMailingTemplates] = useState<MailingTemplate[]>([]);
   const [mailingLoading, setMailingLoading] = useState(false);
 
   useEffect(() => {
@@ -182,6 +183,7 @@ export default function Admin() {
     const data = await res.json();
     setMailingContacts(data.contacts || []);
     setMailingCampaigns(data.campaigns || []);
+    setMailingTemplates(data.templates || []);
     setMailingLoading(false);
   }
 
@@ -424,6 +426,7 @@ export default function Admin() {
             password={password}
             contacts={mailingContacts}
             campaigns={mailingCampaigns}
+            templates={mailingTemplates}
             loading={mailingLoading}
             fetchMailing={fetchMailing}
           />
