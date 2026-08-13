@@ -5,8 +5,8 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
-  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode,
-  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL,
+  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode, MailingContact, MailingCampaign,
+  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, MAILING_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
@@ -16,6 +16,7 @@ import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
+import MailingSection from './admin/MailingSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
@@ -86,6 +87,11 @@ export default function Admin() {
   // Промокоды
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
+
+  // Рассылки
+  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>([]);
+  const [mailingCampaigns, setMailingCampaigns] = useState<MailingCampaign[]>([]);
+  const [mailingLoading, setMailingLoading] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
@@ -170,6 +176,15 @@ export default function Admin() {
     setPromoLoading(false);
   }
 
+  async function fetchMailing() {
+    setMailingLoading(true);
+    const res = await fetch(MAILING_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setMailingContacts(data.contacts || []);
+    setMailingCampaigns(data.campaigns || []);
+    setMailingLoading(false);
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
@@ -181,6 +196,7 @@ export default function Admin() {
     if (authed && section === 'results') fetchTrResults();
     if (authed && section === 'subscriptions') fetchSubs();
     if (authed && section === 'promo-codes') fetchPromoCodes();
+    if (authed && section === 'mailing') fetchMailing();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -241,6 +257,7 @@ export default function Admin() {
             ['results', 'ListChecks', 'Результаты'],
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
+            ['mailing', 'Mail', 'Рассылки'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -398,6 +415,17 @@ export default function Admin() {
             promoCodes={promoCodes}
             promoLoading={promoLoading}
             fetchPromoCodes={fetchPromoCodes}
+          />
+        )}
+
+        {/* === РАССЫЛКИ === */}
+        {section === 'mailing' && (
+          <MailingSection
+            password={password}
+            contacts={mailingContacts}
+            campaigns={mailingCampaigns}
+            loading={mailingLoading}
+            fetchMailing={fetchMailing}
           />
         )}
 
