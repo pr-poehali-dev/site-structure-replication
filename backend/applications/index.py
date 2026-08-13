@@ -123,8 +123,9 @@ def handler(event: dict, context) -> dict:
     # Редактирование заявки (_action: update)
     if method == 'POST' and action == 'update':
         cur.execute(
-            "UPDATE applications SET fio=%s, age=%s, fsr_id=%s, coach=%s, country_city=%s, school=%s, email=%s, phone=%s, status=%s, notes=%s WHERE id=%s",
-            (body.get('fio'), body.get('age'), body.get('fsr_id'), body.get('coach'),
+            "UPDATE applications SET tournament_id=%s, tournament_title=%s, fio=%s, age=%s, fsr_id=%s, coach=%s, country_city=%s, school=%s, email=%s, phone=%s, status=%s, notes=%s WHERE id=%s",
+            (body.get('tournament_id'), body.get('tournament_title'),
+             body.get('fio'), body.get('age'), body.get('fsr_id'), body.get('coach'),
              body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
              body.get('status', 'new'), body.get('notes', ''), body.get('id'))
         )

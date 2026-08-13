@@ -198,6 +198,20 @@ export default function ApplicationsSection({
               <button onClick={() => setEditApp(null)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
             </div>
             <form onSubmit={handleSaveApp} className="flex flex-col gap-3">
+              <div>
+                <Label>Турнир</Label>
+                <select
+                  value={editApp.tournament_id ?? ''}
+                  onChange={e => {
+                    const tid = Number(e.target.value);
+                    const t = tournaments.find(x => x.id === tid);
+                    setEditApp({ ...editApp, tournament_id: tid, tournament_title: t?.title || editApp.tournament_title });
+                  }}
+                  className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {tournaments.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                </select>
+              </div>
               <div><Label>ФИО участника</Label><Input className="mt-1" value={editApp.fio} onChange={e => setEditApp({ ...editApp, fio: e.target.value })} /></div>
               <div><Label>Возраст</Label><Input className="mt-1" value={editApp.age} onChange={e => setEditApp({ ...editApp, age: e.target.value })} /></div>
               <div><Label>ID ФШР</Label><Input className="mt-1" value={editApp.fsr_id} onChange={e => setEditApp({ ...editApp, fsr_id: e.target.value })} /></div>
