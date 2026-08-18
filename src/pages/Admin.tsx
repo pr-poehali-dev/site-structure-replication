@@ -17,6 +17,7 @@ import ResultsSection from './admin/ResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import MailingSection from './admin/MailingSection';
+import TemplatesSection from './admin/TemplatesSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
@@ -199,6 +200,7 @@ export default function Admin() {
     if (authed && section === 'subscriptions') fetchSubs();
     if (authed && section === 'promo-codes') fetchPromoCodes();
     if (authed && section === 'mailing') fetchMailing();
+    if (authed && section === 'templates') fetchMailing();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -260,6 +262,7 @@ export default function Admin() {
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
             ['mailing', 'Mail', 'Рассылки'],
+            ['templates', 'FileText', 'Шаблоны писем'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -426,6 +429,16 @@ export default function Admin() {
             password={password}
             contacts={mailingContacts}
             campaigns={mailingCampaigns}
+            templates={mailingTemplates}
+            loading={mailingLoading}
+            fetchMailing={fetchMailing}
+          />
+        )}
+
+        {/* === ШАБЛОНЫ ПИСЕМ === */}
+        {section === 'templates' && (
+          <TemplatesSection
+            password={password}
             templates={mailingTemplates}
             loading={mailingLoading}
             fetchMailing={fetchMailing}

@@ -1,9 +1,12 @@
-<!DOCTYPE html>
+INSERT INTO t_p58220589_site_structure_repli.mailing_templates (name, subject, html_body) VALUES (
+'Лето! Ах, Лето! — обе лиги',
+'☀️ Лето! Ах, Лето! — прощаемся с каникулами турниром!',
+'<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Королевский блиц — Лига субботы и Лига воскресенья</title>
+<title>Лето! Ах, Лето! — Лига субботы и Лига воскресенья</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:24px 0;">
@@ -22,15 +25,15 @@
         <!-- Announcement image -->
         <tr>
           <td>
-            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/5a718abb8557.png" alt="Королевский блиц" width="600" style="display:block; width:100%; height:auto;">
+            <img src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/ce93b057e1fd.png" alt="Лето! Ах, Лето!" width="600" style="display:block; width:100%; height:auto;">
           </td>
         </tr>
 
         <!-- Title -->
         <tr>
           <td style="padding:32px 32px 8px;">
-            <h1 style="margin:0; color:#141414; font-size:26px; line-height:1.3;">♟️ Королевский блиц</h1>
-            <p style="margin:6px 0 0; color:#E8B600; font-size:16px; font-weight:bold;">Выбирай удобный день — суббота или воскресенье</p>
+            <h1 style="margin:0; color:#141414; font-size:26px; line-height:1.3;">♟️ Лето! Ах, Лето!</h1>
+            <p style="margin:6px 0 0; color:#E8B600; font-size:16px; font-weight:bold;">Прощание с летними каникулами — выбирай удобный день</p>
           </td>
         </tr>
 
@@ -38,7 +41,7 @@
         <tr>
           <td style="padding:8px 32px 0;">
             <p style="margin:0; color:#444444; font-size:15px; line-height:1.6;">
-              Всероссийский онлайн-блицтурнир (8+4) для детей до 13 лет. Участников распределят по турнирам согласно рейтингу ФШР, а внутри каждого — отдельный зачёт по возрастным подгруппам. Играй в удобный день — участвуй хоть в одном, хоть в обоих! Готовьтесь к молниеносным партиям! ⚡
+              Всероссийский онлайн-турнир по шахматам для детей до 13 лет — тёплое прощание с летом и каникулами! Деление по рейтингу ФШР, зачёт в возрастных подгруппах. Играй в удобный день — участвуй хоть в одном, хоть в обоих! ☀️
             </p>
           </td>
         </tr>
@@ -55,7 +58,7 @@
                     <tr>
                       <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
                         <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Дата и время</div>
-                        <div style="color:#141414; font-size:14px; font-weight:bold;">15 августа, 14:00 МСК</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">29 августа, 14:00 МСК</div>
                       </td>
                       <td style="width:10px;"></td>
                       <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
@@ -85,7 +88,7 @@
                     <tr>
                       <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
                         <div style="color:#999999; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Дата и время</div>
-                        <div style="color:#141414; font-size:14px; font-weight:bold;">16 августа, 14:00 МСК</div>
+                        <div style="color:#141414; font-size:14px; font-weight:bold;">30 августа, 12:00 МСК</div>
                       </td>
                       <td style="width:10px;"></td>
                       <td style="background-color:#faf7ec; border-radius:8px; padding:10px 14px; width:50%;" valign="top">
@@ -110,7 +113,7 @@
               <tr>
                 <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
                   <div style="color:#999999; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Контроль времени</div>
-                  <div style="color:#141414; font-size:15px; font-weight:bold;">8+4</div>
+                  <div style="color:#141414; font-size:15px; font-weight:bold;">10+0</div>
                 </td>
                 <td style="width:12px;"></td>
                 <td style="background-color:#faf7ec; border-radius:10px; padding:14px 16px; width:50%;" valign="top">
@@ -145,12 +148,12 @@
         <!-- Regulations links -->
         <tr>
           <td style="padding:24px 32px 8px;" align="center">
-            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/aca872c6be88.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига субботы (PDF)</a>
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/729260a1ccfb.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига субботы (PDF)</a>
           </td>
         </tr>
         <tr>
           <td style="padding:0 32px 24px;" align="center">
-            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/15bd4884dd36.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига воскресенья (PDF)</a>
+            <a href="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/tournaments/34247b5a38d1.pdf" target="_blank" style="color:#8a6d00; text-decoration:underline; font-size:13px;">Положение о турнире — Лига воскресенья (PDF)</a>
           </td>
         </tr>
 
@@ -178,3 +181,5 @@
 </table>
 </body>
 </html>
+'
+);

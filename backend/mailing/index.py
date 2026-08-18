@@ -157,6 +157,41 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return cors_response(200, {'success': True, 'added': added})
 
+    if action == 'save_template':
+        template_id = body.get('id')
+        name = (body.get('name') or '').strip()
+        subject = (body.get('subject') or '').strip()
+        html_body = body.get('html_body') or ''
+        if not name or not subject or not html_body:
+            return cors_response(400, {'error': 'Укажите название, тему и HTML письма'})
+        conn = get_conn()
+        cur = conn.cursor()
+        if template_id:
+            cur.execute(
+                f"UPDATE {SCHEMA}.mailing_templates SET name=%s, subject=%s, html_body=%s WHERE id=%s",
+                (name, subject, html_body, template_id)
+            )
+        else:
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.mailing_templates (name, subject, html_body) VALUES (%s, %s, %s) RETURNING id",
+                (name, subject, html_body)
+            )
+            template_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return cors_response(200, {'success': True, 'id': template_id})
+
+    if action == 'delete_template':
+        template_id = body.get('id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.mailing_templates WHERE id = %s", (template_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return cors_response(200, {'success': True})
+
     if action == 'send_campaign':
         subject = body.get('subject', '').strip()
         html_body = body.get('body', '')
