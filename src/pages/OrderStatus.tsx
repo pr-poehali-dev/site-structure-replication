@@ -6,6 +6,7 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 
 const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
+const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
 const POLL_ATTEMPTS = 5;
 const POLL_DELAY_MS = 2000;
 
@@ -25,6 +26,7 @@ function sleep(ms: number) {
 export default function OrderStatus() {
   const [order, setOrder] = useState<PendingOrder | null>(null);
   const [state, setState] = useState<OrderState>('checking');
+  const [subscriptionCode, setSubscriptionCode] = useState<string | null>(null);
   const attemptsRef = useRef(0);
 
   useEffect(() => {
@@ -55,6 +57,15 @@ export default function OrderStatus() {
             const data = await res.json();
             if (data.status === 'paid') {
               if (!cancelled) setState('paid');
+              try {
+                const subRes = await fetch(`${SUBSCRIPTIONS_URL}?order_number=${encodeURIComponent(parsed!.order_number)}`);
+                if (subRes.ok) {
+                  const subData = await subRes.json();
+                  if (!cancelled && subData.code) setSubscriptionCode(subData.code);
+                }
+              } catch {
+                // Абонемента могло не быть в заказе — это нормально
+              }
               localStorage.removeItem('yookassa_pending_order');
               return;
             }
@@ -103,8 +114,17 @@ export default function OrderStatus() {
               </div>
               <h1 className="font-heading font-bold text-2xl text-primary mb-2">Спасибо за оплату!</h1>
               <p className="text-gray-500 text-sm mb-6">
-                Платёж прошёл успешно, заявка подтверждена. Подтверждение придёт на указанную почту.
+                {subscriptionCode
+                  ? 'Абонемент оплачен. Код абонемента также отправлен на указанную почту.'
+                  : 'Платёж прошёл успешно, заявка подтверждена. Подтверждение придёт на указанную почту.'}
               </p>
+              {subscriptionCode && (
+                <div className="bg-secondary/10 border border-secondary/30 rounded-xl px-4 py-3 mb-6 text-left">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Код абонемента</p>
+                  <p className="font-mono font-bold text-xl text-primary tracking-wider">{subscriptionCode}</p>
+                  <p className="text-xs text-gray-400 mt-1">Введите его при подаче заявки на турнир вместо оплаты</p>
+                </div>
+              )}
               {order?.order_number && (
                 <div className="bg-gray-50 rounded-xl px-4 py-3 mb-6 text-left">
                   <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Номер заказа</p>

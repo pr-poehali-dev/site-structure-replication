@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 const NAV = [
   { label: 'Главная', href: '/' },
   { label: 'Турниры', href: '/turnir' },
+  { label: 'Абонементы', href: '/subscriptions' },
   { label: 'Олимпиады', href: '/#olimpiady' },
   { label: 'Результаты', href: '/result' },
   { label: 'Заказать награды', href: '/kubki' },

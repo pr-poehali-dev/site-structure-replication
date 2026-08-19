@@ -10,6 +10,7 @@ const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f3
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
 const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420-9983-d32c3d1b6524';
+const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
 
 interface Tournament {
   id: number;
@@ -41,6 +42,8 @@ export default function Turnir() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [promoApplying, setPromoApplying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'pay' | 'promo' | 'subscription'>('pay');
+  const [subscriptionCode, setSubscriptionCode] = useState('');
 
   const { createPayment, isLoading: paymentLoading } = useYookassa({
     apiUrl: YOOKASSA_URL,
@@ -66,6 +69,8 @@ export default function Turnir() {
     setModalTournament(t);
     setForm({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' });
     setSent(false);
+    setPaymentMethod('pay');
+    setSubscriptionCode('');
   }
 
   function closeModal() {
@@ -113,7 +118,7 @@ export default function Turnir() {
       const data = await res.json();
       const applicationId = data.id;
 
-      if (isPaid && form.promo_code.trim()) {
+      if (isPaid && paymentMethod === 'promo' && form.promo_code.trim()) {
         setPromoApplying(true);
         const promoRes = await fetch(PROMO_CODES_URL, {
           method: 'POST',
@@ -127,6 +132,23 @@ export default function Turnir() {
         }
         const promoData = await promoRes.json().catch(() => ({}));
         setSubmitError(promoData.error || 'Не удалось применить промокод');
+        return;
+      }
+
+      if (isPaid && paymentMethod === 'subscription' && subscriptionCode.trim()) {
+        setPromoApplying(true);
+        const subRes = await fetch(SUBSCRIPTIONS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ _action: 'apply', code: subscriptionCode.trim(), application_id: applicationId }),
+        });
+        setPromoApplying(false);
+        if (subRes.ok) {
+          setSent(true);
+          return;
+        }
+        const subData = await subRes.json().catch(() => ({}));
+        setSubmitError(subData.error || 'Не удалось применить код абонемента');
         return;
       }
 
@@ -358,8 +380,27 @@ export default function Turnir() {
                   </div>
                   {modalTournament.price && modalTournament.price > 0 && (
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Промокод на бесплатное участие</label>
-                      <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Необязательно" value={form.promo_code} onChange={e => setForm({ ...form, promo_code: e.target.value.toUpperCase() })} />
+                      <label className="text-sm font-medium text-gray-700">Способ участия</label>
+                      <div className="mt-1 grid grid-cols-3 gap-2">
+                        <button type="button" onClick={() => setPaymentMethod('pay')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'pay' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                          Оплатить
+                        </button>
+                        <button type="button" onClick={() => setPaymentMethod('promo')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'promo' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                          Промокод
+                        </button>
+                        <button type="button" onClick={() => setPaymentMethod('subscription')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'subscription' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                          Абонемент
+                        </button>
+                      </div>
+                      {paymentMethod === 'promo' && (
+                        <input className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Введите промокод" value={form.promo_code} onChange={e => setForm({ ...form, promo_code: e.target.value.toUpperCase() })} />
+                      )}
+                      {paymentMethod === 'subscription' && (
+                        <>
+                          <input className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Код абонемента (AB-XXXXXXXX)" value={subscriptionCode} onChange={e => setSubscriptionCode(e.target.value.toUpperCase())} />
+                          <a href="/subscriptions" target="_blank" className="text-xs text-secondary underline hover:no-underline mt-1 inline-block">Нет абонемента? Купить →</a>
+                        </>
+                      )}
                     </div>
                   )}
                   <label className="flex items-start gap-2 cursor-pointer mt-1">
@@ -381,13 +422,23 @@ export default function Turnir() {
                     </span>
                   </label>
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
-                  <Button type="submit" disabled={submitting || paymentLoading || promoApplying} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
+                  <Button
+                    type="submit"
+                    disabled={
+                      submitting || paymentLoading || promoApplying ||
+                      (!!modalTournament.price && modalTournament.price > 0 && paymentMethod === 'promo' && !form.promo_code.trim()) ||
+                      (!!modalTournament.price && modalTournament.price > 0 && paymentMethod === 'subscription' && !subscriptionCode.trim())
+                    }
+                    className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1"
+                  >
                     {(submitting || paymentLoading || promoApplying)
                       ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Обработка...</>
                       : modalTournament.price && modalTournament.price > 0
-                        ? form.promo_code.trim()
+                        ? paymentMethod === 'promo'
                           ? <><Icon name="Gift" size={16} className="mr-2" />Подать заявку по промокоду</>
-                          : <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
+                          : paymentMethod === 'subscription'
+                            ? <><Icon name="Ticket" size={16} className="mr-2" />Подать заявку по абонементу</>
+                            : <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
                         : <><Icon name="ClipboardCheck" size={16} className="mr-2" />Подать заявку</>
                     }
                   </Button>

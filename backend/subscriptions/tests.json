@@ -1,0 +1,1 @@
+{"tests": [{"name": "Get active plans", "method": "GET", "path": "/?scope=plans", "expectedStatus": 200, "expectedBody": {"plans": "array"}, "bodyMatcher": "partial"}]}

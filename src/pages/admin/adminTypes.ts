@@ -52,6 +52,21 @@ export interface MailingTemplate {
   id: number; name: string; subject: string; html_body: string; created_at: string;
 }
 
+export interface SubscriptionPlan {
+  id: number; title: string; participations: number; price: number;
+  is_active: boolean; sort_order: number; created_at: string;
+}
+
+export interface SubscriptionUsage {
+  fio: string | null; tournament_title: string | null; used_at: string;
+}
+
+export interface Subscription {
+  id: number; code: string; plan_title: string; total_participations: number; used_participations: number;
+  price: number; customer_name: string | null; customer_email: string | null; customer_phone: string | null;
+  active: boolean; status: string; created_at: string; paid_at: string | null; usages: SubscriptionUsage[];
+}
+
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';
 export const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 export const AWARD_CATALOG_ADMIN_URL = 'https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd';
@@ -63,6 +78,7 @@ export const NOTIFY_TOURNAMENT_URL = 'https://functions.poehali.dev/efe18ff0-5db
 export const PUSH_SUBSCRIPTIONS_LIST_URL = 'https://functions.poehali.dev/d647d59e-6434-4c62-bfc9-0c177ac3cf50';
 export const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420-9983-d32c3d1b6524';
 export const MAILING_URL = 'https://functions.poehali.dev/08236040-0d1a-42e2-aed4-90a643b54b11';
+export const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
 
 export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
@@ -73,4 +89,4 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'archive' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'mailing' | 'templates';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'mailing' | 'templates' | 'subscription-plans';

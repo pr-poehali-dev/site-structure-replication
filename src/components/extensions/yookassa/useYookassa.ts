@@ -34,6 +34,7 @@ export interface PaymentResponse {
   payment_id: string;
   order_id: number;
   order_number: string;
+  subscription_code?: string | null;
 }
 
 interface UseYookassaOptions {

@@ -130,7 +130,7 @@ def handler(event, context):
 
         # Find order by payment_id
         cur.execute(f"""
-            SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount
+            SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id
             FROM {S}orders
             WHERE yookassa_payment_id = %s
         """, (payment_id,))
@@ -142,7 +142,7 @@ def handler(event, context):
             order_id_meta = metadata.get('order_id')
             if order_id_meta:
                 cur.execute(f"""
-                    SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount
+                    SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id
                     FROM {S}orders WHERE id = %s
                 """, (int(order_id_meta),))
                 row = cur.fetchone()
@@ -155,7 +155,7 @@ def handler(event, context):
             }
 
         (order_id, current_status, application_id, order_type, items_data,
-         user_name, user_phone, user_email, delivery_address, order_comment, amount) = row
+         user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id) = row
 
         # Update based on verified payment status
         if payment_status == 'succeeded':
@@ -193,6 +193,11 @@ def handler(event, context):
                     cur.execute(f"""
                         UPDATE {S}orders SET award_order_id = %s WHERE id = %s
                     """, (award_order_id, order_id))
+                # Абонемент активируется (переводится в paid) только после успешной оплаты
+                if order_type == 'subscription' and subscription_id:
+                    cur.execute(f"""
+                        UPDATE {S}subscriptions SET status = 'paid', paid_at = %s WHERE id = %s
+                    """, (now, subscription_id))
                 conn.commit()
 
         elif payment_status == 'canceled':
@@ -209,6 +214,11 @@ def handler(event, context):
                         SET status = 'cancelled'
                         WHERE id = %s AND status = 'pending_payment'
                     """, (application_id,))
+                # Неоплаченный абонемент удаляем, чтобы не висел мёртвой записью
+                if order_type == 'subscription' and subscription_id:
+                    cur.execute(f"""
+                        DELETE FROM {S}subscriptions WHERE id = %s AND status = 'pending_payment'
+                    """, (subscription_id,))
                 conn.commit()
 
         return {

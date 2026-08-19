@@ -4,11 +4,18 @@ import os
 import re
 import uuid
 import base64
+import random
+import string
 from datetime import datetime
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 import psycopg2
+
+
+def generate_subscription_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    return 'AB-' + ''.join(random.choice(chars) for _ in range(8))
 
 
 # =============================================================================
@@ -277,6 +284,22 @@ def handler(event, context):
 
         order_id = cur.fetchone()[0]
 
+        # Для абонементов сразу создаём запись со статусом pending_payment и связываем с заказом
+        subscription_code = None
+        if order_type == 'subscription' and items_data:
+            plan_id = items_data.get('plan_id')
+            plan_title = items_data.get('plan_title', 'Абонемент')
+            participations = items_data.get('participations', 0)
+            subscription_code = generate_subscription_code()
+            cur.execute(f"""
+                INSERT INTO {S}subscriptions
+                (code, plan_id, plan_title, total_participations, price, customer_name, customer_email, customer_phone, status, order_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending_payment', %s)
+                RETURNING id
+            """, (subscription_code, plan_id, plan_title, participations, amount, user_name, user_email, user_phone, order_id))
+            subscription_id = cur.fetchone()[0]
+            cur.execute(f"UPDATE {S}orders SET subscription_id = %s WHERE id = %s", (subscription_id, order_id))
+
         # Insert cart items
         for item in cart_items:
             cur.execute(f"""
@@ -328,7 +351,8 @@ def handler(event, context):
                 'payment_url': confirmation_url,
                 'payment_id': payment_id,
                 'order_id': order_id,
-                'order_number': order_number
+                'order_number': order_number,
+                'subscription_code': subscription_code
             })
         }
 

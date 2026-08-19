@@ -6,7 +6,8 @@ import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
   Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode, MailingContact, MailingCampaign, MailingTemplate,
-  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, MAILING_URL,
+  SubscriptionPlan, Subscription,
+  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, MAILING_URL, SUBSCRIPTIONS_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
@@ -18,6 +19,7 @@ import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import MailingSection from './admin/MailingSection';
 import TemplatesSection from './admin/TemplatesSection';
+import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
@@ -94,6 +96,11 @@ export default function Admin() {
   const [mailingCampaigns, setMailingCampaigns] = useState<MailingCampaign[]>([]);
   const [mailingTemplates, setMailingTemplates] = useState<MailingTemplate[]>([]);
   const [mailingLoading, setMailingLoading] = useState(false);
+
+  // Абонементы
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [subscriptionsList, setSubscriptionsList] = useState<Subscription[]>([]);
+  const [subscriptionsListLoading, setSubscriptionsListLoading] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
@@ -188,6 +195,15 @@ export default function Admin() {
     setMailingLoading(false);
   }
 
+  async function fetchSubscriptionPlans() {
+    setSubscriptionsListLoading(true);
+    const res = await fetch(SUBSCRIPTIONS_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setSubscriptionPlans(data.plans || []);
+    setSubscriptionsList(data.subscriptions || []);
+    setSubscriptionsListLoading(false);
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
@@ -201,6 +217,7 @@ export default function Admin() {
     if (authed && section === 'promo-codes') fetchPromoCodes();
     if (authed && section === 'mailing') fetchMailing();
     if (authed && section === 'templates') fetchMailing();
+    if (authed && section === 'subscription-plans') fetchSubscriptionPlans();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -261,6 +278,7 @@ export default function Admin() {
             ['results', 'ListChecks', 'Результаты'],
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
+            ['subscription-plans', 'Ticket', 'Абонементы'],
             ['mailing', 'Mail', 'Рассылки'],
             ['templates', 'FileText', 'Шаблоны писем'],
           ] as const).map(([key, icon, label]) => (
@@ -442,6 +460,17 @@ export default function Admin() {
             templates={mailingTemplates}
             loading={mailingLoading}
             fetchMailing={fetchMailing}
+          />
+        )}
+
+        {/* === АБОНЕМЕНТЫ === */}
+        {section === 'subscription-plans' && (
+          <SubscriptionPlansSection
+            password={password}
+            plans={subscriptionPlans}
+            subscriptions={subscriptionsList}
+            loading={subscriptionsListLoading}
+            fetchData={fetchSubscriptionPlans}
           />
         )}
 

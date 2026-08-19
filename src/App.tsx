@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Turnir from "./pages/Turnir";
+import Subscriptions from "./pages/Subscriptions";
 import OlimpiadPage from "./pages/OlimpiadPage";
 import Result from "./pages/Result";
 import Kubki from "./pages/Kubki";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/turnir" element={<Turnir />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
           <Route path="/olimpiad/:slug" element={<OlimpiadPage />} />
           <Route path="/result" element={<Result />} />
           <Route path="/kubki" element={<Kubki />} />
