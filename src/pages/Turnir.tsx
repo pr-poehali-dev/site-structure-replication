@@ -354,12 +354,22 @@ export default function Turnir() {
               <>
                 <h2 className="font-heading font-bold text-xl text-primary mb-1">Заявка на участие</h2>
                 <p className="text-sm text-gray-500 mb-4">{modalTournament.title}</p>
-                {!user && (
-                  <div className="mb-4 bg-secondary/10 border border-secondary/30 rounded-lg px-3 py-2.5 text-xs text-gray-600 flex items-start gap-2">
-                    <Icon name="Info" size={14} className="text-secondary shrink-0 mt-0.5" />
-                    <span><a href="/login" className="text-secondary font-semibold hover:underline">Войдите</a> в личный кабинет, чтобы отслеживать статус заявки и не заполнять анкету заново в следующий раз</span>
+                {!user ? (
+                  <div className="flex flex-col items-center text-center gap-3 py-6">
+                    <Icon name="Lock" size={32} className="text-secondary" />
+                    <p className="text-gray-600 text-sm">
+                      Чтобы подать заявку на турнир, необходимо зарегистрироваться или войти в личный кабинет
+                    </p>
+                    <div className="flex gap-2 w-full mt-2">
+                      <a href="/register" className="flex-1">
+                        <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">Зарегистрироваться</Button>
+                      </a>
+                      <a href="/login" className="flex-1">
+                        <Button variant="outline" className="w-full">Войти</Button>
+                      </a>
+                    </div>
                   </div>
-                )}
+                ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <div>
                     <label className="text-sm font-medium text-gray-700">ФИО участника *</label>
@@ -458,6 +468,7 @@ export default function Turnir() {
                     }
                   </Button>
                 </form>
+                )}
               </>
             ) : (
               <div className="text-center py-6">

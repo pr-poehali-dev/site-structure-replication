@@ -32,7 +32,7 @@ export function Header() {
           {!loading && (
             user ? (
               <a href="/cabinet" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
-                <Icon name="User" size={16} /> {user.first_name}
+                <Icon name="User" size={16} /> {user.last_name} {user.first_name}
               </a>
             ) : (
               <a href="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/90 transition-colors">

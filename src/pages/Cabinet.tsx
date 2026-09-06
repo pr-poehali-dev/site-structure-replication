@@ -33,6 +33,19 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function calcAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const b = new Date(birthDate);
+  if (Number.isNaN(b.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - b.getFullYear();
+  const monthDiff = today.getMonth() - b.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < b.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
 export default function Cabinet() {
   const { user, token, loading, logout, updateProfile } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
@@ -191,8 +204,9 @@ export default function Cabinet() {
               <div><Label>Имя *</Label><Input required className="mt-1" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
               <div><Label>Отчество</Label><Input className="mt-1" value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })} /></div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div><Label>Дата рождения</Label><Input type="date" className="mt-1" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div><Label>Дата рождения</Label><Input type="date" disabled className="mt-1 bg-gray-50" value={form.birth_date} /></div>
+              <div><Label>Возраст</Label><Input disabled className="mt-1 bg-gray-50" value={calcAge(user.birth_date) !== null ? `${calcAge(user.birth_date)} лет` : '—'} /></div>
               <div><Label>ID ФШР</Label><Input className="mt-1" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
             </div>
             <div><Label>ФИО тренера</Label><Input className="mt-1" value={form.coach_fio} onChange={e => setForm({ ...form, coach_fio: e.target.value })} /></div>
