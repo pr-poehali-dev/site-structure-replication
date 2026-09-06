@@ -49,14 +49,14 @@ def handler(event: dict, context) -> dict:
                 conn.close()
                 return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
             cur.execute(
-                """SELECT a.id, a.tournament_id, a.tournament_title, a.fio, a.age, a.status, a.created_at, COALESCE(t.hall_open, false)
+                """SELECT a.id, a.tournament_id, a.tournament_title, a.fio, a.age, a.status, a.created_at, COALESCE(t.hall_open, false), COALESCE(t.status, 'active')
                    FROM applications a LEFT JOIN tournaments t ON t.id = a.tournament_id
                    WHERE a.user_id = %s ORDER BY a.created_at DESC""",
                 (user_id,)
             )
             rows = cur.fetchall()
             conn.close()
-            cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'status', 'created_at', 'hall_open']
+            cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'status', 'created_at', 'hall_open', 'tournament_status']
             my_apps = [dict(zip(cols, r)) for r in rows]
             for a in my_apps:
                 a['created_at'] = str(a['created_at'])

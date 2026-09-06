@@ -20,6 +20,7 @@ interface MyApplication {
   status: string;
   created_at: string;
   hall_open: boolean;
+  tournament_status: string;
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -106,8 +107,8 @@ export default function Cabinet() {
   }
 
   const activeHalls = apps.filter(a => a.status === 'paid' && a.hall_open);
-  const ongoing = apps.filter(a => a.status !== 'cancelled' && a.status !== 'paid');
-  const history = apps.filter(a => a.status === 'cancelled' || (a.status === 'paid' && !a.hall_open));
+  const history = apps.filter(a => a.tournament_status === 'archived' || a.status === 'cancelled');
+  const ongoing = apps.filter(a => !activeHalls.includes(a) && !history.includes(a));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
