@@ -1,0 +1,1 @@
+ALTER TABLE tournaments ADD COLUMN hall_open BOOLEAN NOT NULL DEFAULT false;

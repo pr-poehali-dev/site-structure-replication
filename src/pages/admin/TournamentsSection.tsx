@@ -136,6 +136,7 @@ export default function TournamentsSection({
       diploma_sample_url: t.diploma_sample_url || '',
       regulation_url: t.regulation_url || '',
       announcement_url: t.announcement_url || '',
+      hall_open: !!t.hall_open,
     });
     setTError('');
     setTShowForm(true);
@@ -199,6 +200,15 @@ export default function TournamentsSection({
     fetchTournaments();
   }
 
+  async function handleToggleHall(t: Tournament) {
+    await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'set_hall_open', id: t.id, hall_open: !t.hall_open }),
+    });
+    fetchTournaments();
+  }
+
   async function handleArchiveTournament(t: Tournament) {
     if (!confirm(`Перенести турнир «${t.title}» в архив? Он исчезнет из публичного раздела «Турниры».`)) return;
     await fetch(TOURNAMENTS_URL, {
@@ -234,6 +244,10 @@ export default function TournamentsSection({
           <div><Label>Стоимость участия (₽)</Label><Input type="number" className="mt-1" value={tForm.price} onChange={e => setTForm({ ...tForm, price: e.target.value })} /></div>
           <div><Label>Контроль времени</Label><Input className="mt-1" placeholder="10+0" value={tForm.time_control} onChange={e => setTForm({ ...tForm, time_control: e.target.value })} /></div>
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
+          <div className="md:col-span-2 flex items-center gap-2 border-t border-gray-100 pt-4">
+            <input type="checkbox" id="hall_open" className="w-4 h-4 accent-secondary" checked={tForm.hall_open} onChange={e => setTForm({ ...tForm, hall_open: e.target.checked })} />
+            <Label htmlFor="hall_open" className="cursor-pointer mb-0">Открыт турнирный зал (участники видят ссылку в кабинете)</Label>
+          </div>
 
           <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-1">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Документы турнира</p>
@@ -302,6 +316,11 @@ export default function TournamentsSection({
                             {tApps.length} заявок
                           </span>
                         )}
+                        {t.hall_open && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex items-center gap-1">
+                            <Icon name="DoorOpen" size={11} /> Зал открыт
+                          </span>
+                        )}
                       </div>
                       {t.date && <p className="text-sm text-gray-500 mb-1">{new Date(t.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
                       {t.location && <p className="text-sm text-gray-500">{t.location}</p>}
@@ -313,6 +332,10 @@ export default function TournamentsSection({
                       <Button variant="outline" size="sm" onClick={() => handleToggleStatus(t)}>
                         <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
                         {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}
+                      </Button>
+                      <Button variant="outline" size="sm" className={t.hall_open ? 'text-purple-600 border-purple-200 hover:bg-purple-50' : ''} onClick={() => handleToggleHall(t)}>
+                        <Icon name="DoorOpen" size={14} className="mr-1" />
+                        {t.hall_open ? 'Закрыть зал' : 'Открыть зал'}
                       </Button>
                       <NotifyTournamentButton password={password} tournament={t} />
                       <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>

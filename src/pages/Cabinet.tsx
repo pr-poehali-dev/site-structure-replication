@@ -19,6 +19,7 @@ interface MyApplication {
   age: string;
   status: string;
   created_at: string;
+  hall_open: boolean;
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -104,8 +105,9 @@ export default function Cabinet() {
     setSaveMsg(res.ok ? 'Профиль обновлён' : res.error);
   }
 
+  const activeHalls = apps.filter(a => a.status === 'paid' && a.hall_open);
   const ongoing = apps.filter(a => a.status !== 'cancelled' && a.status !== 'paid');
-  const history = apps.filter(a => a.status === 'paid' || a.status === 'cancelled');
+  const history = apps.filter(a => a.status === 'cancelled' || (a.status === 'paid' && !a.hall_open));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -139,6 +141,29 @@ export default function Cabinet() {
 
         {tab === 'tournaments' && (
           <div className="flex flex-col gap-8">
+            {activeHalls.length > 0 && (
+              <div>
+                <h2 className="font-heading font-bold text-xl text-primary uppercase mb-4 flex items-center gap-2">
+                  <Icon name="DoorOpen" size={20} className="text-secondary" /> Турнирный зал
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {activeHalls.map(a => (
+                    <div key={a.id} className="bg-white rounded-xl border-2 border-secondary/40 shadow-sm px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="font-semibold text-primary">{a.tournament_title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
+                      </div>
+                      <Link to={`/hall/${a.tournament_id}`}>
+                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                          <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <h2 className="font-heading font-bold text-xl text-primary uppercase mb-4 flex items-center gap-2">
                 <Icon name="CalendarClock" size={20} className="text-secondary" /> Предстоящие турниры

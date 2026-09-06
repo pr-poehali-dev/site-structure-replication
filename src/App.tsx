@@ -16,6 +16,7 @@ import OrderStatus from "./pages/OrderStatus";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cabinet from "./pages/Cabinet";
+import Hall from "./pages/Hall";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/cabinet" element={<Cabinet />} />
+            <Route path="/hall/:tournamentId" element={<Hall />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

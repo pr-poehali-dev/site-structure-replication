@@ -3,6 +3,7 @@ export interface Tournament {
   location: string; age_category: string; price: number | null; time_control: string; time_msk: string; created_at: string;
   status: string;
   diploma_sample_url: string | null; regulation_url: string | null; announcement_url: string | null;
+  hall_open: boolean;
 }
 
 export interface Application {
@@ -80,7 +81,7 @@ export const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420
 export const MAILING_URL = 'https://functions.poehali.dev/08236040-0d1a-42e2-aed4-90a643b54b11';
 export const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
 
-export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '' };
+export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
 export const STATUS_LABELS: Record<string, string> = { new: 'Новая', pending_payment: 'Ждёт оплаты', confirmed: 'Подтверждена', paid: 'Оплачена', cancelled: 'Отменена' };
 export const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', pending_payment: 'bg-orange-100 text-orange-700', confirmed: 'bg-green-100 text-green-700', paid: 'bg-yellow-100 text-yellow-700', cancelled: 'bg-red-100 text-red-700' };
