@@ -11,6 +11,19 @@ function fullNameFromUser(u: { last_name: string; first_name: string; middle_nam
   return [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ');
 }
 
+function calcAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const b = new Date(birthDate);
+  if (Number.isNaN(b.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - b.getFullYear();
+  const monthDiff = today.getMonth() - b.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < b.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
@@ -74,7 +87,7 @@ export default function Turnir() {
   function openModal(t: Tournament) {
     setModalTournament(t);
     setForm(user
-      ? { fio: fullNameFromUser(user), age: '', fsr_id: user.fsr_id || '', coach: user.coach_fio || '', country_city: user.country_city || '', school: user.institution || '', email: user.email || '', phone: user.phone || '', agree: false, promo_code: '' }
+      ? { fio: fullNameFromUser(user), age: calcAge(user.birth_date) !== null ? String(calcAge(user.birth_date)) : '', fsr_id: user.fsr_id || '', coach: user.coach_fio || '', country_city: user.country_city || '', school: user.institution || '', email: user.email || '', phone: user.phone || '', agree: false, promo_code: '' }
       : { fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' }
     );
     setSent(false);
