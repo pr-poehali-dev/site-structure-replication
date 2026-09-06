@@ -5,9 +5,9 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
-  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode, MailingContact, MailingCampaign, MailingTemplate,
+  Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode,
   SubscriptionPlan, Subscription,
-  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, MAILING_URL, SUBSCRIPTIONS_URL,
+  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, SUBSCRIPTIONS_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
@@ -17,8 +17,6 @@ import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
-import MailingSection from './admin/MailingSection';
-import TemplatesSection from './admin/TemplatesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
@@ -90,12 +88,6 @@ export default function Admin() {
   // Промокоды
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
-
-  // Рассылки
-  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>([]);
-  const [mailingCampaigns, setMailingCampaigns] = useState<MailingCampaign[]>([]);
-  const [mailingTemplates, setMailingTemplates] = useState<MailingTemplate[]>([]);
-  const [mailingLoading, setMailingLoading] = useState(false);
 
   // Абонементы
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
@@ -185,16 +177,6 @@ export default function Admin() {
     setPromoLoading(false);
   }
 
-  async function fetchMailing() {
-    setMailingLoading(true);
-    const res = await fetch(MAILING_URL, { headers: { 'X-Admin-Password': password } });
-    const data = await res.json();
-    setMailingContacts(data.contacts || []);
-    setMailingCampaigns(data.campaigns || []);
-    setMailingTemplates(data.templates || []);
-    setMailingLoading(false);
-  }
-
   async function fetchSubscriptionPlans() {
     setSubscriptionsListLoading(true);
     const res = await fetch(SUBSCRIPTIONS_URL, { headers: { 'X-Admin-Password': password } });
@@ -215,8 +197,6 @@ export default function Admin() {
     if (authed && section === 'results') fetchTrResults();
     if (authed && section === 'subscriptions') fetchSubs();
     if (authed && section === 'promo-codes') fetchPromoCodes();
-    if (authed && section === 'mailing') fetchMailing();
-    if (authed && section === 'templates') fetchMailing();
     if (authed && section === 'subscription-plans') fetchSubscriptionPlans();
   }, [section]);
 
@@ -279,8 +259,6 @@ export default function Admin() {
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
             ['subscription-plans', 'Ticket', 'Абонементы'],
-            ['mailing', 'Mail', 'Рассылки'],
-            ['templates', 'FileText', 'Шаблоны писем'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -438,28 +416,6 @@ export default function Admin() {
             promoCodes={promoCodes}
             promoLoading={promoLoading}
             fetchPromoCodes={fetchPromoCodes}
-          />
-        )}
-
-        {/* === РАССЫЛКИ === */}
-        {section === 'mailing' && (
-          <MailingSection
-            password={password}
-            contacts={mailingContacts}
-            campaigns={mailingCampaigns}
-            templates={mailingTemplates}
-            loading={mailingLoading}
-            fetchMailing={fetchMailing}
-          />
-        )}
-
-        {/* === ШАБЛОНЫ ПИСЕМ === */}
-        {section === 'templates' && (
-          <TemplatesSection
-            password={password}
-            templates={mailingTemplates}
-            loading={mailingLoading}
-            fetchMailing={fetchMailing}
           />
         )}
 
