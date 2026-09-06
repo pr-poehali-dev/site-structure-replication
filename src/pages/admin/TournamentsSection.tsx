@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import * as XLSX from 'xlsx';
 import {
-  Tournament, Application, TOURNAMENTS_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
+  Tournament, Application, TOURNAMENTS_URL, TOURNAMENT_HALL_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
 } from './adminTypes';
 import NotifyTournamentButton from './NotifyTournamentButton';
 
@@ -35,9 +35,29 @@ export default function TournamentsSection({
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [uploadingRegulation, setUploadingRegulation] = useState(false);
   const [uploadingAnnouncement, setUploadingAnnouncement] = useState(false);
+  const [startingId, setStartingId] = useState<number | null>(null);
+  const [startError, setStartError] = useState('');
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const regulationInputRef = useRef<HTMLInputElement>(null);
   const announcementInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleStartTournament(t: Tournament) {
+    if (!confirm(`Начать турнир «${t.title}»? Будут сформированы пары 1-го тура по оплаченным заявкам. Отменить это действие нельзя.`)) return;
+    setStartingId(t.id);
+    setStartError('');
+    const res = await fetch(TOURNAMENT_HALL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'start', tournament_id: t.id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStartError(data.error || 'Не удалось начать турнир');
+    } else {
+      fetchTournaments();
+    }
+    setStartingId(null);
+  }
 
   async function uploadTournamentFile(file: File): Promise<string | null> {
     return new Promise((resolve, reject) => {
@@ -109,6 +129,7 @@ export default function TournamentsSection({
       body: JSON.stringify({
         ...tForm,
         price: tForm.price ? parseFloat(tForm.price) : null,
+        rounds_count: tForm.rounds_count ? parseInt(tForm.rounds_count, 10) : 5,
         ...(isEdit ? { _action: 'update', id: tEditId } : {}),
       }),
     });
@@ -137,6 +158,7 @@ export default function TournamentsSection({
       regulation_url: t.regulation_url || '',
       announcement_url: t.announcement_url || '',
       hall_open: !!t.hall_open,
+      rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
     });
     setTError('');
     setTShowForm(true);
@@ -233,6 +255,12 @@ export default function TournamentsSection({
         </Button>
       </div>
 
+      {startError && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+          <Icon name="AlertCircle" size={16} className="shrink-0" /> {startError}
+        </div>
+      )}
+
       {tShowForm && (
         <form onSubmit={handleCreateTournament} className="bg-white rounded-2xl shadow p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <h3 className="md:col-span-2 font-bold text-lg text-primary -mb-2">{tEditId !== null ? 'Редактирование турнира' : 'Новый турнир'}</h3>
@@ -244,6 +272,7 @@ export default function TournamentsSection({
           <div><Label>Стоимость участия (₽)</Label><Input type="number" className="mt-1" value={tForm.price} onChange={e => setTForm({ ...tForm, price: e.target.value })} /></div>
           <div><Label>Контроль времени</Label><Input className="mt-1" placeholder="10+0" value={tForm.time_control} onChange={e => setTForm({ ...tForm, time_control: e.target.value })} /></div>
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
+          <div><Label>Число туров (швейцарская система)</Label><Input type="number" min={1} max={15} className="mt-1" value={tForm.rounds_count} onChange={e => setTForm({ ...tForm, rounds_count: e.target.value })} /></div>
           <div className="md:col-span-2 flex items-center gap-2 border-t border-gray-100 pt-4">
             <input type="checkbox" id="hall_open" className="w-4 h-4 accent-secondary" checked={tForm.hall_open} onChange={e => setTForm({ ...tForm, hall_open: e.target.checked })} />
             <Label htmlFor="hall_open" className="cursor-pointer mb-0">Открыт турнирный зал (участники видят ссылку в кабинете)</Label>
@@ -337,6 +366,30 @@ export default function TournamentsSection({
                         <Icon name="DoorOpen" size={14} className="mr-1" />
                         {t.hall_open ? 'Закрыть зал' : 'Открыть зал'}
                       </Button>
+                      {(!t.hall_status || t.hall_status === 'not_started') && (
+                        <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          disabled={startingId === t.id} onClick={() => handleStartTournament(t)}>
+                          <Icon name="Play" size={14} className="mr-1" />
+                          {startingId === t.id ? 'Запускаю...' : 'Начать турнир'}
+                        </Button>
+                      )}
+                      {t.hall_status === 'active' && (
+                        <span className="text-xs px-2 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 font-medium flex items-center gap-1">
+                          <Icon name="Radio" size={13} className="animate-pulse" /> Турнир идёт
+                        </span>
+                      )}
+                      {t.hall_status === 'finished' && (
+                        <span className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-600 font-medium flex items-center gap-1">
+                          <Icon name="Trophy" size={13} /> Завершён
+                        </span>
+                      )}
+                      {t.hall_status && t.hall_status !== 'not_started' && (
+                        <a href={`/hall/${t.id}`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" size="sm">
+                            <Icon name="ExternalLink" size={14} className="mr-1" /> Зал
+                          </Button>
+                        </a>
+                      )}
                       <NotifyTournamentButton password={password} tournament={t} />
                       <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>
                         <Icon name="FileSpreadsheet" size={14} className="mr-1" /> Экспорт в Excel

@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "GET without game_id returns 400",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    },
+    {
+      "name": "OPTIONS preflight returns 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

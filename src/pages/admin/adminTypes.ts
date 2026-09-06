@@ -4,6 +4,8 @@ export interface Tournament {
   status: string;
   diploma_sample_url: string | null; regulation_url: string | null; announcement_url: string | null;
   hall_open: boolean;
+  rounds_count?: number;
+  hall_status?: string;
 }
 
 export interface Application {
@@ -67,8 +69,10 @@ export const NOTIFY_TOURNAMENT_URL = 'https://functions.poehali.dev/efe18ff0-5db
 export const PUSH_SUBSCRIPTIONS_LIST_URL = 'https://functions.poehali.dev/d647d59e-6434-4c62-bfc9-0c177ac3cf50';
 export const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420-9983-d32c3d1b6524';
 export const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
+export const TOURNAMENT_HALL_URL = 'https://functions.poehali.dev/8e8afc0d-8119-46a4-ac6c-7411f14bdbd1';
+export const CHESS_GAME_URL = 'https://functions.poehali.dev/6f01cd2f-f475-4924-82d7-e4c47dc8622c';
 
-export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false };
+export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false, rounds_count: '5' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
 export const STATUS_LABELS: Record<string, string> = { new: 'Новая', pending_payment: 'Ждёт оплаты', confirmed: 'Подтверждена', paid: 'Оплачена', cancelled: 'Отменена' };
 export const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', pending_payment: 'bg-orange-100 text-orange-700', confirmed: 'bg-green-100 text-green-700', paid: 'bg-yellow-100 text-yellow-700', cancelled: 'bg-red-100 text-red-700' };
