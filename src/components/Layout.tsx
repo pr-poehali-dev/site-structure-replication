@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NAV = [
   { label: 'Главная', href: '/' },
@@ -14,6 +15,7 @@ const NAV = [
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
@@ -26,6 +28,19 @@ export function Header() {
             </a>
           ))}
         </nav>
+        <div className="hidden lg:flex items-center gap-2">
+          {!loading && (
+            user ? (
+              <a href="/cabinet" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
+                <Icon name="User" size={16} /> {user.first_name}
+              </a>
+            ) : (
+              <a href="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/90 transition-colors">
+                <Icon name="LogIn" size={16} /> Войти
+              </a>
+            )
+          )}
+        </div>
         <button className="lg:hidden text-white" onClick={() => setMenuOpen((v) => !v)}>
           <Icon name={menuOpen ? 'X' : 'Menu'} size={26} />
         </button>
@@ -37,6 +52,17 @@ export function Header() {
               {n.label}
             </a>
           ))}
+          {!loading && (
+            user ? (
+              <a href="/cabinet" onClick={() => setMenuOpen(false)} className="py-2 text-white/85 hover:text-secondary flex items-center gap-2">
+                <Icon name="User" size={16} /> Личный кабинет
+              </a>
+            ) : (
+              <a href="/login" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
+                <Icon name="LogIn" size={16} /> Войти
+              </a>
+            )
+          )}
         </nav>
       )}
     </header>

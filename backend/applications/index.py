@@ -10,8 +10,15 @@ def cors_headers():
     return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Auth-Token',
     }
+
+def get_user_id_by_token(cur, token: str):
+    if not token:
+        return None
+    cur.execute("SELECT user_id FROM user_sessions WHERE token = %s AND expires_at > now()", (token,))
+    row = cur.fetchone()
+    return row[0] if row else None
 
 def handler(event: dict, context) -> dict:
     """Управление заявками на турниры: публичное создание и админское CRUD"""
@@ -28,10 +35,32 @@ def handler(event: dict, context) -> dict:
 
     admin_password = headers.get('X-Admin-Password', '')
     is_admin = admin_password == os.environ.get('ADMIN_PASSWORD', '')
+    auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token', '')
 
-    # GET — публичный (только участники) или админский (полные заявки)
+    # GET — публичный (только участники), список "моих заявок" или админский (полные заявки)
     if method == 'GET':
-        tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
+        params = event.get('queryStringParameters') or {}
+        tournament_id = params.get('tournament_id')
+        scope = params.get('scope', '')
+
+        if not is_admin and scope == 'my':
+            user_id = get_user_id_by_token(cur, auth_token)
+            if not user_id:
+                conn.close()
+                return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+            cur.execute(
+                """SELECT id, tournament_id, tournament_title, fio, age, status, created_at
+                   FROM applications WHERE user_id = %s ORDER BY created_at DESC""",
+                (user_id,)
+            )
+            rows = cur.fetchall()
+            conn.close()
+            cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'status', 'created_at']
+            my_apps = [dict(zip(cols, r)) for r in rows]
+            for a in my_apps:
+                a['created_at'] = str(a['created_at'])
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'applications': my_apps})}
+
         if not is_admin:
             # Публичный: только ФИО и возраст, tournament_id обязателен
             # Заявки, ожидающие оплаты, в список участников не попадают
@@ -52,13 +81,14 @@ def handler(event: dict, context) -> dict:
     # и попадёт в список участников только после подтверждения оплаты через webhook
     if method == 'POST' and action != 'update' and not is_admin:
         initial_status = 'pending_payment' if body.get('requires_payment') else 'new'
+        user_id = get_user_id_by_token(cur, auth_token)
         cur.execute(
-            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (body.get('tournament_id'), body.get('tournament_title'), body.get('fio'),
              body.get('age'), body.get('fsr_id'), body.get('coach'),
              body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
-             initial_status)
+             initial_status, user_id)
         )
         new_id = cur.fetchone()[0]
         conn.commit()

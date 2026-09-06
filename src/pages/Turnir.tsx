@@ -5,6 +5,11 @@ import { Header, Footer } from '@/components/Layout';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import Seo from '@/components/Seo';
+import { useAuth } from '@/contexts/AuthContext';
+
+function fullNameFromUser(u: { last_name: string; first_name: string; middle_name: string | null }) {
+  return [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ');
+}
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
 const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
@@ -34,6 +39,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function Turnir() {
+  const { user, token } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
@@ -67,7 +73,10 @@ export default function Turnir() {
 
   function openModal(t: Tournament) {
     setModalTournament(t);
-    setForm({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' });
+    setForm(user
+      ? { fio: fullNameFromUser(user), age: '', fsr_id: user.fsr_id || '', coach: user.coach_fio || '', country_city: user.country_city || '', school: user.institution || '', email: user.email || '', phone: user.phone || '', agree: false, promo_code: '' }
+      : { fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' }
+    );
     setSent(false);
     setPaymentMethod('pay');
     setSubscriptionCode('');
@@ -96,7 +105,7 @@ export default function Turnir() {
     try {
       const res = await fetch(APPS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Auth-Token': token } : {}) },
         body: JSON.stringify({
           tournament_id: modalTournament.id,
           tournament_title: modalTournament.title,
@@ -345,6 +354,12 @@ export default function Turnir() {
               <>
                 <h2 className="font-heading font-bold text-xl text-primary mb-1">Заявка на участие</h2>
                 <p className="text-sm text-gray-500 mb-4">{modalTournament.title}</p>
+                {!user && (
+                  <div className="mb-4 bg-secondary/10 border border-secondary/30 rounded-lg px-3 py-2.5 text-xs text-gray-600 flex items-start gap-2">
+                    <Icon name="Info" size={14} className="text-secondary shrink-0 mt-0.5" />
+                    <span><a href="/login" className="text-secondary font-semibold hover:underline">Войдите</a> в личный кабинет, чтобы отслеживать статус заявки и не заполнять анкету заново в следующий раз</span>
+                  </div>
+                )}
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <div>
                     <label className="text-sm font-medium text-gray-700">ФИО участника *</label>
