@@ -119,7 +119,7 @@ def maybe_advance(cur, tournament):
             else:
                 trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
                 break_seconds = tournament.get('round_break_seconds', 60)
-                return (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat()
+                return (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat() + 'Z'
         return None
 
     if status == 'completed' and round_number < tournament['rounds_count']:
@@ -130,7 +130,7 @@ def maybe_advance(cur, tournament):
             if new_round_id:
                 trigger(f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number + 1})
             return None
-        return next_round_at.isoformat() if next_round_at else None
+        return next_round_at.isoformat() + 'Z' if next_round_at else None
 
     return None
 
