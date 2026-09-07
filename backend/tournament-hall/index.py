@@ -95,13 +95,14 @@ def start_next_round(cur, tournament, round_number):
 
 
 def maybe_advance(cur, tournament):
+    """Возвращает ISO-время старта следующего тура, если сейчас идёт перерыв между турами."""
     cur.execute(
         "SELECT id, round_number, status, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
         (tournament['id'],)
     )
     row = cur.fetchone()
     if not row:
-        return
+        return None
     round_id, round_number, status, completed_at = row
 
     if status == 'active':
@@ -117,14 +118,21 @@ def maybe_advance(cur, tournament):
                 trigger(f"tournament-{tournament['id']}", 'finished', {})
             else:
                 trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
-        return
+                break_seconds = tournament.get('round_break_seconds', 60)
+                return (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat()
+        return None
 
     if status == 'completed' and round_number < tournament['rounds_count']:
         break_seconds = tournament.get('round_break_seconds', 60)
+        next_round_at = completed_at + timedelta(seconds=break_seconds) if completed_at else None
         if completed_at and datetime.utcnow() >= completed_at + timedelta(seconds=break_seconds):
             new_round_id = start_next_round(cur, tournament, round_number + 1)
             if new_round_id:
                 trigger(f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number + 1})
+            return None
+        return next_round_at.isoformat() if next_round_at else None
+
+    return None
 
 
 def get_tournament(cur, tournament_id):
@@ -167,8 +175,9 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
 
+        next_round_at = None
         if tournament['hall_status'] == 'active':
-            maybe_advance(cur, tournament)
+            next_round_at = maybe_advance(cur, tournament)
             conn.commit()
             tournament = get_tournament(cur, tournament_id)
 
@@ -178,6 +187,29 @@ def handler(event: dict, context) -> dict:
             cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND user_id = %s", (tournament_id, user_id))
             r = cur.fetchone()
             my_player_id = r[0] if r else None
+
+            # Если турнир ещё не начался — регистрируем зашедшего в зал пользователя
+            # в таблице участников сразу (по его оплаченной заявке), чтобы он был виден остальным
+            if not my_player_id and tournament['hall_status'] == 'not_started':
+                cur.execute(
+                    "SELECT id, fio FROM applications WHERE tournament_id = %s AND user_id = %s AND status = 'paid' LIMIT 1",
+                    (tournament_id, user_id)
+                )
+                app_row = cur.fetchone()
+                if app_row:
+                    app_id, fio = app_row
+                    cur.execute(
+                        """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
+                           VALUES (%s, %s, %s, %s, 1200)
+                           ON CONFLICT (tournament_id, application_id) DO NOTHING
+                           RETURNING id""",
+                        (tournament_id, user_id, app_id, fio)
+                    )
+                    new_row = cur.fetchone()
+                    conn.commit()
+                    if new_row:
+                        my_player_id = new_row[0]
+                        trigger(f'tournament-{tournament_id}', 'player-joined', {})
 
         cur.execute(
             "SELECT id, fio, rating, points, buchholz FROM tournament_players WHERE tournament_id = %s ORDER BY points DESC, rating DESC",
@@ -222,6 +254,7 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
             'tournament': tournament, 'players': players, 'rounds': rounds,
             'my_player_id': my_player_id, 'my_game_id': my_game_id,
+            'next_round_at': next_round_at,
             'pusher_key': os.environ.get('PUSHER_KEY', ''),
             'pusher_cluster': os.environ.get('PUSHER_CLUSTER', 'eu'),
         })}

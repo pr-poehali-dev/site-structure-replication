@@ -52,6 +52,15 @@ interface HallData {
   rounds: Round[];
   my_player_id: number | null;
   my_game_id: number | null;
+  next_round_at: string | null;
+}
+
+function formatCountdown(ms: number): string {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 const RESULT_LABELS: Record<string, string> = { '1-0': '1–0', '0-1': '0–1', '1/2-1/2': '½–½' };
@@ -64,6 +73,7 @@ export default function Hall() {
   const [activeRound, setActiveRound] = useState<number | null>(null);
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
+  const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
 
   const fetchHall = useCallback(async () => {
     if (!tournamentId) return;
@@ -77,6 +87,7 @@ export default function Hall() {
       setFetchError('');
       setPusherKey(json.pusher_key || null);
       setPusherCluster(json.pusher_cluster || null);
+      setNextRoundMs(json.next_round_at ? new Date(json.next_round_at).getTime() - Date.now() : null);
       setActiveRound(prev => prev ?? (json.rounds?.length ? json.rounds[json.rounds.length - 1].round_number : null));
     } catch {
       setFetchError('Не удалось загрузить турнирный зал');
@@ -89,6 +100,23 @@ export default function Hall() {
     const interval = setInterval(fetchHall, 20000);
     return () => clearInterval(interval);
   }, [fetchHall]);
+
+  // Живой обратный отсчёт до старта следующего тура, тикает раз в секунду
+  useEffect(() => {
+    if (nextRoundMs === null) return;
+    const tick = setInterval(() => {
+      setNextRoundMs(ms => {
+        if (ms === null) return null;
+        const next = ms - 1000;
+        if (next <= 0) {
+          fetchHall();
+          return null;
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [nextRoundMs !== null, fetchHall]);
 
   usePusherChannel(
     tournamentId ? `tournament-${tournamentId}` : null,
@@ -105,7 +133,7 @@ export default function Hall() {
     );
   }
 
-  if (!user) {
+  if (!user && !tournamentId) {
     return <Navigate to="/login" replace />;
   }
 
@@ -219,9 +247,16 @@ export default function Hall() {
                 <Icon name="Trophy" size={28} className="text-secondary mx-auto mb-2" />
                 <h1 className="font-heading font-bold text-2xl md:text-3xl text-primary">{tournament.title}</h1>
                 {isFinished && <p className="text-sm text-gray-400 mt-2">Турнир завершён</p>}
-                {isActive && <p className="text-sm text-emerald-600 font-medium mt-2 flex items-center justify-center gap-1"><Icon name="Radio" size={13} className="animate-pulse" /> Турнир идёт</p>}
+                {isActive && nextRoundMs === null && <p className="text-sm text-emerald-600 font-medium mt-2 flex items-center justify-center gap-1"><Icon name="Radio" size={13} className="animate-pulse" /> Турнир идёт</p>}
                 {tournament.hall_status === 'not_started' && <p className="text-sm text-gray-400 mt-2">Турнир ещё не начался</p>}
               </div>
+
+              {isActive && nextRoundMs !== null && (
+                <div className="bg-primary text-primary-foreground rounded-2xl shadow-sm p-5 text-center">
+                  <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Следующий тур через</p>
+                  <p className="font-heading font-bold text-3xl text-secondary tabular-nums">{formatCountdown(nextRoundMs)}</p>
+                </div>
+              )}
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <div className="flex items-center justify-between mb-4">
