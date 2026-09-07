@@ -5,6 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePusherChannel } from '@/hooks/usePusherChannel';
 import func2url from '../../backend/func2url.json';
 
 const HALL_URL = func2url['tournament-hall'];
@@ -61,6 +62,8 @@ export default function Hall() {
   const [data, setData] = useState<HallData | null>(null);
   const [fetchError, setFetchError] = useState('');
   const [activeRound, setActiveRound] = useState<number | null>(null);
+  const [pusherKey, setPusherKey] = useState<string | null>(null);
+  const [pusherCluster, setPusherCluster] = useState<string | null>(null);
 
   const fetchHall = useCallback(async () => {
     if (!tournamentId) return;
@@ -72,6 +75,8 @@ export default function Hall() {
       if (!res.ok) { setFetchError(json.error || 'Не удалось загрузить турнирный зал'); return; }
       setData(json);
       setFetchError('');
+      setPusherKey(json.pusher_key || null);
+      setPusherCluster(json.pusher_cluster || null);
       setActiveRound(prev => prev ?? (json.rounds?.length ? json.rounds[json.rounds.length - 1].round_number : null));
     } catch {
       setFetchError('Не удалось загрузить турнирный зал');
@@ -80,9 +85,17 @@ export default function Hall() {
 
   useEffect(() => {
     fetchHall();
-    const interval = setInterval(fetchHall, 4000);
+    // Резервный опрос на случай, если real-time соединение прервалось
+    const interval = setInterval(fetchHall, 20000);
     return () => clearInterval(interval);
   }, [fetchHall]);
+
+  usePusherChannel(
+    tournamentId ? `tournament-${tournamentId}` : null,
+    pusherKey,
+    pusherCluster,
+    useCallback(() => { fetchHall(); }, [fetchHall]),
+  );
 
   if (loading) {
     return (

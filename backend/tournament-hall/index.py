@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import psycopg2
 
 from swiss import make_pairings
+from pusher_client import trigger
 
 DEFAULT_BASE_MS = 600000
 DEFAULT_INC_MS = 0
@@ -113,12 +114,17 @@ def maybe_advance(cur, tournament):
             cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
             if round_number >= tournament['rounds_count']:
                 cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
+                trigger(f"tournament-{tournament['id']}", 'finished', {})
+            else:
+                trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
         return
 
     if status == 'completed' and round_number < tournament['rounds_count']:
         break_seconds = tournament.get('round_break_seconds', 60)
         if completed_at and datetime.utcnow() >= completed_at + timedelta(seconds=break_seconds):
-            start_next_round(cur, tournament, round_number + 1)
+            new_round_id = start_next_round(cur, tournament, round_number + 1)
+            if new_round_id:
+                trigger(f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number + 1})
 
 
 def get_tournament(cur, tournament_id):
@@ -216,6 +222,8 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
             'tournament': tournament, 'players': players, 'rounds': rounds,
             'my_player_id': my_player_id, 'my_game_id': my_game_id,
+            'pusher_key': os.environ.get('PUSHER_KEY', ''),
+            'pusher_cluster': os.environ.get('PUSHER_CLUSTER', 'eu'),
         })}
 
     if method == 'POST' and action == 'start':
@@ -256,6 +264,7 @@ def handler(event: dict, context) -> dict:
         conn.close()
         if not round_id:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось создать пары'})}
+        trigger(f'tournament-{tournament_id}', 'round-started', {'round_number': 1})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     conn.close()

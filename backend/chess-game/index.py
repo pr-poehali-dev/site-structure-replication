@@ -5,6 +5,7 @@ from datetime import datetime
 import psycopg2
 
 from chess_rules import Board
+from pusher_client import trigger
 
 CHECKMATE = 'checkmate'
 STALEMATE = 'stalemate'
@@ -131,6 +132,8 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
+            trigger(f'game-{game_id}', 'update', {})
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
 
         cur.execute(
             "SELECT gm.message, gm.created_at, gm.player_id, COALESCE(tp.fio, 'Игрок') FROM game_chat_messages gm LEFT JOIN tournament_players tp ON tp.id = gm.player_id WHERE gm.game_id = %s ORDER BY gm.id ASC",
@@ -150,6 +153,8 @@ def handler(event: dict, context) -> dict:
                 'tournament_id': game['tournament_id'],
             },
             'chat': chat, 'my_role': role,
+            'pusher_key': os.environ.get('PUSHER_KEY', ''),
+            'pusher_cluster': os.environ.get('PUSHER_CLUSTER', 'eu'),
         })}
 
     if method == 'POST' and action == 'move':
@@ -195,18 +200,25 @@ def handler(event: dict, context) -> dict:
             (board.to_fen(), new_pgn, new_turn, white_ms, black_ms, game_id)
         )
 
+        game_finished = False
         if board.is_checkmate():
             winner_id = game['white_player_id'] if role == 'white' else game['black_player_id']
             loser_id = game['black_player_id'] if role == 'white' else game['white_player_id']
             result = '1-0' if role == 'white' else '0-1'
             finish_game(cur, game_id, result, CHECKMATE, winner_id, loser_id)
+            game_finished = True
         elif board.is_stalemate():
             finish_game(cur, game_id, '1/2-1/2', STALEMATE)
+            game_finished = True
         elif board.is_insufficient_material():
             finish_game(cur, game_id, '1/2-1/2', INSUFFICIENT)
+            game_finished = True
 
         conn.commit()
         conn.close()
+        trigger(f'game-{game_id}', 'update', {})
+        if game_finished:
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'resign':
@@ -225,6 +237,8 @@ def handler(event: dict, context) -> dict:
         finish_game(cur, game_id, result, RESIGNATION, winner_id, loser_id)
         conn.commit()
         conn.close()
+        trigger(f'game-{game_id}', 'update', {})
+        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'offer_draw':
@@ -241,6 +255,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("UPDATE tournament_games SET draw_offered_by = %s WHERE id = %s", (player_id, game_id))
         conn.commit()
         conn.close()
+        trigger(f'game-{game_id}', 'update', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'accept_draw':
@@ -260,6 +275,8 @@ def handler(event: dict, context) -> dict:
         finish_game(cur, game_id, '1/2-1/2', DRAW_AGREED)
         conn.commit()
         conn.close()
+        trigger(f'game-{game_id}', 'update', {})
+        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'decline_draw':
@@ -267,6 +284,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("UPDATE tournament_games SET draw_offered_by = NULL WHERE id = %s", (game_id,))
         conn.commit()
         conn.close()
+        trigger(f'game-{game_id}', 'update', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'chat':
@@ -287,6 +305,8 @@ def handler(event: dict, context) -> dict:
         cur.execute("INSERT INTO game_chat_messages (game_id, player_id, message) VALUES (%s, %s, %s)", (game_id, player_id, message))
         conn.commit()
         conn.close()
+        fio = game['white_fio'] if role == 'white' else game['black_fio']
+        trigger(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     conn.close()

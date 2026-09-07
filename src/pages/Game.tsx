@@ -5,6 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePusherChannel } from '@/hooks/usePusherChannel';
 import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
@@ -81,6 +82,8 @@ export default function Game() {
   const [liveWhiteMs, setLiveWhiteMs] = useState(0);
   const [liveBlackMs, setLiveBlackMs] = useState(0);
   const [promoChoice, setPromoChoice] = useState<{ from: string; to: string } | null>(null);
+  const [pusherKey, setPusherKey] = useState<string | null>(null);
+  const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchGame = useCallback(async () => {
@@ -96,6 +99,8 @@ export default function Game() {
       setMyRole(json.my_role);
       setLiveWhiteMs(json.game.white_time_ms);
       setLiveBlackMs(json.game.black_time_ms);
+      setPusherKey(json.pusher_key || null);
+      setPusherCluster(json.pusher_cluster || null);
       setFetchError('');
     } catch {
       setFetchError('Не удалось загрузить партию');
@@ -104,9 +109,17 @@ export default function Game() {
 
   useEffect(() => {
     fetchGame();
-    const interval = setInterval(fetchGame, 2000);
+    // Резервный опрос на случай, если real-time соединение прервалось
+    const interval = setInterval(fetchGame, 15000);
     return () => clearInterval(interval);
   }, [fetchGame]);
+
+  usePusherChannel(
+    gameId ? `game-${gameId}` : null,
+    pusherKey,
+    pusherCluster,
+    useCallback(() => { fetchGame(); }, [fetchGame]),
+  );
 
   useEffect(() => {
     if (!game || game.status !== 'active') return;
