@@ -266,23 +266,35 @@ export default function Game() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-8 border-4 border-primary rounded-lg overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
-                {ranks.map(rIdx => (
-                  filesOrdered.map((f) => {
+              <div className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
+                {ranks.map((rIdx, rowPos) => (
+                  filesOrdered.map((f, colPos) => {
                     const fIdx = FILES.indexOf(f);
                     const piece = board[7 - rIdx][fIdx];
                     const sqName = `${f}${rIdx + 1}`;
                     const isLight = (fIdx + rIdx) % 2 === 1;
                     const isSelected = selected === sqName;
+                    const isLastCol = colPos === 7;
+                    const isLastRow = rowPos === 7;
                     return (
                       <button
                         key={sqName}
                         onClick={() => handleSquareClick(sqName, piece)}
-                        className={`relative flex items-center justify-center text-3xl sm:text-4xl select-none
-                          ${isLight ? 'bg-amber-50' : 'bg-primary/80'}
+                        className={`relative aspect-square flex items-center justify-center text-3xl sm:text-4xl select-none
+                          ${isLight ? 'bg-[#f0d9b5]' : 'bg-[#b58863]'}
                           ${isSelected ? 'ring-4 ring-secondary ring-inset' : ''}
                           ${isMyTurn() ? 'cursor-pointer' : 'cursor-default'}`}
                       >
+                        {isLastRow && (
+                          <span className={`absolute left-0.5 bottom-0 text-[10px] sm:text-xs font-semibold select-none ${isLight ? 'text-[#b58863]' : 'text-[#f0d9b5]'}`}>
+                            {f}
+                          </span>
+                        )}
+                        {isLastCol && (
+                          <span className={`absolute right-0.5 top-0 text-[10px] sm:text-xs font-semibold select-none ${isLight ? 'text-[#b58863]' : 'text-[#f0d9b5]'}`}>
+                            {rIdx + 1}
+                          </span>
+                        )}
                         {piece && (
                           <span className={piece === piece.toUpperCase() ? 'text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]' : 'text-gray-900'}>
                             {UNICODE[piece]}
