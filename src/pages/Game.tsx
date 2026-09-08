@@ -35,10 +35,11 @@ interface ChatMsg {
 }
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-const UNICODE: Record<string, string> = {
-  K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
-  k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟',
-};
+
+function pieceIcon(piece: string): string {
+  const color = piece === piece.toUpperCase() ? 'w' : 'b';
+  return `/chess-pieces/${color}${piece.toUpperCase()}.svg`;
+}
 
 const RESULT_REASON_LABELS: Record<string, string> = {
   checkmate: 'мат', stalemate: 'пат', draw_agreed: 'согласие сторон',
@@ -296,9 +297,7 @@ export default function Game() {
                           </span>
                         )}
                         {piece && (
-                          <span className={piece === piece.toUpperCase() ? 'text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]' : 'text-gray-900'}>
-                            {UNICODE[piece]}
-                          </span>
+                          <img src={pieceIcon(piece)} alt={piece} className="w-[80%] h-[80%] pointer-events-none select-none" draggable={false} />
                         )}
                       </button>
                     );
@@ -361,8 +360,8 @@ export default function Game() {
                     <div className="flex gap-2">
                       {['Q', 'R', 'B', 'N'].map(p => (
                         <button key={p} onClick={() => handlePromotion(p)}
-                          className="w-14 h-14 flex items-center justify-center text-4xl bg-muted rounded-xl hover:bg-secondary/20 transition-colors">
-                          {UNICODE[myRole === 'white' ? p : p.toLowerCase()]}
+                          className="w-14 h-14 flex items-center justify-center bg-muted rounded-xl hover:bg-secondary/20 transition-colors">
+                          <img src={pieceIcon(myRole === 'white' ? p : p.toLowerCase())} alt={p} className="w-[80%] h-[80%]" draggable={false} />
                         </button>
                       ))}
                     </div>
