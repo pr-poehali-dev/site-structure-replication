@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
+import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
 
 const HALL_URL = func2url['tournament-hall'];
@@ -65,8 +66,11 @@ function formatCountdown(ms: number): string {
 
 const RESULT_LABELS: Record<string, string> = { '1-0': '1–0', '0-1': '0–1', '1/2-1/2': '½–½' };
 
-function playerRoundScore(playerId: number, round: Round): string | null {
-  const game = round.games.find(g => g.white_player_id === playerId || g.black_player_id === playerId);
+function findPlayerRoundGame(playerId: number, round: Round): Game | null {
+  return round.games.find(g => g.white_player_id === playerId || g.black_player_id === playerId) || null;
+}
+
+function playerRoundScore(playerId: number, game: Game | null): string | null {
   if (!game) return null;
   if (game.is_bye) return '1';
   if (game.status !== 'finished' || !game.result) return null;
@@ -311,13 +315,13 @@ export default function Hall() {
                     <div key={g.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors">
                       {g.is_bye ? (
                         <span className="text-sm text-gray-600 flex items-center gap-2">
-                          <Icon name="Moon" size={14} className="text-gray-400" /> {g.white_fio} — технический бай (+1)
+                          <Icon name="Moon" size={14} className="text-gray-400" /> {shortFio(g.white_fio)} — технический бай (+1)
                         </span>
                       ) : (
                         <>
                           <div className="flex-1 flex items-center gap-2 min-w-0">
                             <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
-                            <span className="truncate text-sm font-medium text-gray-800">{g.white_fio}</span>
+                            <span className="truncate text-sm font-medium text-gray-800">{shortFio(g.white_fio)}</span>
                           </div>
                           <div className="px-3 shrink-0">
                             {g.status === 'finished' ? (
@@ -327,7 +331,7 @@ export default function Hall() {
                             )}
                           </div>
                           <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-                            <span className="truncate text-sm font-medium text-gray-800 text-right">{g.black_fio}</span>
+                            <span className="truncate text-sm font-medium text-gray-800 text-right">{shortFio(g.black_fio)}</span>
                             <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0" />
                           </div>
                         </>
@@ -358,13 +362,21 @@ export default function Hall() {
                     {players.map((p, i) => (
                       <tr key={p.id} className="border-t border-gray-50">
                         <td className="py-2 pr-2 text-gray-400">{i + 1}</td>
-                        <td className="py-2 pr-2 font-medium text-gray-800">{p.fio}</td>
+                        <td className="py-2 pr-2 font-medium text-gray-800">{shortFio(p.fio)}</td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
                         {rounds.map(r => {
-                          const score = playerRoundScore(p.id, r);
+                          const game = findPlayerRoundGame(p.id, r);
+                          const score = playerRoundScore(p.id, game);
+                          const clickable = !!game && !game.is_bye;
                           return (
                             <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
-                              {score ?? <span className="text-gray-300">—</span>}
+                              {clickable ? (
+                                <Link to={`/game/${game!.id}`} className="hover:underline hover:text-secondary font-medium">
+                                  {score ?? <span className="text-gray-300">—</span>}
+                                </Link>
+                              ) : (
+                                score ?? <span className="text-gray-300">—</span>
+                              )}
                             </td>
                           );
                         })}

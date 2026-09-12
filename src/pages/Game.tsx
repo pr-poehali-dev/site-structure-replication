@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
+import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
@@ -284,7 +285,7 @@ export default function Game() {
               <div className="w-full max-w-[560px] flex items-center justify-between px-1">
                 <span className="font-medium text-gray-800 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block" />
-                  {myRole === 'black' ? game.white_fio : game.black_fio || '—'}
+                  {shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}
                 </span>
                 <span className={`font-mono text-lg px-3 py-1 rounded-lg ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-500'}`}>
                   {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
@@ -333,7 +334,7 @@ export default function Game() {
               <div className="w-full max-w-[560px] flex items-center justify-between px-1">
                 <span className="font-medium text-gray-800 flex items-center gap-2">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block" />
-                  {myRole === 'black' ? game.black_fio : game.white_fio || '—'}
+                  {shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}
                 </span>
                 <span className={`font-mono text-lg px-3 py-1 rounded-lg ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-500'}`}>
                   {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
@@ -408,7 +409,7 @@ export default function Game() {
                 <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
                   {chat.map((m, i) => (
                     <div key={i} className="text-sm">
-                      <span className="font-medium text-primary">{m.fio}: </span>
+                      <span className="font-medium text-primary">{shortFio(m.fio)}: </span>
                       <span className="text-gray-700">{m.message}</span>
                     </div>
                   ))}
