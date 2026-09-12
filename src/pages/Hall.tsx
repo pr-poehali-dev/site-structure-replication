@@ -75,6 +75,7 @@ export default function Hall() {
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
+  const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
   const knownGameIdRef = useRef<number | null>(null);
   const hasLoadedOnceRef = useRef(false);
 
@@ -95,7 +96,7 @@ export default function Hall() {
 
       const newGameId: number | null = json.my_game_id || null;
       if (hasLoadedOnceRef.current && newGameId && newGameId !== knownGameIdRef.current) {
-        navigate(`/game/${newGameId}`);
+        setRedirectingGameId(newGameId);
       }
       knownGameIdRef.current = newGameId;
       hasLoadedOnceRef.current = true;
@@ -134,6 +135,12 @@ export default function Hall() {
     pusherCluster,
     useCallback(() => { fetchHall(); }, [fetchHall]),
   );
+
+  useEffect(() => {
+    if (redirectingGameId === null) return;
+    const timer = setTimeout(() => { navigate(`/game/${redirectingGameId}`); }, 1500);
+    return () => clearTimeout(timer);
+  }, [redirectingGameId, navigate]);
 
   if (loading) {
     return (
@@ -193,6 +200,16 @@ export default function Hall() {
     <div className="min-h-screen bg-muted text-foreground flex flex-col">
       <Seo title={`${tournament.title} — турнирный зал`} description="Турнирный зал" path={`/hall/${tournamentId}`} noindex />
       <Header />
+
+      {redirectingGameId !== null && (
+        <div className="fixed inset-0 bg-primary/95 flex flex-col items-center justify-center z-50 px-4 text-center gap-4">
+          <Icon name="Swords" size={40} className="text-secondary animate-pulse" />
+          <p className="font-heading font-bold text-xl md:text-2xl text-white">
+            У Вас начинается партия. Переход в игру
+          </p>
+          <Icon name="Loader2" size={24} className="text-white/70 animate-spin" />
+        </div>
+      )}
 
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-7xl mx-auto">
