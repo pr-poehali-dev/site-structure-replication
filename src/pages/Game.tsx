@@ -399,9 +399,22 @@ export default function Game() {
             <div className="flex flex-col gap-4">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ходы партии</p>
-                <p className="text-sm text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
-                  {game.pgn || 'Партия ещё не началась'}
-                </p>
+                {finished ? (
+                  <>
+                    <p className="text-sm font-semibold text-primary mb-1">
+                      {gameOutcomeText(game.result, game.result_reason)}
+                    </p>
+                    {game.pgn && (
+                      <p className="text-sm text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
+                        {game.pgn}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
+                    {game.pgn || 'Партия ещё не началась'}
+                  </p>
+                )}
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col h-[380px]">
@@ -444,4 +457,16 @@ function RESULT_LABELS(result: string | null): string {
   if (result === '0-1') return 'Победа чёрных';
   if (result === '1/2-1/2') return 'Ничья';
   return result || '';
+}
+
+function gameOutcomeText(result: string | null, reason: string | null): string {
+  if (reason === 'checkmate') return result === '1-0' ? 'Белые поставили мат' : 'Чёрные поставили мат';
+  if (reason === 'stalemate') return 'Ничья: пат';
+  if (reason === 'draw_agreed') return 'Ничья по соглашению сторон';
+  if (reason === 'insufficient_material') return 'Ничья: недостаточно материала для мата';
+  if (reason === 'resignation') return result === '1-0' ? 'Чёрные сдались' : 'Белые сдались';
+  if (reason === 'timeout') return result === '1-0' ? 'Чёрные просрочили время' : 'Белые просрочили время';
+  if (reason === 'first_move_timeout') return 'Белые не сделали первый ход вовремя';
+  if (reason === 'bye') return 'Технический бай';
+  return RESULT_LABELS(result);
 }
