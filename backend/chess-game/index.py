@@ -87,6 +87,29 @@ def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_playe
         )
 
 
+def check_round_completion(cur, tournament_id, round_id):
+    """Если только что завершённая партия была последней активной в туре — закрывает тур
+    и сразу запускает отсчёт до следующего тура, не дожидаясь захода кого-либо в зал."""
+    cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s FOR UPDATE", (round_id,))
+    row = cur.fetchone()
+    if not row:
+        return
+    round_number, status = row
+    if status != 'active':
+        return
+    cur.execute("SELECT COUNT(*) FROM tournament_games WHERE round_id = %s AND status != 'finished'", (round_id,))
+    if cur.fetchone()[0] > 0:
+        return
+    cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
+    cur.execute("SELECT rounds_count FROM tournaments WHERE id = %s", (tournament_id,))
+    rounds_count = cur.fetchone()[0]
+    if round_number >= rounds_count:
+        cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament_id,))
+        trigger(f"tournament-{tournament_id}", 'finished', {})
+    else:
+        trigger(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})
+
+
 def player_role(game, user_id):
     if user_id and game['white_user_id'] == user_id:
         return 'white'
@@ -129,6 +152,7 @@ def handler(event: dict, context) -> dict:
             loser_id = game['white_player_id'] if loser_color == 'white' else game['black_player_id']
             result = '0-1' if loser_color == 'white' else '1-0'
             finish_game(cur, game['id'], result, TIMEOUT, winner_id, loser_id)
+            check_round_completion(cur, game['tournament_id'], game['round_id'])
             conn.commit()
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
@@ -214,6 +238,9 @@ def handler(event: dict, context) -> dict:
             finish_game(cur, game_id, '1/2-1/2', INSUFFICIENT)
             game_finished = True
 
+        if game_finished:
+            check_round_completion(cur, game['tournament_id'], game['round_id'])
+
         conn.commit()
         conn.close()
         trigger(f'game-{game_id}', 'update', {})
@@ -235,6 +262,7 @@ def handler(event: dict, context) -> dict:
         loser_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         result = '0-1' if role == 'white' else '1-0'
         finish_game(cur, game_id, result, RESIGNATION, winner_id, loser_id)
+        check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
         conn.close()
         trigger(f'game-{game_id}', 'update', {})
@@ -273,6 +301,7 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нельзя принять собственное предложение'})}
         finish_game(cur, game_id, '1/2-1/2', DRAW_AGREED)
+        check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
         conn.close()
         trigger(f'game-{game_id}', 'update', {})
