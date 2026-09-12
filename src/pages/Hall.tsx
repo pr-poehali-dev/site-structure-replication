@@ -65,6 +65,18 @@ function formatCountdown(ms: number): string {
 
 const RESULT_LABELS: Record<string, string> = { '1-0': '1–0', '0-1': '0–1', '1/2-1/2': '½–½' };
 
+function playerRoundScore(playerId: number, round: Round): string | null {
+  const game = round.games.find(g => g.white_player_id === playerId || g.black_player_id === playerId);
+  if (!game) return null;
+  if (game.is_bye) return '1';
+  if (game.status !== 'finished' || !game.result) return null;
+  const isWhite = game.white_player_id === playerId;
+  if (game.result === '1/2-1/2') return '½';
+  if (game.result === '1-0') return isWhite ? '1' : '0';
+  if (game.result === '0-1') return isWhite ? '0' : '1';
+  return null;
+}
+
 export default function Hall() {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -335,6 +347,9 @@ export default function Hall() {
                       <th className="pb-2 pr-2 font-medium">#</th>
                       <th className="pb-2 pr-2 font-medium">Участник</th>
                       <th className="pb-2 pr-2 font-medium text-right">Рейтинг</th>
+                      {rounds.map(r => (
+                        <th key={r.round_number} className="pb-2 pr-2 font-medium text-center">Т{r.round_number}</th>
+                      ))}
                       <th className="pb-2 pr-2 font-medium text-right">Очки</th>
                       <th className="pb-2 font-medium text-right">Бухгольц</th>
                     </tr>
@@ -345,12 +360,20 @@ export default function Hall() {
                         <td className="py-2 pr-2 text-gray-400">{i + 1}</td>
                         <td className="py-2 pr-2 font-medium text-gray-800">{p.fio}</td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
+                        {rounds.map(r => {
+                          const score = playerRoundScore(p.id, r);
+                          return (
+                            <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
+                              {score ?? <span className="text-gray-300">—</span>}
+                            </td>
+                          );
+                        })}
                         <td className="py-2 pr-2 text-right font-bold text-primary">{p.points}</td>
                         <td className="py-2 text-right text-gray-500">{p.buchholz}</td>
                       </tr>
                     ))}
                     {players.length === 0 && (
-                      <tr><td colSpan={5} className="py-6 text-center text-gray-400">Участники ещё не зарегистрированы</td></tr>
+                      <tr><td colSpan={5 + rounds.length} className="py-6 text-center text-gray-400">Участники ещё не зарегистрированы</td></tr>
                     )}
                   </tbody>
                 </table>
