@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
@@ -67,6 +67,7 @@ const RESULT_LABELS: Record<string, string> = { '1-0': '1–0', '0-1': '0–1', 
 
 export default function Hall() {
   const { tournamentId } = useParams();
+  const navigate = useNavigate();
   const { user, token, loading } = useAuth();
   const [data, setData] = useState<HallData | null>(null);
   const [fetchError, setFetchError] = useState('');
@@ -74,6 +75,8 @@ export default function Hall() {
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
+  const knownGameIdRef = useRef<number | null>(null);
+  const hasLoadedOnceRef = useRef(false);
 
   const fetchHall = useCallback(async () => {
     if (!tournamentId) return;
@@ -89,10 +92,17 @@ export default function Hall() {
       setPusherCluster(json.pusher_cluster || null);
       setNextRoundMs(json.next_round_at ? new Date(json.next_round_at).getTime() - Date.now() : null);
       setActiveRound(prev => prev ?? (json.rounds?.length ? json.rounds[json.rounds.length - 1].round_number : null));
+
+      const newGameId: number | null = json.my_game_id || null;
+      if (hasLoadedOnceRef.current && newGameId && newGameId !== knownGameIdRef.current) {
+        navigate(`/game/${newGameId}`);
+      }
+      knownGameIdRef.current = newGameId;
+      hasLoadedOnceRef.current = true;
     } catch {
       setFetchError('Не удалось загрузить турнирный зал');
     }
-  }, [tournamentId, token]);
+  }, [tournamentId, token, navigate]);
 
   useEffect(() => {
     fetchHall();
