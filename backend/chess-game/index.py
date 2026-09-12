@@ -13,6 +13,9 @@ DRAW_AGREED = 'draw_agreed'
 RESIGNATION = 'resignation'
 TIMEOUT = 'timeout'
 INSUFFICIENT = 'insufficient_material'
+FIRST_MOVE_TIMEOUT = 'first_move_timeout'
+
+FIRST_MOVE_GRACE_MS = 30000
 
 
 def get_conn():
@@ -62,15 +65,29 @@ def load_game(cur, game_id):
     }
 
 
+def is_first_white_move(game):
+    """Партия ещё не начата (нет ни одного хода) и сейчас ход белых —
+    значит идёт 30-секундный льготный период на первый ход, который не тратит их основное время."""
+    return not game['pgn'] and game['turn'] == 'white'
+
+
 def compute_live_times(game):
     white_ms, black_ms = game['white_time_ms'], game['black_time_ms']
-    if game['status'] == 'active' and game['last_move_at']:
+    if game['status'] == 'active' and game['last_move_at'] and not is_first_white_move(game):
         elapsed = (datetime.utcnow() - game['last_move_at']).total_seconds() * 1000
         if game['turn'] == 'white':
             white_ms = max(0, white_ms - int(elapsed))
         else:
             black_ms = max(0, black_ms - int(elapsed))
     return white_ms, black_ms
+
+
+def compute_first_move_grace_ms(game):
+    """Остаток льготных 30 секунд на первый ход белых, либо None, если льготный период неактуален."""
+    if game['status'] != 'active' or not game['last_move_at'] or not is_first_white_move(game):
+        return None
+    elapsed = (datetime.utcnow() - game['last_move_at']).total_seconds() * 1000
+    return max(0, FIRST_MOVE_GRACE_MS - int(elapsed))
 
 
 def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_player_id=None):
@@ -145,8 +162,18 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
 
         white_ms, black_ms = compute_live_times(game)
+        first_move_grace_ms = compute_first_move_grace_ms(game)
 
-        if game['status'] == 'active' and (white_ms <= 0 or black_ms <= 0):
+        if game['status'] == 'active' and first_move_grace_ms == 0:
+            finish_game(cur, game['id'], '0-1', FIRST_MOVE_TIMEOUT, game['black_player_id'], game['white_player_id'])
+            check_round_completion(cur, game['tournament_id'], game['round_id'])
+            conn.commit()
+            game = load_game(cur, game_id)
+            white_ms, black_ms = compute_live_times(game)
+            first_move_grace_ms = None
+            trigger(f'game-{game_id}', 'update', {})
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        elif game['status'] == 'active' and (white_ms <= 0 or black_ms <= 0):
             loser_color = 'white' if white_ms <= 0 else 'black'
             winner_id = game['black_player_id'] if loser_color == 'white' else game['white_player_id']
             loser_id = game['white_player_id'] if loser_color == 'white' else game['black_player_id']
@@ -156,6 +183,7 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
+            first_move_grace_ms = None
             trigger(f'game-{game_id}', 'update', {})
             trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
 
@@ -173,6 +201,7 @@ def handler(event: dict, context) -> dict:
                 'fen': game['fen'], 'pgn': game['pgn'], 'turn': game['turn'],
                 'white_fio': game['white_fio'], 'black_fio': game['black_fio'],
                 'white_time_ms': white_ms, 'black_time_ms': black_ms,
+                'first_move_grace_ms': first_move_grace_ms,
                 'draw_offered_by': game['draw_offered_by'], 'tournament_title': game['tournament_title'],
                 'tournament_id': game['tournament_id'],
             },

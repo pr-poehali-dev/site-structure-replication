@@ -22,6 +22,7 @@ interface GameData {
   black_fio: string | null;
   white_time_ms: number;
   black_time_ms: number;
+  first_move_grace_ms: number | null;
   draw_offered_by: number | null;
   tournament_title: string;
   tournament_id: number;
@@ -44,7 +45,7 @@ function pieceIcon(piece: string): string {
 const RESULT_REASON_LABELS: Record<string, string> = {
   checkmate: 'мат', stalemate: 'пат', draw_agreed: 'согласие сторон',
   resignation: 'сдача', timeout: 'закончилось время', insufficient_material: 'недостаточно материала для мата',
-  bye: 'технический бай',
+  bye: 'технический бай', first_move_timeout: 'не сделан первый ход за 30 секунд',
 };
 
 function parseFen(fen: string): (string | null)[][] {
@@ -82,6 +83,7 @@ export default function Game() {
   const [chatText, setChatText] = useState('');
   const [liveWhiteMs, setLiveWhiteMs] = useState(0);
   const [liveBlackMs, setLiveBlackMs] = useState(0);
+  const [firstMoveGraceMs, setFirstMoveGraceMs] = useState<number | null>(null);
   const [promoChoice, setPromoChoice] = useState<{ from: string; to: string } | null>(null);
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
@@ -100,6 +102,7 @@ export default function Game() {
       setMyRole(json.my_role);
       setLiveWhiteMs(json.game.white_time_ms);
       setLiveBlackMs(json.game.black_time_ms);
+      setFirstMoveGraceMs(json.game.first_move_grace_ms ?? null);
       setPusherKey(json.pusher_key || null);
       setPusherCluster(json.pusher_cluster || null);
       setFetchError('');
@@ -124,12 +127,23 @@ export default function Game() {
 
   useEffect(() => {
     if (!game || game.status !== 'active') return;
+    const inGrace = firstMoveGraceMs !== null;
     const tick = setInterval(() => {
-      if (game.turn === 'white') setLiveWhiteMs(ms => Math.max(0, ms - 1000));
-      else setLiveBlackMs(ms => Math.max(0, ms - 1000));
+      if (inGrace) {
+        setFirstMoveGraceMs(ms => (ms === null ? null : Math.max(0, ms - 1000)));
+      } else if (game.turn === 'white') {
+        setLiveWhiteMs(ms => Math.max(0, ms - 1000));
+      } else {
+        setLiveBlackMs(ms => Math.max(0, ms - 1000));
+      }
     }, 1000);
     return () => clearInterval(tick);
-  }, [game]);
+  }, [game, firstMoveGraceMs !== null]);
+
+  useEffect(() => {
+    if (firstMoveGraceMs !== 0) return;
+    fetchGame();
+  }, [firstMoveGraceMs, fetchGame]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -256,6 +270,16 @@ export default function Game() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
             {/* Доска */}
             <div className="flex flex-col items-center gap-3">
+              {firstMoveGraceMs !== null && !finished && (
+                <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Icon name="Clock" size={14} />
+                    {myRole === 'white' ? 'Сделайте первый ход до окончания времени' : 'Ожидание первого хода соперника'}
+                  </span>
+                  <span className="font-mono font-semibold tabular-nums">{formatClock(firstMoveGraceMs)}</span>
+                </div>
+              )}
+
               {/* Верхний игрок (чёрные, либо белые если перевёрнуто) */}
               <div className="w-full max-w-[560px] flex items-center justify-between px-1">
                 <span className="font-medium text-gray-800 flex items-center gap-2">
