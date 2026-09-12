@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
+import MiniChessBoard from '@/components/MiniChessBoard';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import func2url from '../../backend/func2url.json';
 
 const HALL_URL = func2url['tournament-hall'];
@@ -20,6 +22,7 @@ interface Game {
   is_bye: boolean;
   status: string;
   result: string | null;
+  fen: string | null;
 }
 
 interface Round {
@@ -79,6 +82,47 @@ function playerRoundScore(playerId: number, game: Game | null): string | null {
   if (game.result === '1-0') return isWhite ? '1' : '0';
   if (game.result === '0-1') return isWhite ? '0' : '1';
   return null;
+}
+
+function GameCellContent({ score }: { score: string | null }) {
+  return score ?? <span className="text-gray-300">—</span>;
+}
+
+function RoundResultCell({ playerId, game, score }: { playerId: number; game: Game; score: string | null }) {
+  const isWhite = game.white_player_id === playerId;
+  const myFio = isWhite ? game.white_fio : game.black_fio;
+  const opponentFio = isWhite ? game.black_fio : game.white_fio;
+  const myScore = score === '1' ? '1' : score === '0' ? '0' : score === '½' ? '½' : '';
+  const oppScore = myScore === '1' ? '0' : myScore === '0' ? '1' : myScore === '½' ? '½' : '';
+  if (!game.fen) {
+    return (
+      <Link to={`/game/${game.id}`} className="hover:underline hover:text-secondary font-medium">
+        <GameCellContent score={score} />
+      </Link>
+    );
+  }
+  return (
+    <HoverCard openDelay={150} closeDelay={0}>
+      <HoverCardTrigger asChild>
+        <Link to={`/game/${game.id}`} className="hover:underline hover:text-secondary font-medium">
+          <GameCellContent score={score} />
+        </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-auto p-3" align="center">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
+            <span className="truncate max-w-[110px]">{shortFio(opponentFio)}</span>
+            <span className="text-gray-400">{oppScore}</span>
+          </div>
+          <MiniChessBoard fen={game.fen} size={160} />
+          <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
+            <span className="truncate max-w-[110px]">{shortFio(myFio)}</span>
+            <span className="text-gray-400">{myScore}</span>
+          </div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
 }
 
 export default function Hall() {
@@ -371,9 +415,7 @@ export default function Hall() {
                           return (
                             <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
                               {clickable ? (
-                                <Link to={`/game/${game!.id}`} className="hover:underline hover:text-secondary font-medium">
-                                  {score ?? <span className="text-gray-300">—</span>}
-                                </Link>
+                                <RoundResultCell playerId={p.id} game={game!} score={score} />
                               ) : (
                                 score ?? <span className="text-gray-300">—</span>
                               )}

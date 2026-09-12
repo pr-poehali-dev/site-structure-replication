@@ -227,7 +227,7 @@ def handler(event: dict, context) -> dict:
         for rr in rounds_rows:
             round_id, round_number, r_status, started_at, completed_at = rr
             cur.execute(
-                """SELECT g.id, g.white_player_id, wp.fio, g.black_player_id, bp.fio, g.is_bye, g.status, g.result
+                """SELECT g.id, g.white_player_id, wp.fio, g.black_player_id, bp.fio, g.is_bye, g.status, g.result, g.fen
                    FROM tournament_games g
                    LEFT JOIN tournament_players wp ON wp.id = g.white_player_id
                    LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
@@ -239,7 +239,7 @@ def handler(event: dict, context) -> dict:
                 games.append({
                     'id': g[0], 'white_player_id': g[1], 'white_fio': g[2],
                     'black_player_id': g[3], 'black_fio': g[4], 'is_bye': g[5],
-                    'status': g[6], 'result': g[7],
+                    'status': g[6], 'result': g[7], 'fen': g[8],
                 })
                 if my_player_id and g[6] != 'finished' and (g[1] == my_player_id or g[3] == my_player_id):
                     my_game_id = g[0]
