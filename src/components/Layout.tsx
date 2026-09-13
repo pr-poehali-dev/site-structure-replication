@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const NAV = [
   { label: 'Главная', href: '/' },
@@ -15,7 +22,7 @@ const NAV = [
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
@@ -31,9 +38,32 @@ export function Header() {
         <div className="hidden lg:flex items-center gap-2">
           {!loading && (
             user ? (
-              <a href="/cabinet" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors">
-                <Icon name="User" size={16} /> {user.last_name} {user.first_name}
-              </a>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors outline-none">
+                  <Icon name="User" size={16} /> {user.last_name} {user.first_name} <Icon name="ChevronDown" size={14} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem asChild>
+                    <a href="/cabinet?tab=balance" className="flex items-center gap-2 cursor-pointer">
+                      <Icon name="Wallet" size={16} /> Баланс
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href="/cabinet?tab=tournaments" className="flex items-center gap-2 cursor-pointer">
+                      <Icon name="Swords" size={16} /> Мои турниры
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a href="/cabinet?tab=profile" className="flex items-center gap-2 cursor-pointer">
+                      <Icon name="UserCog" size={16} /> Профиль
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500">
+                    <Icon name="LogOut" size={16} /> Выйти
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <a href="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/90 transition-colors">
                 <Icon name="LogIn" size={16} /> Войти
