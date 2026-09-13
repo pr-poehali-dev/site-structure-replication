@@ -487,6 +487,17 @@ export default function Game() {
 
             {/* ЦЕНТР: ДОСКА */}
             <div className="order-1 lg:order-2 flex flex-col items-center gap-3">
+              {/* Часы соперника — на мобильных показываются над доской */}
+              <div className={`lg:hidden w-full max-w-[560px] rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+                <span className="font-medium flex items-center gap-2 min-w-0">
+                  <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
+                  <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
+                </span>
+                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                  {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
+                </span>
+              </div>
+
               {firstMoveGraceMs !== null && !finished && (
                 <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
@@ -571,12 +582,23 @@ export default function Game() {
                   </div>
                 </div>
               )}
+
+              {/* Мои часы — на мобильных показываются сразу под доской, до ходов партии */}
+              <div className={`lg:hidden w-full max-w-[560px] rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+                <span className="font-medium flex items-center gap-2 min-w-0">
+                  <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                  <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
+                </span>
+                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                  {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
+                </span>
+              </div>
             </div>
 
             {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
             <div className="order-2 lg:order-3 flex flex-col gap-4 min-h-0">
-              {/* Часы соперника */}
-              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+              {/* Часы соперника (на мобильных дублируются над доской, здесь скрыты) */}
+              <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
@@ -648,8 +670,8 @@ export default function Game() {
                 )}
               </div>
 
-              {/* Часы игрока (мои) */}
-              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+              {/* Часы игрока (мои) — на мобильных дублируются под доской, здесь скрыты */}
+              <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
