@@ -5,7 +5,6 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import BalanceSection from './cabinet/BalanceSection';
 import ApplicationCard from './cabinet/ApplicationCard';
 import ProfileSection from './cabinet/ProfileSection';
 import func2url from '../../backend/func2url.json';
@@ -43,10 +42,10 @@ export default function Cabinet() {
   const { user, token, loading, logout } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
-  const [tab, setTab] = useState<'tournaments' | 'balance' | 'profile'>(() => {
+  const [tab, setTab] = useState<'tournaments' | 'profile'>(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('tab');
-    return t === 'balance' || t === 'profile' ? t : 'tournaments';
+    return t === 'balance' || t === 'profile' ? 'profile' : 'tournaments';
   });
 
   useEffect(() => {
@@ -97,9 +96,6 @@ export default function Cabinet() {
         <div className="flex gap-2 mb-6 border-b border-border">
           <button onClick={() => setTab('tournaments')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'tournaments' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Мои турниры
-          </button>
-          <button onClick={() => setTab('balance')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'balance' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-            Баланс
           </button>
           <button onClick={() => setTab('profile')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'profile' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Профиль
@@ -169,8 +165,6 @@ export default function Cabinet() {
             </div>
           </div>
         )}
-
-        {tab === 'balance' && <BalanceSection />}
 
         {tab === 'profile' && <ProfileSection />}
       </section>

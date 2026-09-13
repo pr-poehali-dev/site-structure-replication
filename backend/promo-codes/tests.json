@@ -13,11 +13,11 @@
       "expectedStatus": 401
     },
     {
-      "name": "POST apply without code rejected",
+      "name": "POST activate without auth rejected",
       "method": "POST",
       "path": "/",
-      "body": {"_action": "apply"},
-      "expectedStatus": 400
+      "body": {"_action": "activate", "code": "TEST"},
+      "expectedStatus": 401
     }
   ]
 }

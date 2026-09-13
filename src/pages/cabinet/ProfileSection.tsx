@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import BalanceSection from './BalanceSection';
 
 function calcAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
@@ -148,6 +149,9 @@ export default function ProfileSection() {
           </div>
         </div>
       </div>
+
+      {/* Баланс: пополнение, промокод, история операций */}
+      <BalanceSection />
 
       {/* Данные профиля: просмотр или редактирование */}
       {!editing ? (

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ interface PromoCodesSectionProps {
 export default function PromoCodesSection({ password, promoCodes, promoLoading, fetchPromoCodes }: PromoCodesSectionProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [code, setCode] = useState('');
+  const [amount, setAmount] = useState('250');
   const [expiresAt, setExpiresAt] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -25,7 +26,7 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
     const res = await fetch(PROMO_CODES_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ _action: 'create', code, expires_at: expiresAt || null }),
+      body: JSON.stringify({ _action: 'create', code, amount: Number(amount) || 250, expires_at: expiresAt || null }),
     });
     setCreating(false);
     if (res.ok) {
@@ -33,6 +34,7 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
       toast.success(`Промокод создан: ${data.code}`);
       setShowCreate(false);
       setCode('');
+      setAmount('250');
       setExpiresAt('');
       fetchPromoCodes();
     } else {
@@ -83,7 +85,7 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
       </div>
 
       <p className="text-sm text-gray-500 mb-6">
-        Промокод даёт бесплатное участие в любом платном турнире. Каждый код одноразовый — после применения он автоматически деактивируется.
+        Промокод пополняет баланс пользователя на указанную сумму. Каждый код одноразовый — после активации его нельзя использовать повторно.
       </p>
 
       {promoLoading ? <div className="text-center py-12 text-gray-400">Загрузка...</div>
@@ -101,6 +103,7 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="font-mono font-bold text-lg text-primary tracking-wider">{pc.code}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-secondary/20 text-primary">{pc.amount.toLocaleString('ru')} ₽</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
@@ -108,11 +111,10 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
                       {pc.expires_at && <span>Действует до: {new Date(pc.expires_at).toLocaleString('ru-RU')}</span>}
                       {pc.used_at && <span>Использован: {new Date(pc.used_at).toLocaleString('ru-RU')}</span>}
                     </div>
-                    {pc.used_at && (pc.used_by_fio || pc.used_by_tournament_title) && (
+                    {pc.used_at && pc.used_by_fio && (
                       <div className="mt-2 text-sm bg-purple-50 text-purple-700 rounded-lg px-3 py-2 flex items-center gap-2">
                         <Icon name="User" size={14} />
-                        {pc.used_by_fio && <span className="font-medium">{pc.used_by_fio}</span>}
-                        {pc.used_by_tournament_title && <span>— {pc.used_by_tournament_title}</span>}
+                        <span className="font-medium">{pc.used_by_fio}</span>
                       </div>
                     )}
                   </div>
@@ -143,6 +145,10 @@ export default function PromoCodesSection({ password, promoCodes, promoLoading, 
               <div>
                 <Label>Код</Label>
                 <Input className="mt-1 font-mono uppercase" placeholder="Оставьте пустым для автогенерации" value={code} onChange={e => setCode(e.target.value.toUpperCase())} />
+              </div>
+              <div>
+                <Label>Сумма пополнения, ₽</Label>
+                <Input type="number" min="1" className="mt-1" value={amount} onChange={e => setAmount(e.target.value)} />
               </div>
               <div>
                 <Label>Срок действия (необязательно)</Label>

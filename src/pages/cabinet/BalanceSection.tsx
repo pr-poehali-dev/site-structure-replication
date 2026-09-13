@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import func2url from '../../../backend/func2url.json';
 
 const BALANCE_URL = func2url['balance'];
+const PROMO_CODES_URL = func2url['promo-codes'];
 const POLL_ATTEMPTS = 5;
 const POLL_DELAY_MS = 2000;
 
@@ -20,6 +21,7 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; className: stri
   topup: { label: 'Пополнение', icon: 'ArrowDownCircle', className: 'text-green-600' },
   payment: { label: 'Списание', icon: 'ArrowUpCircle', className: 'text-red-500' },
   refund: { label: 'Возврат', icon: 'RotateCcw', className: 'text-secondary' },
+  promo: { label: 'Промокод', icon: 'Gift', className: 'text-purple-600' },
 };
 
 function formatDateTime(dateStr: string) {
@@ -40,6 +42,10 @@ export default function BalanceSection() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoActivating, setPromoActivating] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
 
   const fetchBalance = useCallback(() => {
     if (!token) return;
@@ -90,7 +96,7 @@ export default function BalanceSection() {
           amount: value,
           user_email: user.email,
           user_name: [user.last_name, user.first_name].filter(Boolean).join(' '),
-          return_url: window.location.origin + '/cabinet?tab=balance',
+          return_url: window.location.origin + '/cabinet?tab=profile',
         }),
       });
       const data = await res.json();
@@ -104,6 +110,33 @@ export default function BalanceSection() {
       setError('Ошибка сети. Попробуйте ещё раз.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleActivatePromo(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token || !promoCode.trim()) return;
+    setPromoActivating(true);
+    setPromoError('');
+    setPromoSuccess('');
+    try {
+      const res = await fetch(PROMO_CODES_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ _action: 'activate', code: promoCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPromoError(data.error || 'Не удалось активировать промокод');
+        return;
+      }
+      setPromoSuccess(`Баланс пополнен на ${data.amount.toLocaleString('ru')} ₽`);
+      setPromoCode('');
+      fetchBalance();
+    } catch {
+      setPromoError('Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      setPromoActivating(false);
     }
   }
 
@@ -160,6 +193,24 @@ export default function BalanceSection() {
             {submitting ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Создаём платёж...</> : <><Icon name="CreditCard" size={16} className="mr-2" />Пополнить через ЮKassa</>}
           </Button>
         </form>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h3 className="font-heading font-bold text-lg text-primary mb-4">Активировать промокод</h3>
+        <form onSubmit={handleActivatePromo} className="flex gap-2 max-w-sm">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={e => setPromoCode(e.target.value.toUpperCase())}
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm uppercase tracking-wider font-mono focus:outline-none focus:ring-2 focus:ring-secondary"
+            placeholder="Введите промокод"
+          />
+          <Button type="submit" disabled={promoActivating || !promoCode.trim()} variant="outline" className="shrink-0">
+            {promoActivating ? <Icon name="Loader2" size={16} className="animate-spin" /> : <><Icon name="Gift" size={16} className="mr-2" />Активировать</>}
+          </Button>
+        </form>
+        {promoError && <p className="text-red-500 text-sm mt-2">{promoError}</p>}
+        {promoSuccess && <p className="text-green-600 text-sm mt-2">{promoSuccess}</p>}
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

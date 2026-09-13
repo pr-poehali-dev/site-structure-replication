@@ -127,7 +127,7 @@ export default function TournamentModals({
                     <p className="text-sm text-red-500 flex items-center gap-1.5">
                       <Icon name="AlertCircle" size={14} />
                       Недостаточно средств на балансе.{' '}
-                      <a href="/cabinet?tab=balance" className="underline hover:no-underline font-medium">Пополнить →</a>
+                      <a href="/cabinet?tab=profile" className="underline hover:no-underline font-medium">Пополнить →</a>
                     </p>
                   )}
                   <label className="flex items-start gap-2 cursor-pointer mt-1">

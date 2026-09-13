@@ -1,0 +1,5 @@
+ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS amount NUMERIC(10,2);
+UPDATE promo_codes SET amount = 250 WHERE amount IS NULL;
+ALTER TABLE promo_codes ALTER COLUMN amount SET DEFAULT 250;
+ALTER TABLE promo_codes ALTER COLUMN amount SET NOT NULL;
+ALTER TABLE promo_codes ADD COLUMN IF NOT EXISTS used_by_user_id INTEGER REFERENCES users(id);

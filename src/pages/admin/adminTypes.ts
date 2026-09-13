@@ -39,8 +39,8 @@ export interface PushSubscription {
 export interface PromoCode {
   id: number; code: string; active: boolean;
   expires_at: string | null; used_at: string | null;
-  used_by_application_id: number | null; created_at: string;
-  used_by_fio: string | null; used_by_tournament_title: string | null;
+  amount: number; created_at: string;
+  used_by_fio: string | null;
 }
 
 export interface SubscriptionPlan {

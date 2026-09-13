@@ -44,18 +44,13 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem asChild>
-                    <a href="/cabinet?tab=balance" className="flex items-center gap-2 cursor-pointer">
-                      <Icon name="Wallet" size={16} /> Баланс
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
                     <a href="/cabinet?tab=tournaments" className="flex items-center gap-2 cursor-pointer">
                       <Icon name="Swords" size={16} /> Мои турниры
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a href="/cabinet?tab=profile" className="flex items-center gap-2 cursor-pointer">
-                      <Icon name="UserCog" size={16} /> Профиль
+                      <Icon name="UserCog" size={16} /> Профиль и баланс
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
