@@ -300,5 +300,31 @@ def handler(event: dict, context) -> dict:
         trigger(f'tournament-{tournament_id}', 'round-started', {'round_number': 1})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
+    if method == 'POST' and action == 'reset':
+        if not is_admin:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        tournament_id = body.get('tournament_id')
+        tournament = get_tournament(cur, tournament_id)
+        if not tournament:
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
+
+        cur.execute(
+            """DELETE FROM game_chat_messages WHERE game_id IN
+               (SELECT id FROM tournament_games WHERE tournament_id = %s)""",
+            (tournament_id,)
+        )
+        cur.execute("DELETE FROM tournament_games WHERE tournament_id = %s", (tournament_id,))
+        cur.execute("DELETE FROM tournament_rounds WHERE tournament_id = %s", (tournament_id,))
+        cur.execute("DELETE FROM tournament_players WHERE tournament_id = %s", (tournament_id,))
+        cur.execute(
+            "UPDATE tournaments SET hall_status = 'not_started', hall_open = false WHERE id = %s",
+            (tournament_id,)
+        )
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
     conn.close()
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}
