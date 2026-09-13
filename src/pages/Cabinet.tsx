@@ -178,9 +178,12 @@ export default function Cabinet() {
             )}
 
             <div>
-              <h2 className="font-heading font-bold text-xl text-primary uppercase mb-4 flex items-center gap-2">
+              <h2 className="font-heading font-bold text-xl text-primary uppercase mb-1 flex items-center gap-2">
                 <Icon name="CalendarClock" size={20} className="text-secondary" /> Предстоящие турниры
               </h2>
+              <p className="text-sm text-gray-400 mb-4 flex items-center gap-1.5">
+                <Icon name="Info" size={14} className="shrink-0" /> Турнирный зал открывается за полчаса до начала турнира
+              </p>
               {appsLoading ? (
                 <div className="text-gray-400 py-6"><Icon name="Loader2" size={20} className="animate-spin inline mr-2" />Загрузка...</div>
               ) : ongoing.length === 0 ? (
