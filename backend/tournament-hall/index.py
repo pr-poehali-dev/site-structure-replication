@@ -281,13 +281,20 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно оплаченных участников (нужно минимум 2)'})}
 
+        cur.execute("SELECT user_id FROM tournament_players WHERE tournament_id = %s AND user_id IS NOT NULL", (tournament_id,))
+        existing_user_ids = {r[0] for r in cur.fetchall()}
+
         for app_id, user_id, fio in paid_apps:
+            if user_id and user_id in existing_user_ids:
+                continue
             cur.execute(
                 """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
                    VALUES (%s, %s, %s, %s, 1200)
                    ON CONFLICT (tournament_id, application_id) DO NOTHING""",
                 (tournament_id, user_id, app_id, fio)
             )
+            if user_id:
+                existing_user_ids.add(user_id)
 
         cur.execute("UPDATE tournaments SET hall_status = 'active' WHERE id = %s", (tournament_id,))
         conn.commit()
