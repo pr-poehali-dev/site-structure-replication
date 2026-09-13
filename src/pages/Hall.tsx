@@ -90,10 +90,10 @@ function GameCellContent({ score }: { score: string | null }) {
 
 function RoundResultCell({ playerId, game, score }: { playerId: number; game: Game; score: string | null }) {
   const isWhite = game.white_player_id === playerId;
-  const myFio = isWhite ? game.white_fio : game.black_fio;
-  const opponentFio = isWhite ? game.black_fio : game.white_fio;
   const myScore = score === '1' ? '1' : score === '0' ? '0' : score === '½' ? '½' : '';
   const oppScore = myScore === '1' ? '0' : myScore === '0' ? '1' : myScore === '½' ? '½' : '';
+  const whiteScore = isWhite ? myScore : oppScore;
+  const blackScore = isWhite ? oppScore : myScore;
   if (!game.fen) {
     return (
       <Link to={`/game/${game.id}`} className="hover:underline hover:text-secondary font-medium">
@@ -111,13 +111,13 @@ function RoundResultCell({ playerId, game, score }: { playerId: number; game: Ga
       <HoverCardContent className="w-auto p-3" align="center">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
-            <span className="truncate max-w-[110px]">{shortFio(opponentFio)}</span>
-            <span className="text-gray-400">{oppScore}</span>
+            <span className="truncate max-w-[110px]">{shortFio(game.black_fio)}</span>
+            <span className="text-gray-400">{blackScore}</span>
           </div>
           <MiniChessBoard fen={game.fen} size={160} />
           <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
-            <span className="truncate max-w-[110px]">{shortFio(myFio)}</span>
-            <span className="text-gray-400">{myScore}</span>
+            <span className="truncate max-w-[110px]">{shortFio(game.white_fio)}</span>
+            <span className="text-gray-400">{whiteScore}</span>
           </div>
         </div>
       </HoverCardContent>
