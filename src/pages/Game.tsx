@@ -429,10 +429,10 @@ export default function Game() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-stretch">
             {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат */}
-            <div className="order-3 lg:order-1 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="order-3 lg:order-1 flex flex-col gap-4 min-h-0">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 shrink-0">
                 <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-3">
                   <Icon name="Swords" size={16} className="text-secondary shrink-0" />
                   <span className="truncate">{game.tournament_title}</span>
@@ -452,7 +452,7 @@ export default function Game() {
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col h-[380px]">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Чат</p>
                 <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
                   {chat.map((m, i) => (
@@ -568,9 +568,9 @@ export default function Game() {
             </div>
 
             {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
-            <div className="order-2 lg:order-3 flex flex-col gap-4">
+            <div className="order-2 lg:order-3 flex flex-col gap-4 min-h-0">
               {/* Часы соперника */}
-              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
@@ -580,8 +580,8 @@ export default function Game() {
                 </span>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ходы партии</p>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 shrink-0">Ходы партии</p>
                 {finished && (
                   <p className="text-sm font-semibold text-primary mb-2">
                     {gameOutcomeText(game.result, game.result_reason)}
@@ -591,7 +591,7 @@ export default function Game() {
                   <p className="text-sm text-gray-700 font-mono leading-relaxed">Партия ещё не началась</p>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100 shrink-0">
                       {viewingPast ? (
                         <span className="text-xs text-secondary flex items-center gap-1">
                           <Icon name="History" size={13} />
@@ -606,7 +606,7 @@ export default function Game() {
                         К текущей позиции
                       </button>
                     </div>
-                    <div className="flex items-center justify-center gap-1 mb-2">
+                    <div className="flex items-center justify-center gap-1 mb-2 shrink-0">
                       <button onClick={goFirst} disabled={!canGoPrev} className="p-1.5 rounded-lg text-primary hover:bg-secondary/15 disabled:opacity-30 disabled:hover:bg-transparent">
                         <Icon name="ChevronsLeft" size={18} />
                       </button>
@@ -620,7 +620,7 @@ export default function Game() {
                         <Icon name="ChevronsRight" size={18} />
                       </button>
                     </div>
-                    <div className="flex flex-col gap-1 text-sm font-mono font-semibold leading-relaxed h-[264px] overflow-y-auto">
+                    <div className="flex flex-col gap-1 text-sm font-mono font-semibold leading-relaxed flex-1 min-h-0 overflow-y-auto">
                       {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
                         const whiteIdx = pairIdx * 2;
                         const blackIdx = whiteIdx + 1;
@@ -650,7 +650,7 @@ export default function Game() {
               </div>
 
               {/* Часы игрока (мои) */}
-              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
@@ -661,13 +661,13 @@ export default function Game() {
               </div>
 
               {moveError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 flex items-center gap-2">
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 flex items-center gap-2 shrink-0">
                   <Icon name="AlertCircle" size={14} /> {moveError}
                 </div>
               )}
 
               {finished && (
-                <div className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-center shadow-sm">
+                <div className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-center shadow-sm shrink-0">
                   <p className="font-heading font-bold text-lg text-primary mb-1">
                     {RESULT_LABELS(game.result)}
                   </p>
@@ -676,7 +676,7 @@ export default function Game() {
               )}
 
               {myRole && !finished && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   {game.draw_offered_by ? (
                     <>
                       <Button variant="outline" className="flex-1" onClick={() => postAction('accept_draw')}>
