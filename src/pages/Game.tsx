@@ -263,6 +263,19 @@ export default function Game() {
   }
 
   const moves = game.moves || [];
+  const currentMoveIndex = viewMoveIndex === null ? moves.length - 1 : viewMoveIndex;
+  const canGoPrev = moves.length > 0 && currentMoveIndex > -1;
+  const canGoNext = viewMoveIndex !== null;
+
+  function goToMove(idx: number) {
+    if (idx >= moves.length - 1) setViewMoveIndex(null);
+    else setViewMoveIndex(idx);
+  }
+  function goFirst() { setViewMoveIndex(-1); }
+  function goPrev() { if (canGoPrev) goToMove(currentMoveIndex - 1); }
+  function goNext() { if (canGoNext) goToMove(currentMoveIndex + 1); }
+  function goLast() { setViewMoveIndex(null); }
+
   const displayedFen = viewMoveIndex === null
     ? game.fen
     : viewMoveIndex === -1
@@ -427,18 +440,36 @@ export default function Game() {
                   <p className="text-sm text-gray-700 font-mono leading-relaxed">Партия ещё не началась</p>
                 ) : (
                   <>
-                    {viewingPast && (
-                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                      {viewingPast ? (
                         <span className="text-xs text-secondary flex items-center gap-1">
                           <Icon name="History" size={13} />
                           {viewMoveIndex === -1 ? 'До начала партии' : `После хода ${viewMoveIndex! + 1}`}
                         </span>
-                        <button onClick={() => setViewMoveIndex(null)} className="text-xs font-semibold text-primary underline hover:no-underline">
-                          К текущей позиции
-                        </button>
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-1 text-sm font-mono leading-relaxed max-h-40 overflow-y-auto">
+                      ) : <span />}
+                      <button
+                        onClick={() => setViewMoveIndex(null)}
+                        disabled={!viewingPast}
+                        className={`text-xs font-semibold underline hover:no-underline ${viewingPast ? 'text-primary' : 'text-gray-300 cursor-default no-underline'}`}
+                      >
+                        К текущей позиции
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <button onClick={goFirst} disabled={!canGoPrev} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronsLeft" size={16} />
+                      </button>
+                      <button onClick={goPrev} disabled={!canGoPrev} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronLeft" size={16} />
+                      </button>
+                      <button onClick={goNext} disabled={!canGoNext} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronRight" size={16} />
+                      </button>
+                      <button onClick={goLast} disabled={!canGoNext} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronsRight" size={16} />
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm font-mono leading-relaxed h-[264px] overflow-y-auto">
                       {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
                         const whiteIdx = pairIdx * 2;
                         const blackIdx = whiteIdx + 1;
