@@ -300,18 +300,6 @@ export default function Game() {
                 </div>
               )}
 
-              {viewingPast && (
-                <div className="w-full max-w-[560px] bg-secondary/10 border border-secondary/30 text-primary text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <Icon name="History" size={14} />
-                    Просмотр позиции {viewMoveIndex === -1 ? 'до начала партии' : `после хода ${viewMoveIndex! + 1}`}
-                  </span>
-                  <button onClick={() => setViewMoveIndex(null)} className="text-xs font-semibold underline hover:no-underline">
-                    К текущей позиции
-                  </button>
-                </div>
-              )}
-
               {/* Верхний игрок (чёрные, либо белые если перевёрнуто) */}
               <div className="w-full max-w-[560px] flex items-center justify-between px-1">
                 <span className="font-medium text-gray-800 flex items-center gap-2">
@@ -438,31 +426,44 @@ export default function Game() {
                 {moves.length === 0 ? (
                   <p className="text-sm text-gray-700 font-mono leading-relaxed">Партия ещё не началась</p>
                 ) : (
-                  <div className="flex flex-wrap gap-x-1 gap-y-1.5 text-sm font-mono leading-relaxed max-h-40 overflow-y-auto">
-                    {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
-                      const whiteIdx = pairIdx * 2;
-                      const blackIdx = whiteIdx + 1;
-                      return (
-                        <span key={pairIdx} className="flex items-center gap-1">
-                          <span className="text-gray-400 select-none">{pairIdx + 1}.</span>
-                          <button
-                            onClick={() => setViewMoveIndex(whiteIdx)}
-                            className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === whiteIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
-                          >
-                            {moves[whiteIdx].san}
-                          </button>
-                          {moves[blackIdx] && (
-                            <button
-                              onClick={() => setViewMoveIndex(blackIdx)}
-                              className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === blackIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
-                            >
-                              {moves[blackIdx].san}
-                            </button>
-                          )}
+                  <>
+                    {viewingPast && (
+                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100">
+                        <span className="text-xs text-secondary flex items-center gap-1">
+                          <Icon name="History" size={13} />
+                          {viewMoveIndex === -1 ? 'До начала партии' : `После хода ${viewMoveIndex! + 1}`}
                         </span>
-                      );
-                    })}
-                  </div>
+                        <button onClick={() => setViewMoveIndex(null)} className="text-xs font-semibold text-primary underline hover:no-underline">
+                          К текущей позиции
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-1 text-sm font-mono leading-relaxed max-h-40 overflow-y-auto">
+                      {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
+                        const whiteIdx = pairIdx * 2;
+                        const blackIdx = whiteIdx + 1;
+                        return (
+                          <div key={pairIdx} className="flex items-center gap-1">
+                            <span className="text-gray-400 select-none">{pairIdx + 1}.</span>
+                            <button
+                              onClick={() => setViewMoveIndex(whiteIdx)}
+                              className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === whiteIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                            >
+                              {moves[whiteIdx].san}
+                            </button>
+                            {moves[blackIdx] && (
+                              <button
+                                onClick={() => setViewMoveIndex(blackIdx)}
+                                className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === blackIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                              >
+                                {moves[blackIdx].san}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
 
