@@ -73,6 +73,48 @@ function parseFen(fen: string): (string | null)[][] {
   });
 }
 
+function applyLocalMove(fen: string, from: string, to: string, promotion?: string): string {
+  const parts = fen.split(' ');
+  const rows = parts[0].split('/');
+  const board: (string | null)[][] = rows.map(row => {
+    const cells: (string | null)[] = [];
+    for (const ch of row) {
+      if (/\d/.test(ch)) { for (let i = 0; i < parseInt(ch, 10); i++) cells.push(null); }
+      else cells.push(ch);
+    }
+    return cells;
+  });
+  const fileIdx = (f: string) => FILES.indexOf(f);
+  const rowIdx = (rank: string) => 8 - parseInt(rank, 10);
+  const fFile = fileIdx(from[0]), fRank = rowIdx(from[1]);
+  const tFile = fileIdx(to[0]), tRank = rowIdx(to[1]);
+  let piece = board[fRank]?.[fFile];
+  if (!piece) return fen;
+  const isWhite = piece === piece.toUpperCase();
+  if (piece.toUpperCase() === 'P' && fFile !== tFile && !board[tRank][tFile]) {
+    board[fRank][tFile] = null;
+  }
+  if (piece.toUpperCase() === 'K' && Math.abs(tFile - fFile) === 2) {
+    if (tFile > fFile) { board[fRank][5] = board[fRank][7]; board[fRank][7] = null; }
+    else { board[fRank][3] = board[fRank][0]; board[fRank][0] = null; }
+  }
+  board[fRank][fFile] = null;
+  if (promotion) piece = isWhite ? promotion.toUpperCase() : promotion.toLowerCase();
+  board[tRank][tFile] = piece;
+  const newPlacement = board.map(row => {
+    let s = ''; let empty = 0;
+    for (const cell of row) {
+      if (cell === null) empty++;
+      else { if (empty) { s += empty; empty = 0; } s += cell; }
+    }
+    if (empty) s += empty;
+    return s;
+  }).join('/');
+  parts[0] = newPlacement;
+  parts[1] = parts[1] === 'w' ? 'b' : 'w';
+  return parts.join(' ');
+}
+
 function formatClock(ms: number): string {
   if (ms < 0) ms = 0;
   const totalSec = Math.floor(ms / 1000);
@@ -98,6 +140,7 @@ export default function Game() {
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
+  const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchGame = useCallback(async () => {
@@ -109,6 +152,7 @@ export default function Game() {
       const json = await res.json();
       if (!res.ok) { setFetchError(json.error || 'Партия не найдена'); return; }
       setGame(json.game);
+      setOptimisticFen(null);
       setChat(json.chat || []);
       setMyRole(json.my_role);
       setLiveWhiteMs(json.game.white_time_ms);
@@ -176,7 +220,7 @@ export default function Game() {
   }
 
   function isMyTurn() {
-    return !!game && !!myRole && game.status === 'active' && game.turn === myRole;
+    return !!game && !!myRole && game.status === 'active' && game.turn === myRole && optimisticFen === null;
   }
 
   function isOwnPiece(piece: string | null): boolean {
@@ -194,8 +238,9 @@ export default function Game() {
       setSelected(null);
       return;
     }
-    postAction('move', { from, to });
+    setOptimisticFen(applyLocalMove(game!.fen, from, to));
     setSelected(null);
+    postAction('move', { from, to }).then(ok => { if (!ok) setOptimisticFen(null); });
   }
 
   function handleSquareClick(sqName: string, piece: string | null) {
@@ -240,8 +285,11 @@ export default function Game() {
 
   async function handlePromotion(piece: string) {
     if (!promoChoice) return;
-    await postAction('move', { from: promoChoice.from, to: promoChoice.to, promotion: piece });
+    setOptimisticFen(applyLocalMove(game!.fen, promoChoice.from, promoChoice.to, piece));
+    const { from, to } = promoChoice;
     setPromoChoice(null);
+    const ok = await postAction('move', { from, to, promotion: piece });
+    if (!ok) setOptimisticFen(null);
   }
 
   async function handleSendChat(e: React.FormEvent) {
@@ -301,7 +349,7 @@ export default function Game() {
   function goLast() { setViewMoveIndex(null); }
 
   const displayedFen = viewMoveIndex === null
-    ? game.fen
+    ? (optimisticFen ?? game.fen)
     : viewMoveIndex === -1
       ? START_FEN
       : moves[viewMoveIndex]?.fen ?? game.fen;
