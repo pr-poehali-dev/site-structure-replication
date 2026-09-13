@@ -78,6 +78,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'participants': participants, 'count': len(participants)})}
 
     # Отмена своей заявки пользователем (_action: cancel, без пароля админа)
+    # Если взнос был оплачен (списан с баланса) — сумма возвращается на баланс
     if method == 'POST' and action == 'cancel' and not is_admin:
         user_id = get_user_id_by_token(cur, auth_token)
         if not user_id:
@@ -85,16 +86,32 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
         tournament_id = body.get('tournament_id')
         cur.execute(
-            "UPDATE applications SET status = 'cancelled' WHERE user_id = %s AND tournament_id = %s AND status NOT IN ('cancelled')",
+            "SELECT id, price, status FROM applications WHERE user_id = %s AND tournament_id = %s AND status NOT IN ('cancelled')",
             (user_id, tournament_id)
         )
+        app_row = cur.fetchone()
+        if not app_row:
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Заявка не найдена'})}
+        app_id, app_price, app_status = app_row
+        cur.execute(
+            "UPDATE applications SET status = 'cancelled' WHERE id = %s",
+            (app_id,)
+        )
+        if app_price and float(app_price) > 0 and app_status == 'paid':
+            cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (app_price, user_id))
+            cur.execute(
+                """INSERT INTO balance_transactions (user_id, amount, type, description, application_id)
+                   VALUES (%s, %s, 'refund', 'Возврат взноса за отменённое участие', %s)""",
+                (user_id, app_price, app_id)
+            )
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     # Публичное создание заявки (POST без _action и без пароля)
-    # Если турнир платный (передан флаг requires_payment) — заявка создаётся со статусом pending_payment
-    # и попадёт в список участников только после подтверждения оплаты через webhook
+    # Если турнир платный — стоимость сразу списывается с баланса пользователя.
+    # Недостаточно средств — заявка не создаётся, пользователь должен пополнить баланс.
     if method == 'POST' and action == '' and not is_admin:
         user_id = get_user_id_by_token(cur, auth_token)
         tournament_id = body.get('tournament_id')
@@ -106,16 +123,43 @@ def handler(event: dict, context) -> dict:
             if cur.fetchone():
                 conn.close()
                 return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы уже подали заявку на этот турнир'})}
-        initial_status = 'pending_payment' if body.get('requires_payment') else 'new'
+
+        price = body.get('price') or 0
+        try:
+            price = float(price)
+        except (TypeError, ValueError):
+            price = 0
+
+        if price > 0:
+            if not user_id:
+                conn.close()
+                return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Необходимо авторизоваться'})}
+            cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
+            balance_row = cur.fetchone()
+            current_balance = float(balance_row[0]) if balance_row else 0
+            if current_balance < price:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно средств на балансе. Пополните баланс в личном кабинете.'})}
+
+        initial_status = 'paid' if price > 0 else 'new'
         cur.execute(
-            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id, price, paid_from_balance)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (tournament_id, body.get('tournament_title'), body.get('fio'),
              body.get('age'), body.get('fsr_id'), body.get('coach'),
              body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
-             initial_status, user_id)
+             initial_status, user_id, price if price > 0 else None, price > 0)
         )
         new_id = cur.fetchone()[0]
+
+        if price > 0:
+            cur.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (price, user_id))
+            cur.execute(
+                """INSERT INTO balance_transactions (user_id, amount, type, description, application_id)
+                   VALUES (%s, %s, 'payment', %s, %s)""",
+                (user_id, -price, f"Оплата взноса: {body.get('tournament_title') or ''}", new_id)
+            )
+
         conn.commit()
         try:
             notify_admins_new_application(conn, body.get('tournament_title') or '', body.get('fio') or '')

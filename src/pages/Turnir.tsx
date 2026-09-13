@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header, Footer } from '@/components/Layout';
-import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 import Seo from '@/components/Seo';
 import { useAuth } from '@/contexts/AuthContext';
 import TurnirHero from './turnir/TurnirHero';
@@ -8,6 +7,7 @@ import TournamentsList from './turnir/TournamentsList';
 import TournamentRules from './turnir/TournamentRules';
 import TournamentModals, { ApplicationForm } from './turnir/TournamentModals';
 import { Tournament } from './turnir/types';
+import func2url from '../../backend/func2url.json';
 
 function fullNameFromUser(u: { last_name: string; first_name: string; middle_name: string | null }) {
   return [u.last_name, u.first_name, u.middle_name].filter(Boolean).join(' ');
@@ -27,30 +27,21 @@ function calcAge(birthDate: string | null): number | null {
 }
 
 const API_URL = 'https://functions.poehali.dev/7761fec6-18a2-49d2-833d-2b2db37f330d';
-const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
-const YOOKASSA_URL = 'https://functions.poehali.dev/6e82b6ca-7ab9-4c14-b655-024798e28cc1';
-const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420-9983-d32c3d1b6524';
-const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
+const APPS_URL = func2url['applications'];
+const BALANCE_URL = func2url['balance'];
 
 export default function Turnir() {
   const { user, token } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalTournament, setModalTournament] = useState<Tournament | null>(null);
-  const [form, setForm] = useState<ApplicationForm>({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' });
+  const [form, setForm] = useState<ApplicationForm>({ fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [promoApplying, setPromoApplying] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'pay' | 'promo' | 'subscription'>('pay');
-  const [subscriptionCode, setSubscriptionCode] = useState('');
   const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string }[]>([]);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
-
-  const { createPayment, isLoading: paymentLoading } = useYookassa({
-    apiUrl: YOOKASSA_URL,
-    onError: (err) => setSubmitError(err.message),
-  });
+  const [balance, setBalance] = useState(0);
 
   // Модал списка участников
   const [participantsModal, setParticipantsModal] = useState<Tournament | null>(null);
@@ -75,7 +66,16 @@ export default function Turnir() {
       .catch(() => {});
   }, [token]);
 
+  const fetchBalance = useCallback(() => {
+    if (!token) { setBalance(0); return; }
+    fetch(BALANCE_URL, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.json())
+      .then(data => setBalance(data.balance || 0))
+      .catch(() => {});
+  }, [token]);
+
   useEffect(() => { fetchMyApplications(); }, [fetchMyApplications]);
+  useEffect(() => { fetchBalance(); }, [fetchBalance]);
 
   async function handleCancelApplication(t: Tournament) {
     if (!token) return;
@@ -88,6 +88,7 @@ export default function Turnir() {
         body: JSON.stringify({ _action: 'cancel', tournament_id: t.id }),
       });
       fetchMyApplications();
+      fetchBalance();
     } finally {
       setCancellingId(null);
     }
@@ -96,12 +97,11 @@ export default function Turnir() {
   function openModal(t: Tournament) {
     setModalTournament(t);
     setForm(user
-      ? { fio: fullNameFromUser(user), age: calcAge(user.birth_date) !== null ? String(calcAge(user.birth_date)) : '', fsr_id: user.fsr_id || '', coach: user.coach_fio || '', country_city: user.country_city || '', school: user.institution || '', email: user.email || '', phone: user.phone || '', agree: false, promo_code: '' }
-      : { fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false, promo_code: '' }
+      ? { fio: fullNameFromUser(user), age: calcAge(user.birth_date) !== null ? String(calcAge(user.birth_date)) : '', fsr_id: user.fsr_id || '', coach: user.coach_fio || '', country_city: user.country_city || '', school: user.institution || '', email: user.email || '', phone: user.phone || '', agree: false }
+      : { fio: '', age: '', fsr_id: '', coach: '', country_city: '', school: '', email: '', phone: '', agree: false }
     );
     setSent(false);
-    setPaymentMethod('pay');
-    setSubscriptionCode('');
+    setSubmitError('');
   }
 
   function closeModal() {
@@ -123,7 +123,6 @@ export default function Turnir() {
     if (!modalTournament) return;
     setSubmitting(true);
     setSubmitError('');
-    const isPaid = !!(modalTournament.price && modalTournament.price > 0);
     try {
       const res = await fetch(APPS_URL, {
         method: 'POST',
@@ -139,72 +138,17 @@ export default function Turnir() {
           school: form.school,
           email: form.email,
           phone: form.phone,
-          requires_payment: isPaid,
+          price: modalTournament.price || 0,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setSubmitError('Ошибка при отправке. Попробуйте ещё раз.');
+        setSubmitError(data.error || 'Ошибка при отправке. Попробуйте ещё раз.');
         return;
       }
-      const data = await res.json();
-      const applicationId = data.id;
-
-      if (isPaid && paymentMethod === 'promo' && form.promo_code.trim()) {
-        setPromoApplying(true);
-        const promoRes = await fetch(PROMO_CODES_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ _action: 'apply', code: form.promo_code.trim(), application_id: applicationId }),
-        });
-        setPromoApplying(false);
-        if (promoRes.ok) {
-          setSent(true);
-          fetchMyApplications();
-          return;
-        }
-        const promoData = await promoRes.json().catch(() => ({}));
-        setSubmitError(promoData.error || 'Не удалось применить промокод');
-        return;
-      }
-
-      if (isPaid && paymentMethod === 'subscription' && subscriptionCode.trim()) {
-        setPromoApplying(true);
-        const subRes = await fetch(SUBSCRIPTIONS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ _action: 'apply', code: subscriptionCode.trim(), application_id: applicationId }),
-        });
-        setPromoApplying(false);
-        if (subRes.ok) {
-          setSent(true);
-          fetchMyApplications();
-          return;
-        }
-        const subData = await subRes.json().catch(() => ({}));
-        setSubmitError(subData.error || 'Не удалось применить код абонемента');
-        return;
-      }
-
-      if (isPaid) {
-        const payment = await createPayment({
-          amount: modalTournament.price as number,
-          userName: form.fio,
-          userEmail: form.email,
-          userPhone: form.phone,
-          description: `${form.fio} — ${modalTournament.title}`,
-          cartItems: [{ id: String(modalTournament.id), name: modalTournament.title, price: modalTournament.price as number, quantity: 1 }],
-          returnUrl: window.location.origin + '/order-status',
-          applicationId,
-        });
-        if (payment?.payment_url) {
-          openPaymentPage(payment.payment_url);
-        } else {
-          setSubmitError('Не удалось создать платёж. Попробуйте ещё раз.');
-        }
-      } else {
-        setSent(true);
-        fetchMyApplications();
-      }
+      setSent(true);
+      fetchMyApplications();
+      fetchBalance();
     } catch {
       setSubmitError('Ошибка сети. Попробуйте ещё раз.');
     } finally {
@@ -240,6 +184,7 @@ export default function Turnir() {
 
       <TournamentModals
         user={user}
+        balance={balance}
         modalTournament={modalTournament}
         closeModal={closeModal}
         sent={sent}
@@ -247,13 +192,7 @@ export default function Turnir() {
         setForm={setForm}
         handleSubmit={handleSubmit}
         submitting={submitting}
-        paymentLoading={paymentLoading}
-        promoApplying={promoApplying}
         submitError={submitError}
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        subscriptionCode={subscriptionCode}
-        setSubscriptionCode={setSubscriptionCode}
         participantsModal={participantsModal}
         setParticipantsModal={setParticipantsModal}
         participants={participants}

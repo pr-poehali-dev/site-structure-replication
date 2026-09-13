@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import BalanceSection from './cabinet/BalanceSection';
 import func2url from '../../backend/func2url.json';
 
 const APPS_URL = func2url['applications'];
@@ -52,7 +53,11 @@ export default function Cabinet() {
   const { user, token, loading, logout, updateProfile } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
-  const [tab, setTab] = useState<'tournaments' | 'profile'>('tournaments');
+  const [tab, setTab] = useState<'tournaments' | 'balance' | 'profile'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('tab');
+    return t === 'balance' || t === 'profile' ? t : 'tournaments';
+  });
 
   const [form, setForm] = useState({
     last_name: '', first_name: '', middle_name: '', birth_date: '',
@@ -134,6 +139,9 @@ export default function Cabinet() {
         <div className="flex gap-2 mb-6 border-b border-border">
           <button onClick={() => setTab('tournaments')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'tournaments' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Мои турниры
+          </button>
+          <button onClick={() => setTab('balance')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'balance' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+            Баланс
           </button>
           <button onClick={() => setTab('profile')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'profile' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Профиль
@@ -222,6 +230,8 @@ export default function Cabinet() {
             </div>
           </div>
         )}
+
+        {tab === 'balance' && <BalanceSection />}
 
         {tab === 'profile' && (
           <form onSubmit={handleSaveProfile} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3 max-w-xl">

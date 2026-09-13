@@ -248,7 +248,7 @@ def handler(event, context):
 
         # Find order by payment_id
         cur.execute(f"""
-            SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id
+            SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id, user_id
             FROM {S}orders
             WHERE yookassa_payment_id = %s
         """, (payment_id,))
@@ -260,7 +260,7 @@ def handler(event, context):
             order_id_meta = metadata.get('order_id')
             if order_id_meta:
                 cur.execute(f"""
-                    SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id
+                    SELECT id, status, application_id, order_type, items_data, user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id, user_id
                     FROM {S}orders WHERE id = %s
                 """, (int(order_id_meta),))
                 row = cur.fetchone()
@@ -273,7 +273,7 @@ def handler(event, context):
             }
 
         (order_id, current_status, application_id, order_type, items_data,
-         user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id) = row
+         user_name, user_phone, user_email, delivery_address, order_comment, amount, subscription_id, order_user_id) = row
 
         # Update based on verified payment status
         if payment_status == 'succeeded':
@@ -321,6 +321,15 @@ def handler(event, context):
                         FROM {S}subscriptions WHERE id = %s
                     """, (subscription_id,))
                     sub_row = cur.fetchone()
+                # Пополнение баланса зачисляется на счёт пользователя только после успешной оплаты
+                if order_type == 'balance_topup' and order_user_id:
+                    cur.execute(f"""
+                        UPDATE {S}users SET balance = balance + %s WHERE id = %s
+                    """, (amount, order_user_id))
+                    cur.execute(f"""
+                        INSERT INTO {S}balance_transactions (user_id, amount, type, description, order_id)
+                        VALUES (%s, %s, 'topup', 'Пополнение баланса через ЮKassa', %s)
+                    """, (order_user_id, amount, order_id))
                 conn.commit()
                 if order_type == 'subscription' and subscription_id and sub_row:
                     sub_code, sub_plan_title, sub_total, sub_email, sub_name = sub_row

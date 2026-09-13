@@ -14,11 +14,11 @@ export interface ApplicationForm {
   email: string;
   phone: string;
   agree: boolean;
-  promo_code: string;
 }
 
 interface TournamentModalsProps {
   user: UserProfile | null;
+  balance: number;
 
   // Модал заявки
   modalTournament: Tournament | null;
@@ -28,13 +28,7 @@ interface TournamentModalsProps {
   setForm: Dispatch<SetStateAction<ApplicationForm>>;
   handleSubmit: (e: React.FormEvent) => void;
   submitting: boolean;
-  paymentLoading: boolean;
-  promoApplying: boolean;
   submitError: string;
-  paymentMethod: 'pay' | 'promo' | 'subscription';
-  setPaymentMethod: Dispatch<SetStateAction<'pay' | 'promo' | 'subscription'>>;
-  subscriptionCode: string;
-  setSubscriptionCode: Dispatch<SetStateAction<string>>;
 
   // Модал списка участников
   participantsModal: Tournament | null;
@@ -48,13 +42,15 @@ interface TournamentModalsProps {
 }
 
 export default function TournamentModals({
-  user,
+  user, balance,
   modalTournament, closeModal, sent, form, setForm, handleSubmit,
-  submitting, paymentLoading, promoApplying, submitError,
-  paymentMethod, setPaymentMethod, subscriptionCode, setSubscriptionCode,
+  submitting, submitError,
   participantsModal, setParticipantsModal, participants, participantsLoading,
   imagePreview, setImagePreview,
 }: TournamentModalsProps) {
+  const price = modalTournament?.price || 0;
+  const isPaid = price > 0;
+  const insufficientBalance = isPaid && balance < price;
   return (
     <>
       {/* Modal */}
@@ -118,30 +114,21 @@ export default function TournamentModals({
                     <label className="text-sm font-medium text-gray-700">Телефон представителя *</label>
                     <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                   </div>
-                  {modalTournament.price && modalTournament.price > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Способ участия</label>
-                      <div className="mt-1 grid grid-cols-3 gap-2">
-                        <button type="button" onClick={() => setPaymentMethod('pay')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'pay' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                          Оплатить
-                        </button>
-                        <button type="button" onClick={() => setPaymentMethod('promo')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'promo' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                          Промокод
-                        </button>
-                        <button type="button" onClick={() => setPaymentMethod('subscription')} className={`px-2 py-2 rounded-lg text-xs font-medium border transition-colors ${paymentMethod === 'subscription' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                          Абонемент
-                        </button>
-                      </div>
-                      {paymentMethod === 'promo' && (
-                        <input className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Введите промокод" value={form.promo_code} onChange={e => setForm({ ...form, promo_code: e.target.value.toUpperCase() })} />
-                      )}
-                      {paymentMethod === 'subscription' && (
-                        <>
-                          <input className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Код абонемента (AB-XXXXXXXX)" value={subscriptionCode} onChange={e => setSubscriptionCode(e.target.value.toUpperCase())} />
-                          <a href="/subscriptions" target="_blank" className="text-xs text-secondary underline hover:no-underline mt-1 inline-block">Нет абонемента? Купить →</a>
-                        </>
-                      )}
+                  {isPaid && (
+                    <div className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-2 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
+                      <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                        <Icon name="Wallet" size={15} className={insufficientBalance ? 'text-red-500' : 'text-secondary'} />
+                        Взнос {price.toLocaleString('ru')} ₽ спишется с баланса
+                      </span>
+                      <span className={`text-sm font-bold shrink-0 ${insufficientBalance ? 'text-red-500' : 'text-primary'}`}>{balance.toLocaleString('ru')} ₽</span>
                     </div>
+                  )}
+                  {insufficientBalance && (
+                    <p className="text-sm text-red-500 flex items-center gap-1.5">
+                      <Icon name="AlertCircle" size={14} />
+                      Недостаточно средств на балансе.{' '}
+                      <a href="/cabinet?tab=balance" className="underline hover:no-underline font-medium">Пополнить →</a>
+                    </p>
                   )}
                   <label className="flex items-start gap-2 cursor-pointer mt-1">
                     <input required type="checkbox" className="mt-0.5 accent-secondary w-4 h-4 shrink-0" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
@@ -164,21 +151,13 @@ export default function TournamentModals({
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
                   <Button
                     type="submit"
-                    disabled={
-                      submitting || paymentLoading || promoApplying ||
-                      (!!modalTournament.price && modalTournament.price > 0 && paymentMethod === 'promo' && !form.promo_code.trim()) ||
-                      (!!modalTournament.price && modalTournament.price > 0 && paymentMethod === 'subscription' && !subscriptionCode.trim())
-                    }
+                    disabled={submitting || insufficientBalance}
                     className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1"
                   >
-                    {(submitting || paymentLoading || promoApplying)
+                    {submitting
                       ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Обработка...</>
-                      : modalTournament.price && modalTournament.price > 0
-                        ? paymentMethod === 'promo'
-                          ? <><Icon name="Gift" size={16} className="mr-2" />Подать заявку по промокоду</>
-                          : paymentMethod === 'subscription'
-                            ? <><Icon name="Ticket" size={16} className="mr-2" />Подать заявку по абонементу</>
-                            : <><Icon name="CreditCard" size={16} className="mr-2" />Оплатить {modalTournament.price.toLocaleString('ru')} ₽ и подать заявку</>
+                      : isPaid
+                        ? <><Icon name="Wallet" size={16} className="mr-2" />Списать {price.toLocaleString('ru')} ₽ и подать заявку</>
                         : <><Icon name="ClipboardCheck" size={16} className="mr-2" />Подать заявку</>
                     }
                   </Button>
