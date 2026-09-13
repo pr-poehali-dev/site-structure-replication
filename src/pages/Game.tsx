@@ -324,9 +324,58 @@ export default function Game() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-            {/* Доска */}
-            <div className="flex flex-col items-center gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center">
+            {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат */}
+            <div className="order-3 lg:order-1 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-3">
+                  <Icon name="Swords" size={16} className="text-secondary shrink-0" />
+                  <span className="truncate">{game.tournament_title}</span>
+                </Link>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
+                    <span className="font-medium text-gray-800 truncate">{shortFio(game.white_fio) || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                    <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                  {finished ? gameOutcomeText(game.result, game.result_reason) : (game.turn === 'white' ? 'Ход белых' : 'Ход чёрных')}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col h-[380px]">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Чат</p>
+                <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+                  {chat.map((m, i) => (
+                    <div key={i} className="text-sm">
+                      <span className="font-medium text-primary">{shortFio(m.fio)}: </span>
+                      <span className="text-gray-700">{m.message}</span>
+                    </div>
+                  ))}
+                  {chat.length === 0 && <p className="text-sm text-gray-400">Сообщений пока нет</p>}
+                  <div ref={chatEndRef} />
+                </div>
+                {myRole && (
+                  <form onSubmit={handleSendChat} className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                    <input
+                      value={chatText}
+                      onChange={e => setChatText(e.target.value)}
+                      placeholder="Сообщение..."
+                      maxLength={500}
+                      className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary/50"
+                    />
+                    <Button type="submit" size="sm"><Icon name="Send" size={14} /></Button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {/* ЦЕНТР: ДОСКА */}
+            <div className="order-1 lg:order-2 flex flex-col items-center gap-3">
               {firstMoveGraceMs !== null && !finished && (
                 <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
@@ -336,17 +385,6 @@ export default function Game() {
                   <span className="font-mono font-semibold tabular-nums">{formatClock(firstMoveGraceMs)}</span>
                 </div>
               )}
-
-              {/* Верхний игрок (чёрные, либо белые если перевёрнуто) */}
-              <div className="w-full max-w-[560px] flex items-center justify-between px-1">
-                <span className="font-medium text-gray-800 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block" />
-                  {shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}
-                </span>
-                <span className={`font-mono text-lg px-3 py-1 rounded-lg ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-500'}`}>
-                  {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
-                </span>
-              </div>
 
               <div className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
                 {ranks.map((rIdx, rowPos) => (
@@ -400,54 +438,6 @@ export default function Game() {
                 ))}
               </div>
 
-              {/* Нижний игрок */}
-              <div className="w-full max-w-[560px] flex items-center justify-between px-1">
-                <span className="font-medium text-gray-800 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block" />
-                  {shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}
-                </span>
-                <span className={`font-mono text-lg px-3 py-1 rounded-lg ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-500'}`}>
-                  {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
-                </span>
-              </div>
-
-              {moveError && (
-                <div className="w-full max-w-[560px] bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 flex items-center gap-2">
-                  <Icon name="AlertCircle" size={14} /> {moveError}
-                </div>
-              )}
-
-              {finished && (
-                <div className="w-full max-w-[560px] bg-white border border-gray-100 rounded-xl px-5 py-4 text-center shadow-sm">
-                  <p className="font-heading font-bold text-lg text-primary mb-1">
-                    {RESULT_LABELS(game.result)}
-                  </p>
-                  <p className="text-sm text-gray-500">{RESULT_REASON_LABELS[game.result_reason || ''] || game.result_reason}</p>
-                </div>
-              )}
-
-              {myRole && !finished && (
-                <div className="w-full max-w-[560px] flex gap-2">
-                  {game.draw_offered_by ? (
-                    <>
-                      <Button variant="outline" className="flex-1" onClick={() => postAction('accept_draw')}>
-                        <Icon name="Check" size={15} className="mr-1" /> Принять ничью
-                      </Button>
-                      <Button variant="outline" className="flex-1" onClick={() => postAction('decline_draw')}>
-                        <Icon name="X" size={15} className="mr-1" /> Отклонить
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
-                      <Icon name="Handshake" size={15} className="mr-1" /> Предложить ничью
-                    </Button>
-                  )}
-                  <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
-                    <Icon name="Flag" size={15} className="mr-1" /> Сдаться
-                  </Button>
-                </div>
-              )}
-
               {promoChoice && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
                   <div className="bg-white rounded-2xl p-5 shadow-xl">
@@ -465,8 +455,19 @@ export default function Game() {
               )}
             </div>
 
-            {/* Правая колонка: ходы + чат */}
-            <div className="flex flex-col gap-4">
+            {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
+            <div className="order-2 lg:order-3 flex flex-col gap-4">
+              {/* Часы соперника */}
+              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+                <span className="font-medium flex items-center gap-2 min-w-0">
+                  <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
+                  <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
+                </span>
+                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                  {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
+                </span>
+              </div>
+
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ходы партии</p>
                 {finished && (
@@ -536,31 +537,53 @@ export default function Game() {
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col h-[380px]">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Чат</p>
-                <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
-                  {chat.map((m, i) => (
-                    <div key={i} className="text-sm">
-                      <span className="font-medium text-primary">{shortFio(m.fio)}: </span>
-                      <span className="text-gray-700">{m.message}</span>
-                    </div>
-                  ))}
-                  {chat.length === 0 && <p className="text-sm text-gray-400">Сообщений пока нет</p>}
-                  <div ref={chatEndRef} />
-                </div>
-                {myRole && (
-                  <form onSubmit={handleSendChat} className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
-                    <input
-                      value={chatText}
-                      onChange={e => setChatText(e.target.value)}
-                      placeholder="Сообщение..."
-                      maxLength={500}
-                      className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary/50"
-                    />
-                    <Button type="submit" size="sm"><Icon name="Send" size={14} /></Button>
-                  </form>
-                )}
+              {/* Часы игрока (мои) */}
+              <div className={`rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
+                <span className="font-medium flex items-center gap-2 min-w-0">
+                  <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                  <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
+                </span>
+                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                  {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
+                </span>
               </div>
+
+              {moveError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 flex items-center gap-2">
+                  <Icon name="AlertCircle" size={14} /> {moveError}
+                </div>
+              )}
+
+              {finished && (
+                <div className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-center shadow-sm">
+                  <p className="font-heading font-bold text-lg text-primary mb-1">
+                    {RESULT_LABELS(game.result)}
+                  </p>
+                  <p className="text-sm text-gray-500">{RESULT_REASON_LABELS[game.result_reason || ''] || game.result_reason}</p>
+                </div>
+              )}
+
+              {myRole && !finished && (
+                <div className="flex gap-2">
+                  {game.draw_offered_by ? (
+                    <>
+                      <Button variant="outline" className="flex-1" onClick={() => postAction('accept_draw')}>
+                        <Icon name="Check" size={15} className="mr-1" /> Принять
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => postAction('decline_draw')}>
+                        <Icon name="X" size={15} className="mr-1" /> Отклонить
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
+                      <Icon name="Handshake" size={15} className="mr-1" /> Ничья
+                    </Button>
+                  )}
+                  <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
+                    <Icon name="Flag" size={15} className="mr-1" /> Сдаться
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
