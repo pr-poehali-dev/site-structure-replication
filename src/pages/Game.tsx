@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
@@ -10,6 +10,7 @@ import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
+const HALL_URL = func2url['tournament-hall'];
 
 interface MoveEntry {
   san: string;
@@ -125,6 +126,7 @@ function formatClock(ms: number): string {
 
 export default function Game() {
   const { gameId } = useParams();
+  const navigate = useNavigate();
   const { user, token, loading } = useAuth();
   const [game, setGame] = useState<GameData | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -141,7 +143,9 @@ export default function Game() {
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
+  const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const knownGameIdRef = useRef<number | null>(null);
 
   const fetchGame = useCallback(async () => {
     if (!gameId) return;
@@ -162,6 +166,7 @@ export default function Game() {
       setPusherKey(json.pusher_key || null);
       setPusherCluster(json.pusher_cluster || null);
       setFetchError('');
+      if (knownGameIdRef.current === null) knownGameIdRef.current = json.game.id;
     } catch {
       setFetchError('Не удалось загрузить партию');
     }
@@ -180,6 +185,46 @@ export default function Game() {
     pusherCluster,
     useCallback(() => { fetchGame(); }, [fetchGame]),
   );
+
+  // Проверяет, не назначена ли игроку новая партия следующего тура —
+  // работает даже когда игрок находится на странице уже завершённой партии,
+  // а не только в турнирном зале.
+  const checkNewGame = useCallback(async () => {
+    if (!game || !token) return;
+    try {
+      const res = await fetch(`${HALL_URL}?tournament_id=${game.tournament_id}`, {
+        headers: { 'X-Auth-Token': token },
+      });
+      const json = await res.json();
+      const newGameId: number | null = json.my_game_id || null;
+      if (newGameId && newGameId !== knownGameIdRef.current) {
+        knownGameIdRef.current = newGameId;
+        setRedirectingGameId(newGameId);
+      }
+    } catch {
+      // молча игнорируем — резервный опрос попробует снова
+    }
+  }, [game, token]);
+
+  usePusherChannel(
+    game ? `tournament-${game.tournament_id}` : null,
+    pusherKey,
+    pusherCluster,
+    useCallback(() => { checkNewGame(); }, [checkNewGame]),
+  );
+
+  useEffect(() => {
+    if (!game || game.status !== 'finished') return;
+    checkNewGame();
+    const interval = setInterval(checkNewGame, 10000);
+    return () => clearInterval(interval);
+  }, [game?.status, checkNewGame]);
+
+  useEffect(() => {
+    if (redirectingGameId === null) return;
+    const timer = setTimeout(() => { navigate(`/game/${redirectingGameId}`); }, 1500);
+    return () => clearTimeout(timer);
+  }, [redirectingGameId, navigate]);
 
   useEffect(() => {
     if (!game || game.status !== 'active') return;
@@ -363,6 +408,16 @@ export default function Game() {
     <div className="min-h-screen bg-muted text-foreground flex flex-col">
       <Seo title={`Партия — ${game.tournament_title}`} description="Шахматная партия" noindex />
       <Header />
+
+      {redirectingGameId !== null && (
+        <div className="fixed inset-0 bg-primary/95 flex flex-col items-center justify-center z-50 px-4 text-center gap-4">
+          <Icon name="Swords" size={40} className="text-secondary animate-pulse" />
+          <p className="font-heading font-bold text-xl md:text-2xl text-white">
+            У Вас начинается партия. Переход в игру
+          </p>
+          <Icon name="Loader2" size={24} className="text-white/70 animate-spin" />
+        </div>
+      )}
 
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-6xl mx-auto">
