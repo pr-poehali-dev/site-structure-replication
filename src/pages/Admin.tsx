@@ -13,6 +13,7 @@ import {
 import TournamentsSection from './admin/TournamentsSection';
 import ArchiveSection from './admin/ArchiveSection';
 import ApplicationsSection from './admin/ApplicationsSection';
+import UsersSection from './admin/UsersSection';
 import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
@@ -253,6 +254,7 @@ export default function Admin() {
             ['tournaments', 'Swords', 'Турниры'],
             ['archive', 'Archive', 'Архив'],
             ['applications', 'ClipboardList', 'Заявки'],
+            ['users', 'Users', 'Участники'],
             ['awards', 'Award', 'Каталог наград'],
             ['award-orders', 'ShoppingCart', 'Заказы наград'],
             ['results', 'ListChecks', 'Результаты'],
@@ -323,6 +325,11 @@ export default function Admin() {
             setFilterTournament={setFilterTournament}
             fetchApps={fetchApps}
           />
+        )}
+
+        {/* === УЧАСТНИКИ === */}
+        {section === 'users' && (
+          <UsersSection password={password} />
         )}
 
         {/* === КАТАЛОГ НАГРАД === */}

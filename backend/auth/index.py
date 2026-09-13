@@ -2,9 +2,12 @@ import json
 import os
 import hashlib
 import secrets
+import base64
+import uuid
 from datetime import datetime, timedelta
 
 import psycopg2
+import boto3
 
 SESSION_DAYS = 30
 
@@ -17,18 +20,40 @@ def cors_headers():
     return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-Admin-Password',
     }
+
+
+def is_admin(event):
+    return event.get('headers', {}).get('X-Admin-Password') == os.environ.get('ADMIN_PASSWORD')
+
+
+def get_s3():
+    return boto3.client(
+        's3',
+        endpoint_url='https://bucket.poehali.dev',
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    )
+
+
+def cdn_url(key):
+    return f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
 
 
 def hash_password(password: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
 
 
+USER_COLS = ['id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
+             'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
+             'avatar_url', 'rating_blitz', 'rating_rapid']
+
+USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
+
+
 def user_to_dict(row):
-    cols = ['id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
-            'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at']
-    d = dict(zip(cols, row))
+    d = dict(zip(USER_COLS, row))
     d['birth_date'] = str(d['birth_date']) if d['birth_date'] else None
     d['created_at'] = str(d['created_at'])
     return d
@@ -38,8 +63,7 @@ def get_user_by_token(cur, token: str):
     if not token:
         return None
     cur.execute(
-        """SELECT u.id, u.last_name, u.first_name, u.middle_name, u.birth_date, u.fsr_id,
-                  u.coach_fio, u.institution, u.country_city, u.email, u.phone, u.created_at
+        f"""SELECT {', '.join('u.' + c for c in USER_COLS)}
            FROM user_sessions s JOIN users u ON u.id = s.user_id
            WHERE s.token = %s AND s.expires_at > now()""",
         (token,)
@@ -49,7 +73,7 @@ def get_user_by_token(cur, token: str):
 
 
 def handler(event: dict, context) -> dict:
-    """Регистрация, вход и профиль участников турниров"""
+    """Регистрация, вход и профиль участников турниров, включая аватар и рейтинги"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
@@ -98,10 +122,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (user_id, new_token, expires_at))
         conn.commit()
 
-        cur.execute(
-            """SELECT id, last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, created_at
-               FROM users WHERE id = %s""", (user_id,)
-        )
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
         user = user_to_dict(cur.fetchone())
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'token': new_token, 'user': user})}
@@ -123,10 +144,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (user_id, new_token, expires_at))
         conn.commit()
 
-        cur.execute(
-            """SELECT id, last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, created_at
-               FROM users WHERE id = %s""", (user_id,)
-        )
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
         user = user_to_dict(cur.fetchone())
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'token': new_token, 'user': user})}
@@ -139,6 +157,35 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
+    # Список пользователей для админки (участники турниров, с рейтингами)
+    if method == 'GET' and is_admin(event):
+        search = (event.get('queryStringParameters') or {}).get('search', '').strip().lower()
+        if search:
+            cur.execute(
+                f"{USER_SELECT} WHERE lower(last_name || ' ' || first_name || ' ' || email) LIKE %s ORDER BY created_at DESC LIMIT 200",
+                (f"%{search}%",)
+            )
+        else:
+            cur.execute(f"{USER_SELECT} ORDER BY created_at DESC LIMIT 200")
+        rows = cur.fetchall()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': [user_to_dict(r) for r in rows]})}
+
+    # Админ обновляет рейтинги пользователя
+    if method == 'POST' and action == 'update_ratings' and is_admin(event):
+        user_id = body.get('user_id')
+        cur.execute(
+            "UPDATE users SET rating_blitz = %s, rating_rapid = %s WHERE id = %s",
+            (body.get('rating_blitz'), body.get('rating_rapid'), user_id)
+        )
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        conn.close()
+        if not row:
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь не найден'})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
+
     # Текущий пользователь по токену
     if method == 'GET':
         user = get_user_by_token(cur, token)
@@ -146,6 +193,33 @@ def handler(event: dict, context) -> dict:
         if not user:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user})}
+
+    # Загрузка аватара
+    if method == 'POST' and action == 'upload_avatar':
+        user = get_user_by_token(cur, token)
+        if not user:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+
+        photo_b64 = body.get('photo_b64', '')
+        content_type = body.get('content_type', 'image/jpeg')
+        if not photo_b64:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Файл не передан'})}
+
+        ext = content_type.split('/')[-1].replace('jpeg', 'jpg')
+        key = f"avatars/{user['id']}_{uuid.uuid4().hex[:8]}.{ext}"
+        data = base64.b64decode(photo_b64)
+        s3 = get_s3()
+        s3.put_object(Bucket='files', Key=key, Body=data, ContentType=content_type)
+        url = cdn_url(key)
+
+        cur.execute("UPDATE users SET avatar_url = %s WHERE id = %s", (url, user['id']))
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user['id'],))
+        updated = user_to_dict(cur.fetchone())
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': updated})}
 
     # Обновление профиля
     if method == 'POST' and action == 'update_profile':
@@ -164,10 +238,7 @@ def handler(event: dict, context) -> dict:
         )
         conn.commit()
 
-        cur.execute(
-            """SELECT id, last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, created_at
-               FROM users WHERE id = %s""", (user['id'],)
-        )
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user['id'],))
         updated = user_to_dict(cur.fetchone())
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': updated})}

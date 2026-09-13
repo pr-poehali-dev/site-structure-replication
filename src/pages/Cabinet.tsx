@@ -4,11 +4,10 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import BalanceSection from './cabinet/BalanceSection';
 import ApplicationCard from './cabinet/ApplicationCard';
+import ProfileSection from './cabinet/ProfileSection';
 import func2url from '../../backend/func2url.json';
 
 const APPS_URL = func2url['applications'];
@@ -40,21 +39,8 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const b = new Date(birthDate);
-  if (Number.isNaN(b.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - b.getFullYear();
-  const monthDiff = today.getMonth() - b.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < b.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
-
 export default function Cabinet() {
-  const { user, token, loading, logout, updateProfile } = useAuth();
+  const { user, token, loading, logout } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [tab, setTab] = useState<'tournaments' | 'balance' | 'profile'>(() => {
@@ -62,29 +48,6 @@ export default function Cabinet() {
     const t = params.get('tab');
     return t === 'balance' || t === 'profile' ? t : 'tournaments';
   });
-
-  const [form, setForm] = useState({
-    last_name: '', first_name: '', middle_name: '', birth_date: '',
-    fsr_id: '', coach_fio: '', institution: '', country_city: '', phone: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      setForm({
-        last_name: user.last_name || '',
-        first_name: user.first_name || '',
-        middle_name: user.middle_name || '',
-        birth_date: user.birth_date || '',
-        fsr_id: user.fsr_id || '',
-        coach_fio: user.coach_fio || '',
-        institution: user.institution || '',
-        country_city: user.country_city || '',
-        phone: user.phone || '',
-      });
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!token) return;
@@ -104,15 +67,6 @@ export default function Cabinet() {
 
   if (!user) {
     return <Navigate to="/login" replace />;
-  }
-
-  async function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
-    const res = await updateProfile(form);
-    setSaving(false);
-    setSaveMsg(res.ok ? 'Профиль обновлён' : res.error);
   }
 
   const activeHalls = apps.filter(a => a.status === 'paid' && a.hall_open);
@@ -218,33 +172,7 @@ export default function Cabinet() {
 
         {tab === 'balance' && <BalanceSection />}
 
-        {tab === 'profile' && (
-          <form onSubmit={handleSaveProfile} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3 max-w-xl">
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div><Label>Фамилия *</Label><Input required className="mt-1" value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} /></div>
-              <div><Label>Имя *</Label><Input required className="mt-1" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
-              <div><Label>Отчество</Label><Input className="mt-1" value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })} /></div>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div><Label>Дата рождения</Label><Input type="date" disabled className="mt-1 bg-gray-50" value={form.birth_date} /></div>
-              <div><Label>Возраст</Label><Input disabled className="mt-1 bg-gray-50" value={calcAge(user.birth_date) !== null ? `${calcAge(user.birth_date)} лет` : '—'} /></div>
-              <div><Label>ID ФШР</Label><Input className="mt-1" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
-            </div>
-            <div><Label>ФИО тренера</Label><Input className="mt-1" value={form.coach_fio} onChange={e => setForm({ ...form, coach_fio: e.target.value })} /></div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div><Label>Учреждение</Label><Input className="mt-1" value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} /></div>
-              <div><Label>Страна / Город</Label><Input className="mt-1" value={form.country_city} onChange={e => setForm({ ...form, country_city: e.target.value })} /></div>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div><Label>Email</Label><Input disabled className="mt-1 bg-gray-50" value={user.email} /></div>
-              <div><Label>Телефон представителя</Label><Input className="mt-1" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-            </div>
-            {saveMsg && <p className={`text-sm ${saveMsg === 'Профиль обновлён' ? 'text-green-600' : 'text-red-500'}`}>{saveMsg}</p>}
-            <Button type="submit" disabled={saving} className="w-full sm:w-auto bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1">
-              {saving ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Сохраняем...</> : 'Сохранить изменения'}
-            </Button>
-          </form>
-        )}
+        {tab === 'profile' && <ProfileSection />}
       </section>
 
       <Footer />

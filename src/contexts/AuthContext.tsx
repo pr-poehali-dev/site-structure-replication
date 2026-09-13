@@ -17,6 +17,9 @@ export interface UserProfile {
   email: string;
   phone: string | null;
   created_at: string;
+  avatar_url: string | null;
+  rating_blitz: number | null;
+  rating_rapid: number | null;
 }
 
 export interface RegisterPayload {
@@ -41,6 +44,7 @@ interface AuthContextValue {
   register: (payload: RegisterPayload) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => void;
   updateProfile: (payload: Partial<RegisterPayload>) => Promise<{ ok: true } | { ok: false; error: string }>;
+  uploadAvatar: (photoBase64: string, contentType: string) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -119,8 +123,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true as const };
   }, []);
 
+  const uploadAvatar = useCallback(async (photoBase64: string, contentType: string) => {
+    const t = localStorage.getItem(TOKEN_KEY);
+    if (!t) return { ok: false as const, error: 'Не авторизован' };
+    const res = await fetch(AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': t },
+      body: JSON.stringify({ _action: 'upload_avatar', photo_b64: photoBase64, content_type: contentType }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false as const, error: data.error || 'Не удалось загрузить фото' };
+    setUser(data.user);
+    return { ok: true as const };
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );

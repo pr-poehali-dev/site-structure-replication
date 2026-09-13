@@ -58,6 +58,13 @@ export interface Subscription {
   active: boolean; status: string; created_at: string; paid_at: string | null; usages: SubscriptionUsage[];
 }
 
+export interface UserAccount {
+  id: number; last_name: string; first_name: string; middle_name: string | null;
+  birth_date: string | null; fsr_id: string | null; coach_fio: string | null;
+  institution: string | null; country_city: string | null; email: string; phone: string | null;
+  created_at: string; avatar_url: string | null; rating_blitz: number | null; rating_rapid: number | null;
+}
+
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';
 export const APPS_URL = 'https://functions.poehali.dev/a5d82f30-fb42-49b2-8c5e-5baac7ded4fa';
 export const AWARD_CATALOG_ADMIN_URL = 'https://functions.poehali.dev/6d39bfe8-ce2f-4ed5-821a-a3784713fcdd';
@@ -71,6 +78,7 @@ export const PROMO_CODES_URL = 'https://functions.poehali.dev/9b1bcd8a-a7eb-4420
 export const SUBSCRIPTIONS_URL = 'https://functions.poehali.dev/f7398788-c4ff-41d6-87e1-75303e227765';
 export const TOURNAMENT_HALL_URL = 'https://functions.poehali.dev/8e8afc0d-8119-46a4-ac6c-7411f14bdbd1';
 export const CHESS_GAME_URL = 'https://functions.poehali.dev/6f01cd2f-f475-4924-82d7-e4c47dc8622c';
+export const AUTH_URL = 'https://functions.poehali.dev/e53e4b4d-a551-44e6-8b21-6ed31203615b';
 
 export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false, rounds_count: '5' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
@@ -81,4 +89,4 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'archive' | 'applications' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'subscription-plans';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'subscription-plans';
