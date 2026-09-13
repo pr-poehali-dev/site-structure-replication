@@ -179,13 +179,32 @@ export default function Game() {
     return !!game && !!myRole && game.status === 'active' && game.turn === myRole;
   }
 
+  function isOwnPiece(piece: string | null): boolean {
+    if (!piece || !myRole) return false;
+    return (myRole === 'white' && piece === piece.toUpperCase()) || (myRole === 'black' && piece === piece.toLowerCase());
+  }
+
+  function attemptMove(from: string, to: string) {
+    if (from === to) return;
+    const movingPiece = pieceAt(from);
+    const isPawn = movingPiece && movingPiece.toUpperCase() === 'P';
+    const destRank = to[1];
+    if (isPawn && ((myRole === 'white' && destRank === '8') || (myRole === 'black' && destRank === '1'))) {
+      setPromoChoice({ from, to });
+      setSelected(null);
+      return;
+    }
+    postAction('move', { from, to });
+    setSelected(null);
+  }
+
   function handleSquareClick(sqName: string, piece: string | null) {
     if (!game || !myRole || game.status !== 'active') return;
     if (viewMoveIndex !== null) return;
     if (!isMyTurn()) return;
 
     if (!selected) {
-      if (piece && ((myRole === 'white' && piece === piece.toUpperCase()) || (myRole === 'black' && piece === piece.toLowerCase()))) {
+      if (isOwnPiece(piece)) {
         setSelected(sqName);
       }
       return;
@@ -193,17 +212,22 @@ export default function Game() {
 
     if (selected === sqName) { setSelected(null); return; }
 
-    const movingPiece = pieceAt(selected);
-    const isPawn = movingPiece && movingPiece.toUpperCase() === 'P';
-    const destRank = sqName[1];
-    if (isPawn && ((myRole === 'white' && destRank === '8') || (myRole === 'black' && destRank === '1'))) {
-      setPromoChoice({ from: selected, to: sqName });
-      setSelected(null);
-      return;
-    }
+    if (isOwnPiece(piece)) { setSelected(sqName); return; }
 
-    postAction('move', { from: selected, to: sqName });
-    setSelected(null);
+    attemptMove(selected, sqName);
+  }
+
+  function handleDragStart(sqName: string, piece: string | null) {
+    if (!game || !myRole || game.status !== 'active') return;
+    if (viewMoveIndex !== null || !isMyTurn()) return;
+    if (!isOwnPiece(piece)) return;
+    setSelected(sqName);
+  }
+
+  function handleDrop(sqName: string) {
+    if (!selected || !isMyTurn() || viewMoveIndex !== null) return;
+    if (selected === sqName) { setSelected(null); return; }
+    attemptMove(selected, sqName);
   }
 
   function pieceAt(sqName: string): string | null {
@@ -334,10 +358,13 @@ export default function Game() {
                     const isSelected = selected === sqName;
                     const isLastCol = colPos === 7;
                     const isLastRow = rowPos === 7;
+                    const draggable = !!piece && isOwnPiece(piece) && isMyTurn() && viewMoveIndex === null;
                     return (
                       <button
                         key={sqName}
                         onClick={() => handleSquareClick(sqName, piece)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); handleDrop(sqName); }}
                         className={`relative aspect-square flex items-center justify-center text-3xl sm:text-4xl select-none
                           ${isLight ? 'bg-[#f0d9b5]' : 'bg-[#b58863]'}
                           ${isSelected ? 'ring-4 ring-secondary ring-inset' : ''}
@@ -354,7 +381,18 @@ export default function Game() {
                           </span>
                         )}
                         {piece && (
-                          <img src={pieceIcon(piece)} alt={piece} className="w-[80%] h-[80%] pointer-events-none select-none" draggable={false} />
+                          <img
+                            src={pieceIcon(piece)}
+                            alt={piece}
+                            draggable={draggable}
+                            onDragStart={e => {
+                              if (!draggable) { e.preventDefault(); return; }
+                              handleDragStart(sqName, piece);
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragEnd={() => setSelected(null)}
+                            className={`w-[80%] h-[80%] select-none ${draggable ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
+                          />
                         )}
                       </button>
                     );
