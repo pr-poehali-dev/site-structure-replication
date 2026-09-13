@@ -294,9 +294,9 @@ export default function Game() {
 
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-6xl mx-auto">
-          <div className="flex items-center gap-2 mb-4 text-sm text-gray-500">
-            <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-1 hover:text-secondary transition-colors">
-              <Icon name="ArrowLeft" size={14} /> {game.tournament_title}
+          <div className="flex items-center gap-2 mb-4">
+            <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+              <Icon name="ArrowLeft" size={16} /> В турнирный зал
             </Link>
           </div>
 
@@ -456,36 +456,36 @@ export default function Game() {
                       </button>
                     </div>
                     <div className="flex items-center justify-center gap-1 mb-2">
-                      <button onClick={goFirst} disabled={!canGoPrev} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                        <Icon name="ChevronsLeft" size={16} />
+                      <button onClick={goFirst} disabled={!canGoPrev} className="p-1.5 rounded-lg text-primary hover:bg-secondary/15 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronsLeft" size={18} />
                       </button>
-                      <button onClick={goPrev} disabled={!canGoPrev} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                        <Icon name="ChevronLeft" size={16} />
+                      <button onClick={goPrev} disabled={!canGoPrev} className="p-1.5 rounded-lg text-primary hover:bg-secondary/15 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronLeft" size={18} />
                       </button>
-                      <button onClick={goNext} disabled={!canGoNext} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                        <Icon name="ChevronRight" size={16} />
+                      <button onClick={goNext} disabled={!canGoNext} className="p-1.5 rounded-lg text-primary hover:bg-secondary/15 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronRight" size={18} />
                       </button>
-                      <button onClick={goLast} disabled={!canGoNext} className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                        <Icon name="ChevronsRight" size={16} />
+                      <button onClick={goLast} disabled={!canGoNext} className="p-1.5 rounded-lg text-primary hover:bg-secondary/15 disabled:opacity-30 disabled:hover:bg-transparent">
+                        <Icon name="ChevronsRight" size={18} />
                       </button>
                     </div>
-                    <div className="flex flex-col gap-1 text-sm font-mono leading-relaxed h-[264px] overflow-y-auto">
+                    <div className="flex flex-col gap-1 text-sm font-mono font-semibold leading-relaxed h-[264px] overflow-y-auto">
                       {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
                         const whiteIdx = pairIdx * 2;
                         const blackIdx = whiteIdx + 1;
                         return (
                           <div key={pairIdx} className="flex items-center gap-1">
-                            <span className="text-gray-400 select-none">{pairIdx + 1}.</span>
+                            <span className="text-gray-500 font-bold select-none">{pairIdx + 1}.</span>
                             <button
                               onClick={() => setViewMoveIndex(whiteIdx)}
-                              className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === whiteIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                              className={`px-1.5 py-0.5 rounded transition-colors ${viewMoveIndex === whiteIdx ? 'bg-secondary text-white font-bold' : 'text-gray-900 hover:bg-secondary/20'}`}
                             >
                               {moves[whiteIdx].san}
                             </button>
                             {moves[blackIdx] && (
                               <button
                                 onClick={() => setViewMoveIndex(blackIdx)}
-                                className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === blackIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                                className={`px-1.5 py-0.5 rounded transition-colors ${viewMoveIndex === blackIdx ? 'bg-secondary text-white font-bold' : 'text-gray-900 hover:bg-secondary/20'}`}
                               >
                                 {moves[blackIdx].san}
                               </button>
