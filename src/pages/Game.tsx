@@ -11,6 +11,12 @@ import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
 
+interface MoveEntry {
+  san: string;
+  fen: string;
+  color: 'white' | 'black';
+}
+
 interface GameData {
   id: number;
   status: string;
@@ -19,6 +25,7 @@ interface GameData {
   fen: string;
   pgn: string;
   turn: 'white' | 'black';
+  moves: MoveEntry[];
   white_fio: string | null;
   black_fio: string | null;
   white_time_ms: number;
@@ -28,6 +35,8 @@ interface GameData {
   tournament_title: string;
   tournament_id: number;
 }
+
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 interface ChatMsg {
   message: string;
@@ -88,6 +97,7 @@ export default function Game() {
   const [promoChoice, setPromoChoice] = useState<{ from: string; to: string } | null>(null);
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
+  const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchGame = useCallback(async () => {
@@ -104,6 +114,7 @@ export default function Game() {
       setLiveWhiteMs(json.game.white_time_ms);
       setLiveBlackMs(json.game.black_time_ms);
       setFirstMoveGraceMs(json.game.first_move_grace_ms ?? null);
+      setViewMoveIndex(prev => (prev !== null && json.game.moves && prev >= json.game.moves.length ? null : prev));
       setPusherKey(json.pusher_key || null);
       setPusherCluster(json.pusher_cluster || null);
       setFetchError('');
@@ -170,6 +181,7 @@ export default function Game() {
 
   function handleSquareClick(sqName: string, piece: string | null) {
     if (!game || !myRole || game.status !== 'active') return;
+    if (viewMoveIndex !== null) return;
     if (!isMyTurn()) return;
 
     if (!selected) {
@@ -250,10 +262,17 @@ export default function Game() {
     );
   }
 
-  const board = parseFen(game.fen);
+  const moves = game.moves || [];
+  const displayedFen = viewMoveIndex === null
+    ? game.fen
+    : viewMoveIndex === -1
+      ? START_FEN
+      : moves[viewMoveIndex]?.fen ?? game.fen;
+  const board = parseFen(displayedFen);
   const ranks = myRole === 'black' ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
   const filesOrdered = myRole === 'black' ? [...FILES].reverse() : FILES;
   const finished = game.status === 'finished';
+  const viewingPast = viewMoveIndex !== null;
 
   return (
     <div className="min-h-screen bg-muted text-foreground flex flex-col">
@@ -278,6 +297,18 @@ export default function Game() {
                     {myRole === 'white' ? 'Сделайте первый ход до окончания времени' : 'Ожидание первого хода соперника'}
                   </span>
                   <span className="font-mono font-semibold tabular-nums">{formatClock(firstMoveGraceMs)}</span>
+                </div>
+              )}
+
+              {viewingPast && (
+                <div className="w-full max-w-[560px] bg-secondary/10 border border-secondary/30 text-primary text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Icon name="History" size={14} />
+                    Просмотр позиции {viewMoveIndex === -1 ? 'до начала партии' : `после хода ${viewMoveIndex! + 1}`}
+                  </span>
+                  <button onClick={() => setViewMoveIndex(null)} className="text-xs font-semibold underline hover:no-underline">
+                    К текущей позиции
+                  </button>
                 </div>
               )}
 
@@ -399,21 +430,39 @@ export default function Game() {
             <div className="flex flex-col gap-4">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ходы партии</p>
-                {finished ? (
-                  <>
-                    <p className="text-sm font-semibold text-primary mb-1">
-                      {gameOutcomeText(game.result, game.result_reason)}
-                    </p>
-                    {game.pgn && (
-                      <p className="text-sm text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
-                        {game.pgn}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
-                    {game.pgn || 'Партия ещё не началась'}
+                {finished && (
+                  <p className="text-sm font-semibold text-primary mb-2">
+                    {gameOutcomeText(game.result, game.result_reason)}
                   </p>
+                )}
+                {moves.length === 0 ? (
+                  <p className="text-sm text-gray-700 font-mono leading-relaxed">Партия ещё не началась</p>
+                ) : (
+                  <div className="flex flex-wrap gap-x-1 gap-y-1.5 text-sm font-mono leading-relaxed max-h-40 overflow-y-auto">
+                    {Array.from({ length: Math.ceil(moves.length / 2) }).map((_, pairIdx) => {
+                      const whiteIdx = pairIdx * 2;
+                      const blackIdx = whiteIdx + 1;
+                      return (
+                        <span key={pairIdx} className="flex items-center gap-1">
+                          <span className="text-gray-400 select-none">{pairIdx + 1}.</span>
+                          <button
+                            onClick={() => setViewMoveIndex(whiteIdx)}
+                            className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === whiteIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                          >
+                            {moves[whiteIdx].san}
+                          </button>
+                          {moves[blackIdx] && (
+                            <button
+                              onClick={() => setViewMoveIndex(blackIdx)}
+                              className={`px-1 rounded hover:bg-secondary/20 transition-colors ${viewMoveIndex === blackIdx ? 'bg-secondary text-secondary-foreground font-semibold' : 'text-gray-700'}`}
+                            >
+                              {moves[blackIdx].san}
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 

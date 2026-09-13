@@ -18,6 +18,28 @@ FIRST_MOVE_TIMEOUT = 'first_move_timeout'
 FIRST_MOVE_GRACE_MS = 30000
 
 
+def replay_moves_from_pgn(pgn):
+    """Восстанавливает историю ходов (SAN + FEN после каждого хода) для старых партий,
+    сыгранных до появления столбца moves, проигрывая сохранённый pgn с самого начала."""
+    sans = pgn.split()
+    if not sans:
+        return []
+    board = Board()
+    result = []
+    for san in sans:
+        found = None
+        for mv in board.legal_moves():
+            if board.move_to_san(mv) == san:
+                found = mv
+                break
+        if not found:
+            break
+        color = 'white' if board.turn == 'w' else 'black'
+        board.apply_move(found)
+        result.append({'san': san, 'fen': board.to_fen(), 'color': color})
+    return result
+
+
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
 
@@ -43,7 +65,7 @@ def load_game(cur, game_id):
         """SELECT g.id, g.round_id, g.tournament_id, g.white_player_id, wp.fio, wp.user_id,
                   g.black_player_id, bp.fio, bp.user_id, g.status, g.result, g.result_reason,
                   g.fen, g.pgn, g.turn, g.white_time_ms, g.black_time_ms, g.increment_ms,
-                  g.last_move_at, g.draw_offered_by, t.title
+                  g.last_move_at, g.draw_offered_by, t.title, g.moves
            FROM tournament_games g
            LEFT JOIN tournament_players wp ON wp.id = g.white_player_id
            LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
@@ -54,14 +76,19 @@ def load_game(cur, game_id):
     row = cur.fetchone()
     if not row:
         return None
+    pgn = row[13]
+    moves = row[21] if row[21] is not None else []
+    if not moves and pgn:
+        moves = replay_moves_from_pgn(pgn)
     return {
         'id': row[0], 'round_id': row[1], 'tournament_id': row[2],
         'white_player_id': row[3], 'white_fio': row[4], 'white_user_id': row[5],
         'black_player_id': row[6], 'black_fio': row[7], 'black_user_id': row[8],
         'status': row[9], 'result': row[10], 'result_reason': row[11],
-        'fen': row[12], 'pgn': row[13], 'turn': row[14],
+        'fen': row[12], 'pgn': pgn, 'turn': row[14],
         'white_time_ms': row[15], 'black_time_ms': row[16], 'increment_ms': row[17],
         'last_move_at': row[18], 'draw_offered_by': row[19], 'tournament_title': row[20],
+        'moves': moves,
     }
 
 
@@ -198,7 +225,7 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
             'game': {
                 'id': game['id'], 'status': game['status'], 'result': game['result'], 'result_reason': game['result_reason'],
-                'fen': game['fen'], 'pgn': game['pgn'], 'turn': game['turn'],
+                'fen': game['fen'], 'pgn': game['pgn'], 'turn': game['turn'], 'moves': game['moves'],
                 'white_fio': game['white_fio'], 'black_fio': game['black_fio'],
                 'white_time_ms': white_ms, 'black_time_ms': black_ms,
                 'first_move_grace_ms': first_move_grace_ms,
@@ -247,10 +274,12 @@ def handler(event: dict, context) -> dict:
 
         new_pgn = (game['pgn'] + ' ' + san).strip()
         new_turn = 'black' if role == 'white' else 'white'
+        new_fen = board.to_fen()
+        new_moves = game['moves'] + [{'san': san, 'fen': new_fen, 'color': role}]
 
         cur.execute(
-            "UPDATE tournament_games SET fen = %s, pgn = %s, turn = %s, white_time_ms = %s, black_time_ms = %s, last_move_at = now(), draw_offered_by = NULL WHERE id = %s",
-            (board.to_fen(), new_pgn, new_turn, white_ms, black_ms, game_id)
+            "UPDATE tournament_games SET fen = %s, pgn = %s, turn = %s, white_time_ms = %s, black_time_ms = %s, last_move_at = now(), draw_offered_by = NULL, moves = %s WHERE id = %s",
+            (new_fen, new_pgn, new_turn, white_ms, black_ms, json.dumps(new_moves), game_id)
         )
 
         game_finished = False
