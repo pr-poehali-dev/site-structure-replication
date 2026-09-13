@@ -447,9 +447,15 @@ export default function Game() {
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
-                  {finished ? gameOutcomeText(game.result, game.result_reason) : (game.turn === 'white' ? 'Ход белых' : 'Ход чёрных')}
-                </p>
+                {finished ? (
+                  <p className="text-sm font-semibold text-primary bg-secondary/20 rounded-lg px-3 py-2 mt-3">
+                    {gameOutcomeText(game.result, game.result_reason)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                    {game.turn === 'white' ? 'Ход белых' : 'Ход чёрных'}
+                  </p>
+                )}
               </div>
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
@@ -582,14 +588,7 @@ export default function Game() {
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 shrink-0">Ходы партии</p>
-                {finished && (
-                  <p className="text-sm font-semibold text-primary mb-2">
-                    {gameOutcomeText(game.result, game.result_reason)}
-                  </p>
-                )}
-                {moves.length === 0 ? (
-                  <p className="text-sm text-gray-700 font-mono leading-relaxed">Партия ещё не началась</p>
-                ) : (
+                {moves.length > 0 && (
                   <>
                     <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-100 shrink-0">
                       {viewingPast ? (
