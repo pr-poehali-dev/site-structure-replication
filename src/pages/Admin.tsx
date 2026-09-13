@@ -296,6 +296,7 @@ export default function Admin() {
             tEditId={tEditId}
             setTEditId={setTEditId}
             fetchTournaments={fetchTournaments}
+            fetchApps={fetchApps}
           />
         )}
 

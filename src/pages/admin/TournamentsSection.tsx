@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import * as XLSX from 'xlsx';
 import {
-  Tournament, Application, TOURNAMENTS_URL, TOURNAMENT_HALL_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
+  Tournament, Application, TOURNAMENTS_URL, TOURNAMENT_HALL_URL, APPS_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
 } from './adminTypes';
 import NotifyTournamentButton from './NotifyTournamentButton';
 
@@ -26,12 +26,14 @@ interface TournamentsSectionProps {
   tEditId: number | null;
   setTEditId: Dispatch<SetStateAction<number | null>>;
   fetchTournaments: () => Promise<void>;
+  fetchApps: () => Promise<void>;
 }
 
 export default function TournamentsSection({
   password, tournaments, apps, tLoading, tForm, setTForm, tSaving, setTSaving,
-  tShowForm, setTShowForm, tError, setTError, tEditId, setTEditId, fetchTournaments,
+  tShowForm, setTShowForm, tError, setTError, tEditId, setTEditId, fetchTournaments, fetchApps,
 }: TournamentsSectionProps) {
+  const [deletingAppId, setDeletingAppId] = useState<number | null>(null);
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [uploadingRegulation, setUploadingRegulation] = useState(false);
   const [uploadingAnnouncement, setUploadingAnnouncement] = useState(false);
@@ -76,6 +78,18 @@ export default function TournamentsSection({
       fetchTournaments();
     }
     setResettingId(null);
+  }
+
+  async function handleDeleteApp(a: Application) {
+    if (!confirm(`Удалить участника «${a.fio}» из турнира? Заявка и связанные с ней партии (если турнир уже идёт) будут удалены. Отменить это действие нельзя.`)) return;
+    setDeletingAppId(a.id);
+    await fetch(APPS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'delete', id: a.id }),
+    });
+    await fetchApps();
+    setDeletingAppId(null);
   }
 
   async function uploadTournamentFile(file: File): Promise<string | null> {
@@ -441,6 +455,15 @@ export default function TournamentsSection({
                             <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-600'}`}>
                               {STATUS_LABELS[a.status] || a.status}
                             </span>
+                            <button
+                              type="button"
+                              title="Удалить участника"
+                              disabled={deletingAppId === a.id}
+                              onClick={() => handleDeleteApp(a)}
+                              className="shrink-0 text-gray-300 hover:text-red-500 disabled:opacity-40 transition-colors"
+                            >
+                              <Icon name={deletingAppId === a.id ? 'Loader2' : 'Trash2'} size={14} className={deletingAppId === a.id ? 'animate-spin' : ''} />
+                            </button>
                           </div>
                         ))}
                       </div>
