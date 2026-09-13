@@ -221,6 +221,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE application_id = %s)", (app_id,))
         cur.execute("DELETE FROM orders WHERE application_id = %s", (app_id,))
         cur.execute("DELETE FROM subscription_usages WHERE application_id = %s", (app_id,))
+        cur.execute("UPDATE balance_transactions SET application_id = NULL WHERE application_id = %s", (app_id,))
         cur.execute("SELECT id FROM tournament_players WHERE application_id = %s", (app_id,))
         player_row = cur.fetchone()
         if player_row:
