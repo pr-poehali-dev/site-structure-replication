@@ -37,6 +37,7 @@ export default function TournamentsSection({
   const [uploadingAnnouncement, setUploadingAnnouncement] = useState(false);
   const [startingId, setStartingId] = useState<number | null>(null);
   const [startError, setStartError] = useState('');
+  const [resettingId, setResettingId] = useState<number | null>(null);
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const regulationInputRef = useRef<HTMLInputElement>(null);
   const announcementInputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +58,24 @@ export default function TournamentsSection({
       fetchTournaments();
     }
     setStartingId(null);
+  }
+
+  async function handleResetTournament(t: Tournament) {
+    if (!confirm(`Сбросить турнир «${t.title}»? Все туры и партии будут удалены, турнир вернётся в статус «не начат». Отменить это действие нельзя.`)) return;
+    setResettingId(t.id);
+    setStartError('');
+    const res = await fetch(TOURNAMENT_HALL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'reset', tournament_id: t.id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStartError(data.error || 'Не удалось сбросить турнир');
+    } else {
+      fetchTournaments();
+    }
+    setResettingId(null);
   }
 
   async function uploadTournamentFile(file: File): Promise<string | null> {
@@ -382,6 +401,13 @@ export default function TournamentsSection({
                         <span className="text-xs px-2 py-1.5 rounded-lg bg-gray-100 text-gray-600 font-medium flex items-center gap-1">
                           <Icon name="Trophy" size={13} /> Завершён
                         </span>
+                      )}
+                      {t.hall_status && t.hall_status !== 'not_started' && (
+                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50"
+                          disabled={resettingId === t.id} onClick={() => handleResetTournament(t)}>
+                          <Icon name="RotateCcw" size={14} className="mr-1" />
+                          {resettingId === t.id ? 'Сбрасываю...' : 'Сбросить турнир'}
+                        </Button>
                       )}
                       {t.hall_status && t.hall_status !== 'not_started' && (
                         <a href={`/hall/${t.id}`} target="_blank" rel="noopener noreferrer">
