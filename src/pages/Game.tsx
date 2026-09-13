@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
+import { getLegalTargets } from '@/lib/chessMoves';
 import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
@@ -399,6 +400,7 @@ export default function Game() {
       ? START_FEN
       : moves[viewMoveIndex]?.fen ?? game.fen;
   const board = parseFen(displayedFen);
+  const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(displayedFen, selected) : [];
   const ranks = myRole === 'black' ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
   const filesOrdered = myRole === 'black' ? [...FILES].reverse() : FILES;
   const finished = game.status === 'finished';
@@ -500,6 +502,7 @@ export default function Game() {
                     const isLastCol = colPos === 7;
                     const isLastRow = rowPos === 7;
                     const draggable = !!piece && isOwnPiece(piece) && isMyTurn() && viewMoveIndex === null;
+                    const isLegalTarget = legalTargets.includes(sqName);
                     return (
                       <button
                         key={sqName}
@@ -520,6 +523,12 @@ export default function Game() {
                           <span className={`absolute right-0.5 top-0 text-[10px] sm:text-xs font-semibold select-none ${isLight ? 'text-[#b58863]' : 'text-[#f0d9b5]'}`}>
                             {rIdx + 1}
                           </span>
+                        )}
+                        {isLegalTarget && !piece && (
+                          <span className="absolute w-[30%] h-[30%] rounded-full bg-black/20 pointer-events-none" />
+                        )}
+                        {isLegalTarget && piece && (
+                          <span className="absolute inset-[6%] rounded-full ring-[5px] ring-black/25 pointer-events-none" />
                         )}
                         {piece && (
                           <img
