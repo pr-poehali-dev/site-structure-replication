@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import BalanceSection from './cabinet/BalanceSection';
+import ApplicationCard from './cabinet/ApplicationCard';
 import func2url from '../../backend/func2url.json';
 
 const APPS_URL = func2url['applications'];
@@ -22,14 +23,17 @@ interface MyApplication {
   created_at: string;
   hall_open: boolean;
   tournament_status: string;
+  description: string | null;
+  date: string | null;
+  location: string | null;
+  age_category: string | null;
+  price: number | null;
+  time_control: string | null;
+  time_msk: string | null;
+  diploma_sample_url: string | null;
+  regulation_url: string | null;
+  announcement_url: string | null;
 }
-
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  new: { label: 'На рассмотрении', className: 'bg-blue-100 text-blue-700' },
-  paid: { label: 'Подтверждено', className: 'bg-green-100 text-green-700' },
-  pending_payment: { label: 'Ожидает оплаты', className: 'bg-orange-100 text-orange-700' },
-  cancelled: { label: 'Отменено', className: 'bg-gray-100 text-gray-500' },
-};
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -187,18 +191,7 @@ export default function Cabinet() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {ongoing.map(a => {
-                    const s = STATUS_LABELS[a.status] || STATUS_LABELS.new;
-                    return (
-                      <div key={a.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                          <p className="font-semibold text-primary">{a.tournament_title}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
-                        </div>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${s.className}`}>{s.label}</span>
-                      </div>
-                    );
-                  })}
+                  {ongoing.map(a => <ApplicationCard key={a.id} a={a} />)}
                 </div>
               )}
             </div>
@@ -213,18 +206,7 @@ export default function Cabinet() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {history.map(a => {
-                    const s = STATUS_LABELS[a.status] || STATUS_LABELS.new;
-                    return (
-                      <div key={a.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                          <p className="font-semibold text-primary">{a.tournament_title}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
-                        </div>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${s.className}`}>{s.label}</span>
-                      </div>
-                    );
-                  })}
+                  {history.map(a => <ApplicationCard key={a.id} a={a} />)}
                 </div>
               )}
             </div>
