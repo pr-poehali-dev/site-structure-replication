@@ -125,8 +125,7 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'id': new_id})}
 
     # Все остальные — только для админа
-    internal_key = body.get('_internal_setup_key', '')
-    if not is_admin and internal_key != 'yura-one-time-cleanup-2026':
+    if not is_admin:
         conn.close()
         return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
 

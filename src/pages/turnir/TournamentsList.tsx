@@ -8,10 +8,14 @@ interface TournamentsListProps {
   onOpenModal: (t: Tournament) => void;
   onOpenParticipants: (t: Tournament) => void;
   onOpenImagePreview: (preview: { url: string; title: string }) => void;
+  appliedTournamentIds: number[];
+  onCancelApplication: (t: Tournament) => void;
+  cancellingId: number | null;
 }
 
 export default function TournamentsList({
   tournaments, loading, onOpenModal, onOpenParticipants, onOpenImagePreview,
+  appliedTournamentIds, onCancelApplication, cancellingId,
 }: TournamentsListProps) {
   return (
     <div className="lg:col-span-2">
@@ -35,6 +39,7 @@ export default function TournamentsList({
           {tournaments.map(t => {
             const isOpen = t.status !== 'closed';
             const hasPreviews = !!(t.announcement_url || t.diploma_sample_url);
+            const isApplied = appliedTournamentIds.includes(t.id);
             return (
             <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col md:flex-row overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
               <div className="flex-1 flex flex-col min-w-0">
@@ -66,7 +71,17 @@ export default function TournamentsList({
                   </div>
                 </div>
                 <div className="px-6 pb-5 flex flex-col sm:flex-row gap-2">
-                  {isOpen ? (
+                  {isApplied ? (
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-red-500 border-red-200 hover:bg-red-50 font-semibold"
+                      disabled={cancellingId === t.id}
+                      onClick={() => onCancelApplication(t)}
+                    >
+                      <Icon name={cancellingId === t.id ? 'Loader2' : 'XCircle'} size={16} className={`mr-2 ${cancellingId === t.id ? 'animate-spin' : ''}`} />
+                      Отменить участие
+                    </Button>
+                  ) : isOpen ? (
                     <Button className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => onOpenModal(t)}>
                       <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
                     </Button>

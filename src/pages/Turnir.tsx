@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
 import Seo from '@/components/Seo';
@@ -44,6 +44,8 @@ export default function Turnir() {
   const [promoApplying, setPromoApplying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pay' | 'promo' | 'subscription'>('pay');
   const [subscriptionCode, setSubscriptionCode] = useState('');
+  const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string }[]>([]);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   const { createPayment, isLoading: paymentLoading } = useYookassa({
     apiUrl: YOOKASSA_URL,
@@ -64,6 +66,32 @@ export default function Turnir() {
       .then(data => setTournaments(data.tournaments || []))
       .finally(() => setLoading(false));
   }, []);
+
+  const fetchMyApplications = useCallback(() => {
+    if (!token) { setMyApplications([]); return; }
+    fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.json())
+      .then(data => setMyApplications((data.applications || []).filter((a: { status: string }) => a.status !== 'cancelled')))
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => { fetchMyApplications(); }, [fetchMyApplications]);
+
+  async function handleCancelApplication(t: Tournament) {
+    if (!token) return;
+    if (!confirm(`Отменить участие в турнире «${t.title}»?`)) return;
+    setCancellingId(t.id);
+    try {
+      await fetch(APPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ _action: 'cancel', tournament_id: t.id }),
+      });
+      fetchMyApplications();
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   function openModal(t: Tournament) {
     setModalTournament(t);
@@ -131,6 +159,7 @@ export default function Turnir() {
         setPromoApplying(false);
         if (promoRes.ok) {
           setSent(true);
+          fetchMyApplications();
           return;
         }
         const promoData = await promoRes.json().catch(() => ({}));
@@ -148,6 +177,7 @@ export default function Turnir() {
         setPromoApplying(false);
         if (subRes.ok) {
           setSent(true);
+          fetchMyApplications();
           return;
         }
         const subData = await subRes.json().catch(() => ({}));
@@ -173,6 +203,7 @@ export default function Turnir() {
         }
       } else {
         setSent(true);
+        fetchMyApplications();
       }
     } catch {
       setSubmitError('Ошибка сети. Попробуйте ещё раз.');
@@ -200,6 +231,9 @@ export default function Turnir() {
           onOpenModal={openModal}
           onOpenParticipants={openParticipants}
           onOpenImagePreview={setImagePreview}
+          appliedTournamentIds={myApplications.map(a => a.tournament_id)}
+          onCancelApplication={handleCancelApplication}
+          cancellingId={cancellingId}
         />
         <TournamentRules />
       </section>
