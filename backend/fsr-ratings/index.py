@@ -7,6 +7,7 @@ import csv
 import traceback
 
 import psycopg2
+from psycopg2.extras import execute_values
 import boto3
 
 RATING_TYPES = ('blitz', 'rapid')
@@ -70,7 +71,7 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
     column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
-    tsv_buf = io.StringIO()
+    ratings_by_fsr_id = {}
     total_rows = 0
     for row in reader:
         if not row or not row[0]:
@@ -84,25 +85,30 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
             rating_value = None
         if rating_value is None:
             continue
-        tsv_buf.write(f"{fsr_id}\t{rating_value}\n")
+        ratings_by_fsr_id[fsr_id] = rating_value
         total_rows += 1
 
     del text, reader
 
-    cur.execute("DELETE FROM fsr_rating_staging")
-
     matched_count = 0
-    if total_rows:
-        tsv_buf.seek(0)
-        cur.copy_expert("COPY fsr_rating_staging (fsr_id, rating_value) FROM STDIN WITH (FORMAT text)", tsv_buf)
-        cur.execute(
-            f"UPDATE users AS u SET {column} = s.rating_value "
-            f"FROM fsr_rating_staging AS s WHERE u.fsr_id = s.fsr_id"
-        )
-        matched_count = cur.rowcount
-        cur.execute("DELETE FROM fsr_rating_staging")
+    if ratings_by_fsr_id:
+        cur.execute("SELECT id, fsr_id FROM users WHERE fsr_id IS NOT NULL AND fsr_id <> ''")
+        existing_users = cur.fetchall()
 
-    tsv_buf.close()
+        updates = [
+            (user_id, ratings_by_fsr_id[fsr_id])
+            for user_id, fsr_id in existing_users
+            if fsr_id in ratings_by_fsr_id
+        ]
+
+        if updates:
+            update_sql = (
+                f"UPDATE users AS u SET {column} = data.rating_value "
+                f"FROM (VALUES %s) AS data(user_id, rating_value) "
+                f"WHERE u.id = data.user_id"
+            )
+            execute_values(cur, update_sql, updates, template="(%s, %s::integer)", page_size=len(updates))
+            matched_count = cur.rowcount
 
     key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
     s3 = get_s3()
