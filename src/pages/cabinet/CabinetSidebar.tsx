@@ -1,9 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, initials, fileToBase64 } from './utils';
+import func2url from '../../../backend/func2url.json';
+
+const BALANCE_URL = func2url['balance'];
 
 export type CabinetTab = 'tournaments' | 'profile' | 'balance' | 'games' | 'orders';
 
@@ -21,9 +24,18 @@ interface Props {
 }
 
 export default function CabinetSidebar({ tab, onChange }: Props) {
-  const { user, uploadAvatar } = useAuth();
+  const { user, token, uploadAvatar } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(BALANCE_URL, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.json())
+      .then(data => setBalance(data.balance || 0))
+      .catch(() => {});
+  }, [token, tab]);
 
   if (!user) return null;
   const age = calcAge(user.birth_date);
@@ -123,7 +135,10 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
             }`}
           >
             <Icon name={item.icon} size={17} className={tab === item.key ? 'text-secondary' : 'text-gray-400'} />
-            <span className="flex-1">{item.label}</span>
+            <span className="flex-1">
+              {item.label}
+              {item.key === 'balance' && balance !== null && ` (${balance.toLocaleString('ru')} ₽)`}
+            </span>
             {item.soon && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Скоро</span>}
           </button>
         ))}
