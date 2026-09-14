@@ -3,10 +3,10 @@ import os
 import base64
 import uuid
 import io
+import csv
 
 import psycopg2
 import boto3
-from openpyxl import load_workbook
 
 RATING_TYPES = ('blitz', 'rapid')
 
@@ -53,7 +53,7 @@ def file_to_dict(row):
 
 
 def handler(event: dict, context) -> dict:
-    """Загрузка Excel-файлов рейтинга ФШР (блиц/рапид), автообновление рейтингов пользователей по ID ФШР и история загрузок"""
+    """Загрузка CSV-файлов рейтинга ФШР (блиц/рапид), автообновление рейтингов пользователей по ID ФШР и история загрузок"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
@@ -81,7 +81,7 @@ def handler(event: dict, context) -> dict:
     if method == 'POST' and action == 'upload':
         rating_type = body.get('rating_type')
         file_b64 = body.get('file_b64', '')
-        file_name = body.get('file_name', 'rating.xlsx')
+        file_name = body.get('file_name', 'rating.csv')
 
         if rating_type not in RATING_TYPES:
             cur.close(); conn.close()
@@ -93,24 +93,33 @@ def handler(event: dict, context) -> dict:
         data = base64.b64decode(file_b64)
 
         try:
-            wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-            ws = wb.active
-        except Exception:
-            cur.close(); conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось прочитать Excel-файл'})}
+            text = data.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            try:
+                text = data.decode('cp1251')
+            except UnicodeDecodeError:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось прочитать CSV-файл'})}
 
+        try:
+            dialect = csv.Sniffer().sniff(text.splitlines()[0])
+            delimiter = dialect.delimiter
+        except Exception:
+            delimiter = ','
+
+        reader = csv.reader(io.StringIO(text), delimiter=delimiter)
         column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
         total_rows = 0
         matched_count = 0
-        for row in ws.iter_rows(values_only=True):
-            if not row or row[0] is None:
+        for row in reader:
+            if not row or not row[0]:
                 continue
             fsr_id = str(row[0]).strip()
-            if not fsr_id:
+            if not fsr_id or not fsr_id[0].isdigit():
                 continue
             try:
-                rating_value = int(float(row[3])) if len(row) > 3 and row[3] is not None else None
+                rating_value = int(float(row[3])) if len(row) > 3 and row[3] else None
             except (ValueError, TypeError):
                 rating_value = None
             if rating_value is None:
@@ -122,7 +131,7 @@ def handler(event: dict, context) -> dict:
 
         key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
         s3 = get_s3()
-        s3.put_object(Bucket='files', Key=key, Body=data, ContentType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        s3.put_object(Bucket='files', Key=key, Body=data, ContentType='text/csv')
         file_url = cdn_url(key)
 
         cur.execute(

@@ -75,8 +75,8 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
             <Icon name="Zap" size={18} className="text-secondary" />
             <h3 className="font-semibold text-primary">Рейтинг ФШР — Блиц</h3>
           </div>
-          <p className="text-sm text-gray-400">Excel-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг блиц у пользователей по совпадению ID ФШР.</p>
-          <input ref={blitzRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleUpload('blitz', e.target.files?.[0])} />
+          <p className="text-sm text-gray-400">CSV-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг блиц у пользователей по совпадению ID ФШР.</p>
+          <input ref={blitzRef} type="file" accept=".csv" className="hidden" onChange={e => handleUpload('blitz', e.target.files?.[0])} />
           <Button onClick={() => blitzRef.current?.click()} disabled={uploading === 'blitz'}>
             {uploading === 'blitz' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем...</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
           </Button>
@@ -87,8 +87,8 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
             <Icon name="Timer" size={18} className="text-secondary" />
             <h3 className="font-semibold text-primary">Рейтинг ФШР — Рапид</h3>
           </div>
-          <p className="text-sm text-gray-400">Excel-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг рапид у пользователей по совпадению ID ФШР.</p>
-          <input ref={rapidRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleUpload('rapid', e.target.files?.[0])} />
+          <p className="text-sm text-gray-400">CSV-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг рапид у пользователей по совпадению ID ФШР.</p>
+          <input ref={rapidRef} type="file" accept=".csv" className="hidden" onChange={e => handleUpload('rapid', e.target.files?.[0])} />
           <Button onClick={() => rapidRef.current?.click()} disabled={uploading === 'rapid'}>
             {uploading === 'rapid' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем...</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
           </Button>
