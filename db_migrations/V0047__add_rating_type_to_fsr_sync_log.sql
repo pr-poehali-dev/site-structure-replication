@@ -1,0 +1,1 @@
+ALTER TABLE fsr_official_sync_log ADD COLUMN IF NOT EXISTS rating_type VARCHAR(10);

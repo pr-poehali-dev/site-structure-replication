@@ -2,14 +2,14 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
-import { FsrRatingFile, FsrOfficialSync, FSR_RATINGS_URL } from './adminTypes';
+import { FsrRatingFile, FsrOfficialSyncMap, FSR_RATINGS_URL } from './adminTypes';
 
 interface FsrRatingsSectionProps {
   password: string;
   files: FsrRatingFile[];
   loading: boolean;
   fetchFiles: () => Promise<void>;
-  lastSync: FsrOfficialSync | null;
+  lastSync: FsrOfficialSyncMap;
 }
 
 const TYPE_LABELS: Record<'blitz' | 'rapid', string> = { blitz: 'Блиц', rapid: 'Рапид' };
@@ -34,31 +34,29 @@ const DIRECT_UPLOAD_LIMIT = 300_000;
 export default function FsrRatingsSection({ password, files, loading, fetchFiles, lastSync }: FsrRatingsSectionProps) {
   const [uploading, setUploading] = useState<'blitz' | 'rapid' | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const [syncing, setSyncing] = useState<'blitz' | 'rapid' | null>(null);
   const blitzRef = useRef<HTMLInputElement>(null);
   const rapidRef = useRef<HTMLInputElement>(null);
 
-  async function handleSyncOfficial() {
-    setSyncing(true);
+  async function handleSyncOfficial(ratingType: 'blitz' | 'rapid') {
+    setSyncing(ratingType);
     try {
       const res = await fetch(FSR_RATINGS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-        body: JSON.stringify({ _action: 'sync_official' }),
+        body: JSON.stringify({ _action: 'sync_official', rating_type: ratingType }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error || 'Не удалось синхронизировать с сайтом ФШР');
         return;
       }
-      const blitz = data.results?.blitz;
-      const rapid = data.results?.rapid;
-      toast.success(`Синхронизировано: блиц ${blitz?.matched_count ?? 0}, рапид ${rapid?.matched_count ?? 0} игроков обновлено`);
+      toast.success(`${TYPE_LABELS[ratingType]}: обновлено ${data.result?.matched_count ?? 0} из ${data.result?.total_rows ?? 0} игроков`);
       fetchFiles();
     } catch {
       toast.error('Ошибка сети. Попробуйте ещё раз.');
     } finally {
-      setSyncing(false);
+      setSyncing(null);
     }
   }
 
@@ -144,16 +142,30 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
           <h3 className="font-semibold text-primary">Синхронизация с официальным сайтом ФШР</h3>
         </div>
         <p className="text-sm text-gray-400">
-          Скачивает актуальные рейтинги блиц и рапид с ratings.ruchess.ru, обновляет всех зарегистрированных пользователей и пополняет базу для автозаполнения рейтинга при регистрации новых.
+          Скачивает актуальные рейтинги с ratings.ruchess.ru, обновляет всех зарегистрированных пользователей и пополняет базу для автозаполнения рейтинга при регистрации новых. Блиц и рапид синхронизируются отдельно.
         </p>
-        {lastSync && (
-          <p className="text-xs text-gray-400">
-            Последняя синхронизация: {formatDateTime(lastSync.synced_at)} — обновлено {lastSync.matched_users} пользователей из {lastSync.total_players} игроков в базе ФШР
-          </p>
-        )}
-        <Button onClick={handleSyncOfficial} disabled={syncing} className="w-fit">
-          {syncing ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Синхронизируем...</> : <><Icon name="RefreshCw" size={16} className="mr-2" />Обновить рейтинги с сайта ФШР</>}
-        </Button>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => handleSyncOfficial('blitz')} disabled={syncing === 'blitz'} className="w-fit">
+              {syncing === 'blitz' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Синхронизируем...</> : <><Icon name="RefreshCw" size={16} className="mr-2" />Обновить блиц</>}
+            </Button>
+            {lastSync.blitz && (
+              <p className="text-xs text-gray-400">
+                {formatDateTime(lastSync.blitz.synced_at)} — обновлено {lastSync.blitz.matched_users} из {lastSync.blitz.total_players}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => handleSyncOfficial('rapid')} disabled={syncing === 'rapid'} className="w-fit">
+              {syncing === 'rapid' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Синхронизируем...</> : <><Icon name="RefreshCw" size={16} className="mr-2" />Обновить рапид</>}
+            </Button>
+            {lastSync.rapid && (
+              <p className="text-xs text-gray-400">
+                {formatDateTime(lastSync.rapid.synced_at)} — обновлено {lastSync.rapid.matched_users} из {lastSync.rapid.total_players}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       <h3 className="font-semibold text-lg text-primary mb-3">Или загрузите файл вручную</h3>

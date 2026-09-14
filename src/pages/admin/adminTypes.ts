@@ -101,3 +101,5 @@ export interface FsrRatingFile {
 export interface FsrOfficialSync {
   synced_at: string; total_players: number; matched_users: number;
 }
+
+export type FsrOfficialSyncMap = Partial<Record<'blitz' | 'rapid', FsrOfficialSync>>;

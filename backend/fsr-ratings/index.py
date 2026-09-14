@@ -93,6 +93,34 @@ def parse_ratings_csv(data: bytes):
     return ratings_by_fsr_id
 
 
+def parse_ratings_bytes_fast(data: bytes):
+    """Быстрый построчный разбор официального CSV ФШР без декодирования всего файла в текст и без csv-модуля.
+    Формат: fsr_id;ФИО;;регион;рейтинг;...  Рейтинг — 5-е поле (индекс 4)."""
+    ratings_by_fsr_id = {}
+    for line in data.split(b'\n'):
+        if not line:
+            continue
+        parts = line.split(b';')
+        if len(parts) < 5:
+            continue
+        fsr_id_b = parts[0].strip()
+        if not fsr_id_b or not fsr_id_b[0:1].isdigit():
+            continue
+        rating_b = parts[4].strip()
+        if not rating_b:
+            continue
+        try:
+            rating_value = int(float(rating_b))
+        except ValueError:
+            continue
+        try:
+            fsr_id = fsr_id_b.decode('ascii')
+        except UnicodeDecodeError:
+            continue
+        ratings_by_fsr_id[fsr_id] = rating_value
+    return ratings_by_fsr_id
+
+
 def process_csv_and_save(cur, conn, rating_type, file_name, data):
     ratings_by_fsr_id = parse_ratings_csv(data)
     total_rows = len(ratings_by_fsr_id)
@@ -139,55 +167,47 @@ def download_official(rating_type: str) -> bytes:
         return resp.read()
 
 
-def sync_official_ratings(cur, conn):
-    """Скачивает оба официальных файла ФШР, обновляет рейтинги всех зарегистрированных пользователей
-    и общий кэш (для автозаполнения при регистрации новых). Файлы не сохраняются в S3 — это отдельный
-    быстрый путь для автосинхронизации, в отличие от ручной загрузки конкретного файла администратором."""
-    ratings_by_type = {}
-    for rating_type in RATING_TYPES:
-        data = download_official(rating_type)
-        ratings_by_type[rating_type] = parse_ratings_csv(data)
+def sync_one_rating_type(cur, conn, rating_type: str):
+    """Скачивает один официальный файл ФШР (блиц или рапид), обновляет рейтинг всех зарегистрированных
+    пользователей и общий кэш (для автозаполнения при регистрации новых). Разбито по одному типу за вызов,
+    чтобы уложиться в лимит времени и памяти функции."""
+    data = download_official(rating_type)
+    ratings = parse_ratings_bytes_fast(data)
 
+    column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
     cur.execute("SELECT id, fsr_id FROM users WHERE fsr_id IS NOT NULL AND fsr_id <> ''")
     existing_users = cur.fetchall()
+    updates = [(user_id, ratings[fsr_id]) for user_id, fsr_id in existing_users if fsr_id in ratings]
 
-    results = {}
-    for rating_type, ratings in ratings_by_type.items():
-        column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
-        updates = [(user_id, ratings[fsr_id]) for user_id, fsr_id in existing_users if fsr_id in ratings]
-        matched_count = 0
-        if updates:
-            update_sql = (
-                f"UPDATE users AS u SET {column} = data.rating_value "
-                f"FROM (VALUES %s) AS data(user_id, rating_value) "
-                f"WHERE u.id = data.user_id"
-            )
-            execute_values(cur, update_sql, updates, template="(%s, %s::integer)", page_size=len(updates))
-            matched_count = cur.rowcount
-        results[rating_type] = {'total_rows': len(ratings), 'matched_count': matched_count}
+    matched_count = 0
+    if updates:
+        update_sql = (
+            f"UPDATE users AS u SET {column} = data.rating_value "
+            f"FROM (VALUES %s) AS data(user_id, rating_value) "
+            f"WHERE u.id = data.user_id"
+        )
+        execute_values(cur, update_sql, updates, template="(%s, %s::integer)", page_size=len(updates))
+        matched_count = cur.rowcount
 
-    for rating_type, ratings in ratings_by_type.items():
-        col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
-        rows_batch = list(ratings.items())
-        if rows_batch:
-            upsert_sql = (
-                f"INSERT INTO fsr_official_cache (fsr_id, {col}) VALUES %s "
-                f"ON CONFLICT (fsr_id) DO UPDATE SET {col} = EXCLUDED.{col}, updated_at = now()"
-            )
-            execute_values(cur, upsert_sql, rows_batch, template="(%s, %s::integer)", page_size=50000)
+    cache_col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
+    rows_batch = list(ratings.items())
+    if rows_batch:
+        upsert_sql = (
+            f"INSERT INTO fsr_official_cache (fsr_id, {cache_col}) VALUES %s "
+            f"ON CONFLICT (fsr_id) DO UPDATE SET {cache_col} = EXCLUDED.{cache_col}, updated_at = now()"
+        )
+        execute_values(cur, upsert_sql, rows_batch, template="(%s, %s::integer)", page_size=20000)
 
-    total_players = sum(r['total_rows'] for r in results.values())
-    matched_users = max((r['matched_count'] for r in results.values()), default=0)
     cur.execute(
-        "INSERT INTO fsr_official_sync_log (total_players, matched_users) VALUES (%s, %s)",
-        (total_players, matched_users)
+        "INSERT INTO fsr_official_sync_log (rating_type, total_players, matched_users) VALUES (%s, %s, %s)",
+        (rating_type, len(ratings), matched_count)
     )
     conn.commit()
-    return results
+    return {'total_rows': len(ratings), 'matched_count': matched_count}
 
 
 def handler(event: dict, context) -> dict:
-    """Загрузка/синхронизация рейтингов ФШР (блиц/рапид): ручная загрузка CSV частями, автосинхронизация с официального сайта ФШР, поиск рейтинга одного игрока по ID, история загрузок"""
+    """Загрузка/синхронизация рейтингов ФШР (блиц/рапид): ручная загрузка CSV частями, автосинхронизация с официального сайта ФШР по одному типу за вызов, поиск рейтинга одного игрока по ID, история загрузок"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
@@ -220,11 +240,14 @@ def handler(event: dict, context) -> dict:
             "FROM fsr_rating_files ORDER BY uploaded_at DESC LIMIT 100"
         )
         rows = [file_to_dict(r) for r in cur.fetchall()]
-        cur.execute("SELECT synced_at, total_players, matched_users FROM fsr_official_sync_log ORDER BY synced_at DESC LIMIT 1")
-        last_sync_row = cur.fetchone()
-        last_sync = None
-        if last_sync_row:
-            last_sync = {'synced_at': str(last_sync_row[0]), 'total_players': last_sync_row[1], 'matched_users': last_sync_row[2]}
+        cur.execute(
+            "SELECT DISTINCT ON (rating_type) rating_type, synced_at, total_players, matched_users "
+            "FROM fsr_official_sync_log ORDER BY rating_type, synced_at DESC"
+        )
+        last_sync = {
+            r[0]: {'synced_at': str(r[1]), 'total_players': r[2], 'matched_users': r[3]}
+            for r in cur.fetchall()
+        }
         cur.close()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'files': rows, 'last_official_sync': last_sync})}
@@ -232,10 +255,14 @@ def handler(event: dict, context) -> dict:
     body = json.loads(event.get('body') or '{}')
     action = body.get('_action', '')
 
-    # Синхронизация с официальным сайтом ФШР (обновляет всех пользователей + кэш для новых регистраций)
+    # Синхронизация с официальным сайтом ФШР — по одному типу рейтинга за вызов (укладывается в лимит времени/памяти)
     if method == 'POST' and action == 'sync_official':
+        rating_type = body.get('rating_type')
+        if rating_type not in RATING_TYPES:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Некорректный тип рейтинга'})}
         try:
-            results = sync_official_ratings(cur, conn)
+            result = sync_one_rating_type(cur, conn, rating_type)
         except Exception as e:
             conn.rollback()
             cur.close(); conn.close()
@@ -244,7 +271,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось синхронизировать с сайтом ФШР', 'detail': err_detail})}
 
         cur.close(); conn.close()
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'results': results})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'rating_type': rating_type, 'result': result})}
 
     # Загрузка файла одним куском (небольшие файлы)
     if method == 'POST' and action == 'upload':

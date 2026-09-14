@@ -6,7 +6,7 @@ import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
   Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode,
-  SubscriptionPlan, Subscription, FsrRatingFile, FsrOfficialSync,
+  SubscriptionPlan, Subscription, FsrRatingFile, FsrOfficialSyncMap,
   TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, SUBSCRIPTIONS_URL, FSR_RATINGS_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
@@ -99,7 +99,7 @@ export default function Admin() {
   // Файлы рейтинга ФШР
   const [fsrFiles, setFsrFiles] = useState<FsrRatingFile[]>([]);
   const [fsrFilesLoading, setFsrFilesLoading] = useState(false);
-  const [fsrLastSync, setFsrLastSync] = useState<FsrOfficialSync | null>(null);
+  const [fsrLastSync, setFsrLastSync] = useState<FsrOfficialSyncMap>({});
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
@@ -198,7 +198,7 @@ export default function Admin() {
     const res = await fetch(FSR_RATINGS_URL, { headers: { 'X-Admin-Password': password } });
     const data = await res.json();
     setFsrFiles(data.files || []);
-    setFsrLastSync(data.last_official_sync || null);
+    setFsrLastSync(data.last_official_sync || {});
     setFsrFilesLoading(false);
   }
 
