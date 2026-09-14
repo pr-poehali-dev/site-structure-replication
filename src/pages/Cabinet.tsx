@@ -87,10 +87,10 @@ export default function Cabinet() {
       <Seo title="Личный кабинет" description="Личный кабинет участника турниров" path="/cabinet" noindex />
       <Header />
 
-      <section className="bg-primary text-white relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-40" />
+      <section className="bg-gradient-to-br from-secondary/25 via-secondary/10 to-white text-primary relative overflow-hidden">
+        <div className="absolute inset-0 chess-grid opacity-10" />
         <div className="container relative px-4 py-8 max-w-6xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl md:text-3xl uppercase">
+          <h1 className="font-heading font-semibold text-2xl md:text-3xl">
             Привет, <span className="text-secondary">{user.first_name}</span>!
           </h1>
         </div>

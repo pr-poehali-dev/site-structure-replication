@@ -46,7 +46,7 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
         <div className="relative shrink-0">
           <Avatar className="w-16 h-16 border-2 border-secondary/30">
             <AvatarImage src={user.avatar_url || undefined} alt={user.first_name} />
-            <AvatarFallback className="bg-primary text-white font-heading font-bold text-lg">
+            <AvatarFallback className="bg-gradient-to-br from-secondary/70 to-secondary text-white font-heading font-bold text-lg">
               {initials(user.last_name, user.first_name)}
             </AvatarFallback>
           </Avatar>

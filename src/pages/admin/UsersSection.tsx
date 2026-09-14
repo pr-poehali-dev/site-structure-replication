@@ -104,7 +104,7 @@ export default function UsersSection({ password }: UsersSectionProps) {
             <div key={u.id} className="bg-white rounded-2xl shadow p-5 flex items-center gap-4 flex-wrap">
               <Avatar className="w-12 h-12 shrink-0">
                 <AvatarImage src={u.avatar_url || undefined} alt={u.first_name} />
-                <AvatarFallback className="bg-primary text-white font-heading font-bold">
+                <AvatarFallback className="bg-gradient-to-br from-secondary/70 to-secondary text-white font-heading font-bold">
                   {initials(u.last_name, u.first_name)}
                 </AvatarFallback>
               </Avatar>
