@@ -71,12 +71,16 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
     column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
-    cur.execute("CREATE TEMP TABLE _fsr_upload (fsr_id VARCHAR(100), rating_value INTEGER) ON COMMIT DROP")
-    insert_sql = "INSERT INTO _fsr_upload (fsr_id, rating_value) VALUES %s"
+    update_sql = (
+        f"UPDATE users AS u SET {column} = data.rating_value "
+        f"FROM (VALUES %s) AS data(fsr_id, rating_value) "
+        f"WHERE u.fsr_id = data.fsr_id"
+    )
 
     total_rows = 0
+    matched_count = 0
     batch = []
-    BATCH_SIZE = 5000
+    BATCH_SIZE = 2000
     for row in reader:
         if not row or not row[0]:
             continue
@@ -92,20 +96,14 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
         batch.append((fsr_id, rating_value))
         total_rows += 1
         if len(batch) >= BATCH_SIZE:
-            execute_values(cur, insert_sql, batch)
+            execute_values(cur, update_sql, batch, template="(%s, %s::integer)")
+            matched_count += cur.rowcount
             batch.clear()
 
     if batch:
-        execute_values(cur, insert_sql, batch)
+        execute_values(cur, update_sql, batch, template="(%s, %s::integer)")
+        matched_count += cur.rowcount
         batch.clear()
-
-    matched_count = 0
-    if total_rows:
-        cur.execute(
-            f"UPDATE users SET {column} = _fsr_upload.rating_value "
-            f"FROM _fsr_upload WHERE users.fsr_id = _fsr_upload.fsr_id"
-        )
-        matched_count = cur.rowcount
 
     del text, reader
 
