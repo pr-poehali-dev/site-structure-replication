@@ -138,16 +138,17 @@ export default function BalanceSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-primary rounded-2xl shadow-sm p-6 text-white relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-20" />
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-white/70 text-sm mb-1">Текущий баланс</p>
-            <p className="font-heading font-bold text-4xl">
+            <p className="text-gray-400 text-sm mb-1">Текущий баланс</p>
+            <p className="font-heading font-bold text-4xl text-primary">
               {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${balance.toLocaleString('ru')} ₽`}
             </p>
           </div>
-          <Icon name="Wallet" size={40} className="text-secondary opacity-80" />
+          <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+            <Icon name="Wallet" size={26} className="text-secondary" />
+          </div>
         </div>
       </div>
 
