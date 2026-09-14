@@ -52,8 +52,57 @@ def file_to_dict(row):
     }
 
 
+def process_csv_and_save(cur, conn, rating_type, file_name, data):
+    try:
+        text = data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        text = data.decode('cp1251')
+
+    try:
+        dialect = csv.Sniffer().sniff(text.splitlines()[0])
+        delimiter = dialect.delimiter
+    except Exception:
+        delimiter = ','
+
+    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+    column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
+
+    total_rows = 0
+    matched_count = 0
+    for row in reader:
+        if not row or not row[0]:
+            continue
+        fsr_id = str(row[0]).strip()
+        if not fsr_id or not fsr_id[0].isdigit():
+            continue
+        try:
+            rating_value = int(float(row[3])) if len(row) > 3 and row[3] else None
+        except (ValueError, TypeError):
+            rating_value = None
+        if rating_value is None:
+            continue
+        total_rows += 1
+        cur.execute(f"UPDATE users SET {column} = %s WHERE fsr_id = %s", (rating_value, fsr_id))
+        if cur.rowcount > 0:
+            matched_count += cur.rowcount
+
+    key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
+    s3 = get_s3()
+    s3.put_object(Bucket='files', Key=key, Body=data, ContentType='text/csv')
+    file_url = cdn_url(key)
+
+    cur.execute(
+        "INSERT INTO fsr_rating_files (rating_type, file_name, file_url, total_rows, matched_count) "
+        "VALUES (%s, %s, %s, %s, %s) RETURNING id, rating_type, file_name, file_url, total_rows, matched_count, uploaded_at",
+        (rating_type, file_name, file_url, total_rows, matched_count)
+    )
+    new_row = cur.fetchone()
+    conn.commit()
+    return new_row
+
+
 def handler(event: dict, context) -> dict:
-    """Загрузка CSV-файлов рейтинга ФШР (блиц/рапид), автообновление рейтингов пользователей по ID ФШР и история загрузок"""
+    """Загрузка CSV-файлов рейтинга ФШР (блиц/рапид) частями, автообновление рейтингов пользователей по ID ФШР и история загрузок"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
@@ -78,6 +127,7 @@ def handler(event: dict, context) -> dict:
     body = json.loads(event.get('body') or '{}')
     action = body.get('_action', '')
 
+    # Загрузка файла одним куском (небольшие файлы)
     if method == 'POST' and action == 'upload':
         rating_type = body.get('rating_type')
         file_b64 = body.get('file_b64', '')
@@ -90,59 +140,61 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Файл не передан'})}
 
-        data = base64.b64decode(file_b64)
-
         try:
-            text = data.decode('utf-8-sig')
-        except UnicodeDecodeError:
-            try:
-                text = data.decode('cp1251')
-            except UnicodeDecodeError:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось прочитать CSV-файл'})}
-
-        try:
-            dialect = csv.Sniffer().sniff(text.splitlines()[0])
-            delimiter = dialect.delimiter
+            data = base64.b64decode(file_b64)
+            new_row = process_csv_and_save(cur, conn, rating_type, file_name, data)
         except Exception:
-            delimiter = ','
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл'})}
 
-        reader = csv.reader(io.StringIO(text), delimiter=delimiter)
-        column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'file': file_to_dict(new_row)})}
 
-        total_rows = 0
-        matched_count = 0
-        for row in reader:
-            if not row or not row[0]:
-                continue
-            fsr_id = str(row[0]).strip()
-            if not fsr_id or not fsr_id[0].isdigit():
-                continue
-            try:
-                rating_value = int(float(row[3])) if len(row) > 3 and row[3] else None
-            except (ValueError, TypeError):
-                rating_value = None
-            if rating_value is None:
-                continue
-            total_rows += 1
-            cur.execute(f"UPDATE users SET {column} = %s WHERE fsr_id = %s", (rating_value, fsr_id))
-            if cur.rowcount > 0:
-                matched_count += cur.rowcount
+    # Загрузка файла частями (крупные файлы)
+    if method == 'POST' and action == 'upload_chunk':
+        session_id = body.get('session_id', '')
+        chunk_index = body.get('chunk_index')
+        total_chunks = body.get('total_chunks')
+        chunk_b64 = body.get('chunk_b64', '')
 
-        key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
-        s3 = get_s3()
-        s3.put_object(Bucket='files', Key=key, Body=data, ContentType='text/csv')
-        file_url = cdn_url(key)
+        if not session_id or chunk_index is None or total_chunks is None:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Некорректные параметры части файла'})}
 
         cur.execute(
-            "INSERT INTO fsr_rating_files (rating_type, file_name, file_url, total_rows, matched_count) "
-            "VALUES (%s, %s, %s, %s, %s) RETURNING id, rating_type, file_name, file_url, total_rows, matched_count, uploaded_at",
-            (rating_type, file_name, file_url, total_rows, matched_count)
+            "INSERT INTO fsr_rating_upload_chunks (session_id, chunk_index, chunk_b64) VALUES (%s, %s, %s)",
+            (session_id, chunk_index, chunk_b64)
         )
-        new_row = cur.fetchone()
         conn.commit()
-        cur.close()
-        conn.close()
+
+        if chunk_index < total_chunks - 1:
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'received': chunk_index})}
+
+        rating_type = body.get('rating_type')
+        file_name = body.get('file_name', 'rating.csv')
+
+        if rating_type not in RATING_TYPES:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Некорректный тип рейтинга'})}
+
+        cur.execute(
+            "SELECT chunk_b64 FROM fsr_rating_upload_chunks WHERE session_id = %s ORDER BY chunk_index",
+            (session_id,)
+        )
+        chunks = [r[0] for r in cur.fetchall()]
+
+        try:
+            full_b64 = ''.join(chunks)
+            data = base64.b64decode(full_b64)
+            new_row = process_csv_and_save(cur, conn, rating_type, file_name, data)
+        except Exception:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл'})}
+
+        cur.execute("DELETE FROM fsr_rating_upload_chunks WHERE session_id = %s", (session_id,))
+        conn.commit()
+        cur.close(); conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'file': file_to_dict(new_row)})}
 
     cur.close()

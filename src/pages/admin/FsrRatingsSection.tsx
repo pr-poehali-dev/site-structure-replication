@@ -27,32 +27,75 @@ function formatDateTime(dateStr: string) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+const CHUNK_SIZE = 250_000;
+const DIRECT_UPLOAD_LIMIT = 300_000;
+
 export default function FsrRatingsSection({ password, files, loading, fetchFiles }: FsrRatingsSectionProps) {
   const [uploading, setUploading] = useState<'blitz' | 'rapid' | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
   const blitzRef = useRef<HTMLInputElement>(null);
   const rapidRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(ratingType: 'blitz' | 'rapid', file: File | undefined) {
     if (!file) return;
     setUploading(ratingType);
+    setProgress(null);
     try {
       const file_b64 = await fileToBase64(file);
-      const res = await fetch(FSR_RATINGS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-        body: JSON.stringify({ _action: 'upload', rating_type: ratingType, file_b64, file_name: file.name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Не удалось загрузить файл');
+
+      if (file_b64.length <= DIRECT_UPLOAD_LIMIT) {
+        const res = await fetch(FSR_RATINGS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+          body: JSON.stringify({ _action: 'upload', rating_type: ratingType, file_b64, file_name: file.name }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || 'Не удалось загрузить файл');
+          return;
+        }
+        toast.success(`Обновлено рейтингов: ${data.file.matched_count} из ${data.file.total_rows}`);
+        fetchFiles();
         return;
       }
-      toast.success(`Обновлено рейтингов: ${data.file.matched_count} из ${data.file.total_rows}`);
-      fetchFiles();
+
+      const sessionId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const totalChunks = Math.ceil(file_b64.length / CHUNK_SIZE);
+      let lastData: { file?: { matched_count: number; total_rows: number } } | null = null;
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk_b64 = file_b64.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const res = await fetch(FSR_RATINGS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+          body: JSON.stringify({
+            _action: 'upload_chunk',
+            session_id: sessionId,
+            chunk_index: i,
+            total_chunks: totalChunks,
+            chunk_b64,
+            rating_type: ratingType,
+            file_name: file.name,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || 'Не удалось загрузить файл');
+          return;
+        }
+        lastData = data;
+        setProgress(Math.round(((i + 1) / totalChunks) * 100));
+      }
+
+      if (lastData?.file) {
+        toast.success(`Обновлено рейтингов: ${lastData.file.matched_count} из ${lastData.file.total_rows}`);
+        fetchFiles();
+      }
     } catch {
       toast.error('Ошибка сети. Попробуйте ещё раз.');
     } finally {
       setUploading(null);
+      setProgress(null);
       if (blitzRef.current) blitzRef.current.value = '';
       if (rapidRef.current) rapidRef.current.value = '';
     }
@@ -78,7 +121,7 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
           <p className="text-sm text-gray-400">CSV-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг блиц у пользователей по совпадению ID ФШР.</p>
           <input ref={blitzRef} type="file" accept=".csv" className="hidden" onChange={e => handleUpload('blitz', e.target.files?.[0])} />
           <Button onClick={() => blitzRef.current?.click()} disabled={uploading === 'blitz'}>
-            {uploading === 'blitz' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем...</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
+            {uploading === 'blitz' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем{progress !== null ? ` ${progress}%` : '...'}</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
           </Button>
         </div>
 
@@ -90,7 +133,7 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
           <p className="text-sm text-gray-400">CSV-файл: столбцы ID, ФИО, регион, рейтинг. Обновит рейтинг рапид у пользователей по совпадению ID ФШР.</p>
           <input ref={rapidRef} type="file" accept=".csv" className="hidden" onChange={e => handleUpload('rapid', e.target.files?.[0])} />
           <Button onClick={() => rapidRef.current?.click()} disabled={uploading === 'rapid'}>
-            {uploading === 'rapid' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем...</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
+            {uploading === 'rapid' ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Загружаем{progress !== null ? ` ${progress}%` : '...'}</> : <><Icon name="Upload" size={16} className="mr-2" />Загрузить файл</>}
           </Button>
         </div>
       </div>
