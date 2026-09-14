@@ -4,6 +4,7 @@ import base64
 import uuid
 import io
 import csv
+import traceback
 
 import psycopg2
 from psycopg2.extras import execute_values
@@ -165,9 +166,12 @@ def handler(event: dict, context) -> dict:
         try:
             data = base64.b64decode(file_b64)
             new_row = process_csv_and_save(cur, conn, rating_type, file_name, data)
-        except Exception:
+        except Exception as e:
+            conn.rollback()
             cur.close(); conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл'})}
+            err_detail = f"{type(e).__name__}: {e}"
+            print(f"upload error: {err_detail}\n{traceback.format_exc()}")
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл', 'detail': err_detail})}
 
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'file': file_to_dict(new_row)})}
@@ -212,9 +216,12 @@ def handler(event: dict, context) -> dict:
             data = base64.b64decode(full_b64)
             full_b64 = ''
             new_row = process_csv_and_save(cur, conn, rating_type, file_name, data)
-        except Exception:
+        except Exception as e:
+            conn.rollback()
             cur.close(); conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл'})}
+            err_detail = f"{type(e).__name__}: {e}"
+            print(f"upload_chunk error: {err_detail}\n{traceback.format_exc()}")
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось обработать CSV-файл', 'detail': err_detail})}
 
         cur.execute("DELETE FROM fsr_rating_upload_chunks WHERE session_id = %s", (session_id,))
         conn.commit()
