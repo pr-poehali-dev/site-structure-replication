@@ -59,8 +59,10 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     except UnicodeDecodeError:
         text = data.decode('cp1251')
 
+    newline_pos = text.find('\n')
+    sample = text[:newline_pos] if newline_pos > 0 else text[:200]
     try:
-        dialect = csv.Sniffer().sniff(text.splitlines()[0])
+        dialect = csv.Sniffer().sniff(sample)
         delimiter = dialect.delimiter
     except Exception:
         delimiter = ','
@@ -68,7 +70,12 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
     column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
-    entries = []
+    cur.execute("CREATE TEMP TABLE _fsr_upload (fsr_id VARCHAR(100), rating_value INTEGER) ON COMMIT DROP")
+    insert_sql = "INSERT INTO _fsr_upload (fsr_id, rating_value) VALUES %s"
+
+    total_rows = 0
+    batch = []
+    BATCH_SIZE = 5000
     for row in reader:
         if not row or not row[0]:
             continue
@@ -81,19 +88,25 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
             rating_value = None
         if rating_value is None:
             continue
-        entries.append((fsr_id, rating_value))
+        batch.append((fsr_id, rating_value))
+        total_rows += 1
+        if len(batch) >= BATCH_SIZE:
+            execute_values(cur, insert_sql, batch)
+            batch.clear()
 
-    total_rows = len(entries)
+    if batch:
+        execute_values(cur, insert_sql, batch)
+        batch.clear()
+
     matched_count = 0
-
-    if entries:
-        cur.execute("CREATE TEMP TABLE _fsr_upload (fsr_id VARCHAR(100), rating_value INTEGER) ON COMMIT DROP")
-        execute_values(cur, "INSERT INTO _fsr_upload (fsr_id, rating_value) VALUES %s", entries)
+    if total_rows:
         cur.execute(
             f"UPDATE users SET {column} = _fsr_upload.rating_value "
             f"FROM _fsr_upload WHERE users.fsr_id = _fsr_upload.fsr_id"
         )
         matched_count = cur.rowcount
+
+    del text, reader
 
     key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
     s3 = get_s3()
@@ -195,7 +208,9 @@ def handler(event: dict, context) -> dict:
 
         try:
             full_b64 = ''.join(chunks)
+            chunks.clear()
             data = base64.b64decode(full_b64)
+            full_b64 = ''
             new_row = process_csv_and_save(cur, conn, rating_type, file_name, data)
         except Exception:
             cur.close(); conn.close()
