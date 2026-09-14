@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, initials, fileToBase64 } from './utils';
 
@@ -70,7 +71,19 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
 
         <div className="w-full flex flex-col gap-2">
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 text-left">Рейтинг МШ (Мир шахмат)</p>
+            <div className="flex items-center gap-1 mb-1">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide text-left">Рейтинг МШ (Мир шахмат)</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-gray-300 hover:text-gray-500 transition-colors shrink-0">
+                    <Icon name="Info" size={12} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                  Рейтинг МШ рассчитывается по итогам турниров, которые проводит «Мир шахмат». Стартовое значение равно вашему рейтингу ФШР на момент регистрации на платформе, а дальше оно растёт вместе с вашими результатами у нас.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex gap-2">
               <div className="flex-1 bg-muted/50 rounded-lg px-2 py-2 text-center">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide">Блиц</p>
