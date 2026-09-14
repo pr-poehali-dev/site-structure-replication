@@ -39,7 +39,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function Cabinet() {
-  const { user, token, loading, logout } = useAuth();
+  const { user, token, loading } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [tab, setTab] = useState<'tournaments' | 'profile'>(() => {
@@ -79,16 +79,11 @@ export default function Cabinet() {
 
       <section className="bg-primary text-white relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="container relative px-4 py-10 max-w-4xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="font-heading font-bold text-3xl md:text-4xl uppercase">
-              Привет, <span className="text-secondary">{user.first_name}</span>!
-            </h1>
-            <p className="text-white/70 mt-1">{user.email}</p>
-          </div>
-          <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 bg-transparent" onClick={logout}>
-            <Icon name="LogOut" size={16} className="mr-2" /> Выйти
-          </Button>
+        <div className="container relative px-4 py-10 max-w-4xl mx-auto">
+          <h1 className="font-heading font-bold text-3xl md:text-4xl uppercase">
+            Привет, <span className="text-secondary">{user.first_name}</span>!
+          </h1>
+          <p className="text-white/70 mt-1">{user.email}</p>
         </div>
       </section>
 
