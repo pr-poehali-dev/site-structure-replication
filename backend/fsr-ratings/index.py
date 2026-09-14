@@ -7,7 +7,6 @@ import csv
 import traceback
 
 import psycopg2
-from psycopg2.extras import execute_values
 import boto3
 
 RATING_TYPES = ('blitz', 'rapid')
@@ -71,16 +70,8 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
     column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
-    update_sql = (
-        f"UPDATE users AS u SET {column} = data.rating_value "
-        f"FROM (VALUES %s) AS data(fsr_id, rating_value) "
-        f"WHERE u.fsr_id = data.fsr_id"
-    )
-
+    tsv_buf = io.StringIO()
     total_rows = 0
-    matched_count = 0
-    batch = []
-    BATCH_SIZE = 10000
     for row in reader:
         if not row or not row[0]:
             continue
@@ -93,19 +84,25 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
             rating_value = None
         if rating_value is None:
             continue
-        batch.append((fsr_id, rating_value))
+        tsv_buf.write(f"{fsr_id}\t{rating_value}\n")
         total_rows += 1
-        if len(batch) >= BATCH_SIZE:
-            execute_values(cur, update_sql, batch, template="(%s, %s::integer)", page_size=BATCH_SIZE)
-            matched_count += cur.rowcount
-            batch.clear()
-
-    if batch:
-        execute_values(cur, update_sql, batch, template="(%s, %s::integer)", page_size=len(batch))
-        matched_count += cur.rowcount
-        batch.clear()
 
     del text, reader
+
+    cur.execute("DELETE FROM fsr_rating_staging")
+
+    matched_count = 0
+    if total_rows:
+        tsv_buf.seek(0)
+        cur.copy_expert("COPY fsr_rating_staging (fsr_id, rating_value) FROM STDIN WITH (FORMAT text)", tsv_buf)
+        cur.execute(
+            f"UPDATE users AS u SET {column} = s.rating_value "
+            f"FROM fsr_rating_staging AS s WHERE u.fsr_id = s.fsr_id"
+        )
+        matched_count = cur.rowcount
+        cur.execute("DELETE FROM fsr_rating_staging")
+
+    tsv_buf.close()
 
     key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
     s3 = get_s3()
