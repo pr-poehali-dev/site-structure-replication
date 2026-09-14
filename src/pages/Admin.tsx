@@ -6,8 +6,8 @@ import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import {
   Tournament, Application, AwardKit, AwardOrder, TournamentResult, PushSubscription, PromoCode,
-  SubscriptionPlan, Subscription,
-  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, SUBSCRIPTIONS_URL,
+  SubscriptionPlan, Subscription, FsrRatingFile,
+  TOURNAMENTS_URL, APPS_URL, AWARD_CATALOG_ADMIN_URL, AWARD_ORDERS_URL, AWARD_TOURNAMENTS_URL, RESULTS_URL, PUSH_SUBSCRIPTIONS_LIST_URL, PROMO_CODES_URL, SUBSCRIPTIONS_URL, FSR_RATINGS_URL,
   EMPTY_T_FORM, EMPTY_KIT_FORM, EMPTY_TR_FORM, Section,
 } from './admin/adminTypes';
 import TournamentsSection from './admin/TournamentsSection';
@@ -19,6 +19,7 @@ import ResultsSection from './admin/ResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
+import FsrRatingsSection from './admin/FsrRatingsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 
 export default function Admin() {
@@ -94,6 +95,10 @@ export default function Admin() {
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [subscriptionsList, setSubscriptionsList] = useState<Subscription[]>([]);
   const [subscriptionsListLoading, setSubscriptionsListLoading] = useState(false);
+
+  // Файлы рейтинга ФШР
+  const [fsrFiles, setFsrFiles] = useState<FsrRatingFile[]>([]);
+  const [fsrFilesLoading, setFsrFilesLoading] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_password');
@@ -187,6 +192,14 @@ export default function Admin() {
     setSubscriptionsListLoading(false);
   }
 
+  async function fetchFsrFiles() {
+    setFsrFilesLoading(true);
+    const res = await fetch(FSR_RATINGS_URL, { headers: { 'X-Admin-Password': password } });
+    const data = await res.json();
+    setFsrFiles(data.files || []);
+    setFsrFilesLoading(false);
+  }
+
   useEffect(() => {
     if (authed) fetchApps();
   }, [authed, filterTournament]);
@@ -199,6 +212,7 @@ export default function Admin() {
     if (authed && section === 'subscriptions') fetchSubs();
     if (authed && section === 'promo-codes') fetchPromoCodes();
     if (authed && section === 'subscription-plans') fetchSubscriptionPlans();
+    if (authed && section === 'fsr-ratings') fetchFsrFiles();
   }, [section]);
 
   async function handleLogin(e: React.FormEvent) {
@@ -261,6 +275,7 @@ export default function Admin() {
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
             ['subscription-plans', 'Ticket', 'Абонементы'],
+            ['fsr-ratings', 'FileSpreadsheet', 'Файлы рейтинга'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -435,6 +450,16 @@ export default function Admin() {
             subscriptions={subscriptionsList}
             loading={subscriptionsListLoading}
             fetchData={fetchSubscriptionPlans}
+          />
+        )}
+
+        {/* === ФАЙЛЫ РЕЙТИНГА ФШР === */}
+        {section === 'fsr-ratings' && (
+          <FsrRatingsSection
+            password={password}
+            files={fsrFiles}
+            loading={fsrFilesLoading}
+            fetchFiles={fetchFsrFiles}
           />
         )}
 
