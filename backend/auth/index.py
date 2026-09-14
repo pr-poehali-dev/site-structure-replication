@@ -108,22 +108,27 @@ def handler(event: dict, context) -> dict:
         salt = secrets.token_hex(16)
         pwd_hash = hash_password(password, salt)
 
+        # Рейтинг ФШР ищем в кэше официального сайта по ID ФШР. Если не найден (или ID не указан) — 1000 по умолчанию.
+        # Рейтинг МШ (платформы) при регистрации всегда равен стартовому рейтингу ФШР — дальше он живёт своей жизнью
+        # по итогам турниров "Мир шахмат" и не трогается при загрузке новых файлов рейтинга ФШР.
         fsr_id = (body.get('fsr_id') or '').strip() or None
-        fsr_rating_blitz = None
-        fsr_rating_rapid = None
+        cache_row = None
         if fsr_id:
             cur.execute("SELECT rating_blitz, rating_rapid FROM fsr_official_cache WHERE fsr_id = %s", (fsr_id,))
             cache_row = cur.fetchone()
-            if cache_row:
-                fsr_rating_blitz, fsr_rating_rapid = cache_row
+
+        fsr_rating_blitz = (cache_row[0] if cache_row and cache_row[0] is not None else 1000)
+        fsr_rating_rapid = (cache_row[1] if cache_row and cache_row[1] is not None else 1000)
+        rating_blitz = fsr_rating_blitz
+        rating_rapid = fsr_rating_rapid
 
         cur.execute(
-            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, fsr_rating_blitz, fsr_rating_rapid)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
              fsr_id, body.get('coach_fio') or None, body.get('institution') or None,
              body.get('country_city') or None, email, body.get('phone') or None, pwd_hash, salt,
-             fsr_rating_blitz, fsr_rating_rapid)
+             fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
         )
         user_id = cur.fetchone()[0]
 

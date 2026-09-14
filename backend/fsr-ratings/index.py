@@ -85,14 +85,21 @@ def parse_ratings_csv(data: bytes):
         fsr_id = str(row[0]).strip()
         if not fsr_id or not fsr_id[0].isdigit():
             continue
-        rating_field = row[1] if len(row) == 2 else (row[4] if len(row) > 4 else None)
-        try:
-            rating_value = int(float(rating_field)) if rating_field else None
-        except (ValueError, TypeError):
-            rating_value = None
-        if rating_value is None:
+        if len(row) == 2:
+            rating_field = row[1]
+        elif len(row) > 4:
+            rating_field = row[4]
+        else:
             continue
-        ratings_by_fsr_id[fsr_id] = rating_value
+        rating_field = (rating_field or '').strip()
+        if not rating_field:
+            # Рейтинг в файле отсутствует — стартовое значение по умолчанию
+            ratings_by_fsr_id[fsr_id] = 1000
+            continue
+        try:
+            ratings_by_fsr_id[fsr_id] = int(float(rating_field))
+        except (ValueError, TypeError):
+            ratings_by_fsr_id[fsr_id] = 1000
     return ratings_by_fsr_id
 
 
@@ -114,18 +121,19 @@ def parse_ratings_bytes_fast(data: bytes):
         fsr_id_b = parts[0].strip()
         if not fsr_id_b or not fsr_id_b[0:1].isdigit():
             continue
-        rating_b = parts[rating_idx].strip()
-        if not rating_b:
-            continue
-        try:
-            rating_value = int(float(rating_b))
-        except ValueError:
-            continue
         try:
             fsr_id = fsr_id_b.decode('ascii')
         except UnicodeDecodeError:
             continue
-        ratings_by_fsr_id[fsr_id] = rating_value
+        rating_b = parts[rating_idx].strip()
+        if not rating_b:
+            # Рейтинг в файле отсутствует — стартовое значение по умолчанию
+            ratings_by_fsr_id[fsr_id] = 1000
+            continue
+        try:
+            ratings_by_fsr_id[fsr_id] = int(float(rating_b))
+        except ValueError:
+            ratings_by_fsr_id[fsr_id] = 1000
     return ratings_by_fsr_id
 
 
