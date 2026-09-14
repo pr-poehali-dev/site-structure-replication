@@ -70,7 +70,7 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
 
         <div className="w-full flex flex-col gap-2">
           <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 text-left">Рейтинг МШ</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 text-left">Рейтинг МШ (Мир шахмат)</p>
             <div className="flex gap-2">
               <div className="flex-1 bg-muted/50 rounded-lg px-2 py-2 text-center">
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide">Блиц</p>
