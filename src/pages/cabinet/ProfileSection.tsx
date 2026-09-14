@@ -111,8 +111,8 @@ export default function ProfileSection() {
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,380px)_1fr] gap-6 items-start">
-      {/* ЛЕВАЯ КОЛОНКА: аватар, ФИО, рейтинги, баланс */}
-      <div className="flex flex-col gap-6 min-w-0">
+      {/* ЛЕВАЯ КОЛОНКА: аватар, ФИО, рейтинги */}
+      <div className="min-w-0">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center text-center gap-4">
           <div className="relative shrink-0">
             <Avatar className="w-20 h-20 border-2 border-secondary/30">
@@ -150,13 +150,11 @@ export default function ProfileSection() {
             </div>
           </div>
         </div>
-
-        {/* Баланс: пополнение, промокод, история операций */}
-        <BalanceSection />
       </div>
 
-      {/* ПРАВАЯ КОЛОНКА: данные профиля — просмотр или редактирование */}
-      <div className="min-w-0">
+      {/* ПРАВАЯ КОЛОНКА: баланс и данные профиля — просмотр или редактирование */}
+      <div className="min-w-0 flex flex-col gap-6">
+        <BalanceSection />
       {!editing ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
