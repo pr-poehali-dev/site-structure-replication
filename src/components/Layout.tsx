@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '@/components/ui/icon';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -8,6 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import func2url from '../../backend/func2url.json';
+
+const BALANCE_URL = func2url['balance'];
 
 const NAV = [
   { label: 'Главная', href: '/' },
@@ -20,9 +27,88 @@ const NAV = [
   { label: 'Контакты', href: '/#contacts' },
 ];
 
+function LoginPopover({ trigger }: { trigger: React.ReactNode }) {
+  const { login } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    const res = await login(form.email.trim().toLowerCase(), form.password);
+    setSubmitting(false);
+    if (res.ok) {
+      setOpen(false);
+      setForm({ email: '', password: '' });
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent align="end" className="w-72">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-primary mb-1">
+            <Icon name="LogIn" size={18} className="text-secondary" />
+            <h2 className="font-heading font-bold text-base">Вход</h2>
+          </div>
+          <div>
+            <Label htmlFor="header-login-email">Email</Label>
+            <Input
+              id="header-login-email"
+              type="email"
+              required
+              className="mt-1"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="header-login-password">Пароль</Label>
+            <Input
+              id="header-login-password"
+              type="password"
+              required
+              className="mt-1"
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <Button type="submit" disabled={submitting} className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+            {submitting ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Входим...</> : 'Войти'}
+          </Button>
+          <p className="text-sm text-gray-500 text-center">
+            Нет аккаунта? <a href="/register" className="text-secondary font-semibold hover:underline">Зарегистрироваться</a>
+          </p>
+        </form>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, loading, logout } = useAuth();
+  const { user, token, loading, logout } = useAuth();
+  const [balance, setBalance] = useState<number | null>(null);
+
+  const fetchBalance = useCallback(() => {
+    if (!token) return;
+    fetch(BALANCE_URL, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setBalance(data.balance ?? 0))
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (user && token) fetchBalance();
+    else setBalance(null);
+  }, [user, token, fetchBalance]);
 
   return (
     <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur border-b border-white/10">
@@ -38,31 +124,44 @@ export function Header() {
         <div className="hidden lg:flex items-center gap-2">
           {!loading && (
             user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors outline-none">
-                  <Icon name="User" size={16} /> {user.last_name} {user.first_name} <Icon name="ChevronDown" size={14} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem asChild>
-                    <a href="/cabinet?tab=tournaments" className="flex items-center gap-2 cursor-pointer">
-                      <Icon name="Swords" size={16} /> Мои турниры
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="/cabinet?tab=profile" className="flex items-center gap-2 cursor-pointer">
-                      <Icon name="UserCog" size={16} /> Профиль и баланс
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500">
-                    <Icon name="LogOut" size={16} /> Выйти
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-3">
+                <a
+                  href="/cabinet?tab=profile"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-sm font-semibold text-secondary hover:bg-white/15 transition-colors"
+                >
+                  <Icon name="Wallet" size={14} />
+                  {balance === null ? <Icon name="Loader2" size={13} className="animate-spin" /> : `${balance.toLocaleString('ru')} ₽`}
+                </a>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white/80 hover:text-secondary transition-colors outline-none">
+                    <Icon name="User" size={16} /> {user.last_name} {user.first_name} <Icon name="ChevronDown" size={14} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem asChild>
+                      <a href="/cabinet?tab=tournaments" className="flex items-center gap-2 cursor-pointer">
+                        <Icon name="Swords" size={16} /> Мои турниры
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="/cabinet?tab=profile" className="flex items-center gap-2 cursor-pointer">
+                        <Icon name="UserCog" size={16} /> Профиль и баланс
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500">
+                      <Icon name="LogOut" size={16} /> Выйти
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
-              <a href="/login" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/90 transition-colors">
-                <Icon name="LogIn" size={16} /> Войти
-              </a>
+              <LoginPopover
+                trigger={
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/90 transition-colors">
+                    <Icon name="LogIn" size={16} /> Войти
+                  </button>
+                }
+              />
             )
           )}
         </div>
@@ -79,9 +178,15 @@ export function Header() {
           ))}
           {!loading && (
             user ? (
-              <a href="/cabinet" onClick={() => setMenuOpen(false)} className="py-2 text-white/85 hover:text-secondary flex items-center gap-2">
-                <Icon name="User" size={16} /> Личный кабинет
-              </a>
+              <div className="flex flex-col gap-1 pt-1">
+                <a href="/cabinet?tab=profile" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
+                  <Icon name="Wallet" size={16} />
+                  {balance === null ? <Icon name="Loader2" size={14} className="animate-spin" /> : `${balance.toLocaleString('ru')} ₽`}
+                </a>
+                <a href="/cabinet" onClick={() => setMenuOpen(false)} className="py-2 text-white/85 hover:text-secondary flex items-center gap-2">
+                  <Icon name="User" size={16} /> Личный кабинет
+                </a>
+              </div>
             ) : (
               <a href="/login" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
                 <Icon name="LogIn" size={16} /> Войти
