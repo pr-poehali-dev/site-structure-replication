@@ -6,6 +6,7 @@ import io
 import csv
 
 import psycopg2
+from psycopg2.extras import execute_values
 import boto3
 
 RATING_TYPES = ('blitz', 'rapid')
@@ -67,8 +68,7 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
     column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
-    total_rows = 0
-    matched_count = 0
+    entries = []
     for row in reader:
         if not row or not row[0]:
             continue
@@ -81,10 +81,19 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
             rating_value = None
         if rating_value is None:
             continue
-        total_rows += 1
-        cur.execute(f"UPDATE users SET {column} = %s WHERE fsr_id = %s", (rating_value, fsr_id))
-        if cur.rowcount > 0:
-            matched_count += cur.rowcount
+        entries.append((fsr_id, rating_value))
+
+    total_rows = len(entries)
+    matched_count = 0
+
+    if entries:
+        cur.execute("CREATE TEMP TABLE _fsr_upload (fsr_id VARCHAR(100), rating_value INTEGER) ON COMMIT DROP")
+        execute_values(cur, "INSERT INTO _fsr_upload (fsr_id, rating_value) VALUES %s", entries)
+        cur.execute(
+            f"UPDATE users SET {column} = _fsr_upload.rating_value "
+            f"FROM _fsr_upload WHERE users.fsr_id = _fsr_upload.fsr_id"
+        )
+        matched_count = cur.rowcount
 
     key = f"fsr-ratings/{rating_type}_{uuid.uuid4().hex[:12]}_{file_name}"
     s3 = get_s3()
