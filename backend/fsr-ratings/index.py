@@ -5,12 +5,18 @@ import uuid
 import io
 import csv
 import traceback
+from urllib.request import Request, urlopen
 
 import psycopg2
 from psycopg2.extras import execute_values
 import boto3
 
 RATING_TYPES = ('blitz', 'rapid')
+
+OFFICIAL_URLS = {
+    'blitz': 'https://ratings.ruchess.ru/api/smaster_blitz.csv',
+    'rapid': 'https://ratings.ruchess.ru/api/smaster_rapid.csv',
+}
 
 
 def get_conn():
@@ -54,7 +60,8 @@ def file_to_dict(row):
     }
 
 
-def process_csv_and_save(cur, conn, rating_type, file_name, data):
+def parse_ratings_csv(data: bytes):
+    """Парсит CSV-файл рейтинга ФШР (формат Swiss Master), возвращает {fsr_id: rating}. Рейтинг — 5-е поле (индекс 4)."""
     try:
         text = data.decode('utf-8-sig')
     except UnicodeDecodeError:
@@ -66,13 +73,10 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
         dialect = csv.Sniffer().sniff(sample)
         delimiter = dialect.delimiter
     except Exception:
-        delimiter = ','
+        delimiter = ';'
 
     reader = csv.reader(io.StringIO(text), delimiter=delimiter)
-    column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
-
     ratings_by_fsr_id = {}
-    total_rows = 0
     for row in reader:
         if not row or not row[0]:
             continue
@@ -80,15 +84,19 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
         if not fsr_id or not fsr_id[0].isdigit():
             continue
         try:
-            rating_value = int(float(row[3])) if len(row) > 3 and row[3] else None
+            rating_value = int(float(row[4])) if len(row) > 4 and row[4] else None
         except (ValueError, TypeError):
             rating_value = None
         if rating_value is None:
             continue
         ratings_by_fsr_id[fsr_id] = rating_value
-        total_rows += 1
+    return ratings_by_fsr_id
 
-    del text, reader
+
+def process_csv_and_save(cur, conn, rating_type, file_name, data):
+    ratings_by_fsr_id = parse_ratings_csv(data)
+    total_rows = len(ratings_by_fsr_id)
+    column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
 
     matched_count = 0
     if ratings_by_fsr_id:
@@ -125,12 +133,80 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     return new_row
 
 
+def download_official(rating_type: str) -> bytes:
+    req = Request(OFFICIAL_URLS[rating_type], headers={'User-Agent': 'Mozilla/5.0'})
+    with urlopen(req, timeout=15) as resp:
+        return resp.read()
+
+
+def sync_official_ratings(cur, conn):
+    """Скачивает оба официальных файла ФШР, обновляет рейтинги всех зарегистрированных пользователей
+    и общий кэш (для автозаполнения при регистрации новых). Файлы не сохраняются в S3 — это отдельный
+    быстрый путь для автосинхронизации, в отличие от ручной загрузки конкретного файла администратором."""
+    ratings_by_type = {}
+    for rating_type in RATING_TYPES:
+        data = download_official(rating_type)
+        ratings_by_type[rating_type] = parse_ratings_csv(data)
+
+    cur.execute("SELECT id, fsr_id FROM users WHERE fsr_id IS NOT NULL AND fsr_id <> ''")
+    existing_users = cur.fetchall()
+
+    results = {}
+    for rating_type, ratings in ratings_by_type.items():
+        column = 'fsr_rating_blitz' if rating_type == 'blitz' else 'fsr_rating_rapid'
+        updates = [(user_id, ratings[fsr_id]) for user_id, fsr_id in existing_users if fsr_id in ratings]
+        matched_count = 0
+        if updates:
+            update_sql = (
+                f"UPDATE users AS u SET {column} = data.rating_value "
+                f"FROM (VALUES %s) AS data(user_id, rating_value) "
+                f"WHERE u.id = data.user_id"
+            )
+            execute_values(cur, update_sql, updates, template="(%s, %s::integer)", page_size=len(updates))
+            matched_count = cur.rowcount
+        results[rating_type] = {'total_rows': len(ratings), 'matched_count': matched_count}
+
+    for rating_type, ratings in ratings_by_type.items():
+        col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
+        rows_batch = list(ratings.items())
+        if rows_batch:
+            upsert_sql = (
+                f"INSERT INTO fsr_official_cache (fsr_id, {col}) VALUES %s "
+                f"ON CONFLICT (fsr_id) DO UPDATE SET {col} = EXCLUDED.{col}, updated_at = now()"
+            )
+            execute_values(cur, upsert_sql, rows_batch, template="(%s, %s::integer)", page_size=50000)
+
+    total_players = sum(r['total_rows'] for r in results.values())
+    matched_users = max((r['matched_count'] for r in results.values()), default=0)
+    cur.execute(
+        "INSERT INTO fsr_official_sync_log (total_players, matched_users) VALUES (%s, %s)",
+        (total_players, matched_users)
+    )
+    conn.commit()
+    return results
+
+
 def handler(event: dict, context) -> dict:
-    """Загрузка CSV-файлов рейтинга ФШР (блиц/рапид) частями, автообновление рейтингов пользователей по ID ФШР и история загрузок"""
+    """Загрузка/синхронизация рейтингов ФШР (блиц/рапид): ручная загрузка CSV частями, автосинхронизация с официального сайта ФШР, поиск рейтинга одного игрока по ID, история загрузок"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {**cors_headers(), 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
     method = event.get('httpMethod', 'GET')
+    qs = event.get('queryStringParameters') or {}
+
+    # Публичный поиск рейтинга одного игрока по ID ФШР (используется при регистрации, без пароля админа)
+    if method == 'GET' and qs.get('lookup_fsr_id'):
+        fsr_id = str(qs.get('lookup_fsr_id')).strip()
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT rating_blitz, rating_rapid FROM fsr_official_cache WHERE fsr_id = %s", (fsr_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row:
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'found': False})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
+            'found': True, 'fsr_rating_blitz': row[0], 'fsr_rating_rapid': row[1]
+        })}
 
     if not is_admin(event):
         return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Forbidden'})}
@@ -144,12 +220,31 @@ def handler(event: dict, context) -> dict:
             "FROM fsr_rating_files ORDER BY uploaded_at DESC LIMIT 100"
         )
         rows = [file_to_dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT synced_at, total_players, matched_users FROM fsr_official_sync_log ORDER BY synced_at DESC LIMIT 1")
+        last_sync_row = cur.fetchone()
+        last_sync = None
+        if last_sync_row:
+            last_sync = {'synced_at': str(last_sync_row[0]), 'total_players': last_sync_row[1], 'matched_users': last_sync_row[2]}
         cur.close()
         conn.close()
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'files': rows})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'files': rows, 'last_official_sync': last_sync})}
 
     body = json.loads(event.get('body') or '{}')
     action = body.get('_action', '')
+
+    # Синхронизация с официальным сайтом ФШР (обновляет всех пользователей + кэш для новых регистраций)
+    if method == 'POST' and action == 'sync_official':
+        try:
+            results = sync_official_ratings(cur, conn)
+        except Exception as e:
+            conn.rollback()
+            cur.close(); conn.close()
+            err_detail = f"{type(e).__name__}: {e}"
+            print(f"sync_official error: {err_detail}\n{traceback.format_exc()}")
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось синхронизировать с сайтом ФШР', 'detail': err_detail})}
+
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'results': results})}
 
     # Загрузка файла одним куском (небольшие файлы)
     if method == 'POST' and action == 'upload':

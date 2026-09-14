@@ -97,3 +97,7 @@ export interface FsrRatingFile {
   id: number; rating_type: 'blitz' | 'rapid'; file_name: string; file_url: string;
   total_rows: number; matched_count: number; uploaded_at: string;
 }
+
+export interface FsrOfficialSync {
+  synced_at: string; total_players: number; matched_users: number;
+}

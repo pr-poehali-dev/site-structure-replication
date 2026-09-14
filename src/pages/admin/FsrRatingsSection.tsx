@@ -2,13 +2,14 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
-import { FsrRatingFile, FSR_RATINGS_URL } from './adminTypes';
+import { FsrRatingFile, FsrOfficialSync, FSR_RATINGS_URL } from './adminTypes';
 
 interface FsrRatingsSectionProps {
   password: string;
   files: FsrRatingFile[];
   loading: boolean;
   fetchFiles: () => Promise<void>;
+  lastSync: FsrOfficialSync | null;
 }
 
 const TYPE_LABELS: Record<'blitz' | 'rapid', string> = { blitz: 'Блиц', rapid: 'Рапид' };
@@ -30,11 +31,36 @@ function formatDateTime(dateStr: string) {
 const CHUNK_SIZE = 250_000;
 const DIRECT_UPLOAD_LIMIT = 300_000;
 
-export default function FsrRatingsSection({ password, files, loading, fetchFiles }: FsrRatingsSectionProps) {
+export default function FsrRatingsSection({ password, files, loading, fetchFiles, lastSync }: FsrRatingsSectionProps) {
   const [uploading, setUploading] = useState<'blitz' | 'rapid' | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const blitzRef = useRef<HTMLInputElement>(null);
   const rapidRef = useRef<HTMLInputElement>(null);
+
+  async function handleSyncOfficial() {
+    setSyncing(true);
+    try {
+      const res = await fetch(FSR_RATINGS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ _action: 'sync_official' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Не удалось синхронизировать с сайтом ФШР');
+        return;
+      }
+      const blitz = data.results?.blitz;
+      const rapid = data.results?.rapid;
+      toast.success(`Синхронизировано: блиц ${blitz?.matched_count ?? 0}, рапид ${rapid?.matched_count ?? 0} игроков обновлено`);
+      fetchFiles();
+    } catch {
+      toast.error('Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function handleUpload(ratingType: 'blitz' | 'rapid', file: File | undefined) {
     if (!file) return;
@@ -112,6 +138,25 @@ export default function FsrRatingsSection({ password, files, loading, fetchFiles
         </Button>
       </div>
 
+      <div className="bg-white rounded-2xl shadow p-5 flex flex-col gap-3 mb-6 border-2 border-secondary/20">
+        <div className="flex items-center gap-2">
+          <Icon name="Globe" size={18} className="text-secondary" />
+          <h3 className="font-semibold text-primary">Синхронизация с официальным сайтом ФШР</h3>
+        </div>
+        <p className="text-sm text-gray-400">
+          Скачивает актуальные рейтинги блиц и рапид с ratings.ruchess.ru, обновляет всех зарегистрированных пользователей и пополняет базу для автозаполнения рейтинга при регистрации новых.
+        </p>
+        {lastSync && (
+          <p className="text-xs text-gray-400">
+            Последняя синхронизация: {formatDateTime(lastSync.synced_at)} — обновлено {lastSync.matched_users} пользователей из {lastSync.total_players} игроков в базе ФШР
+          </p>
+        )}
+        <Button onClick={handleSyncOfficial} disabled={syncing} className="w-fit">
+          {syncing ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Синхронизируем...</> : <><Icon name="RefreshCw" size={16} className="mr-2" />Обновить рейтинги с сайта ФШР</>}
+        </Button>
+      </div>
+
+      <h3 className="font-semibold text-lg text-primary mb-3">Или загрузите файл вручную</h3>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         <div className="bg-white rounded-2xl shadow p-5 flex flex-col gap-3">
           <div className="flex items-center gap-2">
