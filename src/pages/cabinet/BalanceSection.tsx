@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDateTime } from './utils';
 import func2url from '../../../backend/func2url.json';
 
 const BALANCE_URL = func2url['balance'];
@@ -23,11 +24,6 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; className: stri
   refund: { label: 'Возврат', icon: 'RotateCcw', className: 'text-secondary' },
   promo: { label: 'Промокод', icon: 'Gift', className: 'text-purple-600' },
 };
-
-function formatDateTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -96,7 +92,7 @@ export default function BalanceSection() {
           amount: value,
           user_email: user.email,
           user_name: [user.last_name, user.first_name].filter(Boolean).join(' '),
-          return_url: window.location.origin + '/cabinet?tab=profile',
+          return_url: window.location.origin + '/cabinet?tab=balance',
         }),
       });
       const data = await res.json();

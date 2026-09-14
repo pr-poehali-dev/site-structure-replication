@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import ApplicationCard from './cabinet/ApplicationCard';
 import ProfileSection from './cabinet/ProfileSection';
+import BalanceSection from './cabinet/BalanceSection';
+import ComingSoon from './cabinet/ComingSoon';
+import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
+import { formatDate } from './cabinet/utils';
 import func2url from '../../backend/func2url.json';
 
 const APPS_URL = func2url['applications'];
@@ -33,20 +37,26 @@ interface MyApplication {
   announcement_url: string | null;
 }
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-}
+const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'games', 'orders'];
 
 export default function Cabinet() {
   const { user, token, loading } = useAuth();
   const [apps, setApps] = useState<MyApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
-  const [tab, setTab] = useState<'tournaments' | 'profile'>(() => {
+  const [tab, setTab] = useState<CabinetTab>(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('tab');
-    return t === 'balance' || t === 'profile' ? 'profile' : 'tournaments';
+    if (t === 'balance') return 'balance';
+    if (VALID_TABS.includes(t as CabinetTab)) return t as CabinetTab;
+    return 'tournaments';
   });
+
+  function changeTab(t: CabinetTab) {
+    setTab(t);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', t);
+    window.history.replaceState({}, '', url);
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -79,89 +89,92 @@ export default function Cabinet() {
 
       <section className="bg-primary text-white relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="container relative px-4 py-10 max-w-4xl mx-auto">
-          <h1 className="font-heading font-bold text-3xl md:text-4xl uppercase">
+        <div className="container relative px-4 py-8 max-w-6xl mx-auto">
+          <h1 className="font-heading font-bold text-2xl md:text-3xl uppercase">
             Привет, <span className="text-secondary">{user.first_name}</span>!
           </h1>
-          <p className="text-white/70 mt-1">{user.email}</p>
         </div>
       </section>
 
-      <section className={`container px-4 py-8 mx-auto ${tab === 'profile' ? 'max-w-6xl' : 'max-w-4xl'}`}>
-        <div className="flex gap-2 mb-6 border-b border-border">
-          <button onClick={() => setTab('tournaments')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'tournaments' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-            Мои турниры
-          </button>
-          <button onClick={() => setTab('profile')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'profile' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
-            Профиль
-          </button>
-        </div>
+      <section className="container px-4 py-8 mx-auto max-w-6xl">
+        <div className="grid lg:grid-cols-[260px_1fr] gap-6 items-start">
+          <CabinetSidebar tab={tab} onChange={changeTab} />
 
-        {tab === 'tournaments' && (
-          <div className="flex flex-col gap-8">
-            {activeHalls.length > 0 && (
-              <div>
-                <h2 className="font-heading font-bold text-xl text-primary uppercase mb-4 flex items-center gap-2">
-                  <Icon name="DoorOpen" size={20} className="text-secondary" /> Турнирный зал
-                </h2>
-                <div className="flex flex-col gap-3">
-                  {activeHalls.map(a => (
-                    <div key={a.id} className="bg-white rounded-xl border-2 border-secondary/40 shadow-sm px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <p className="font-semibold text-primary">{a.tournament_title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
-                      </div>
-                      <Link to={`/hall/${a.tournament_id}`}>
-                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
-                          <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
-                        </Button>
-                      </Link>
+          <div className="min-w-0">
+            {tab === 'tournaments' && (
+              <div className="flex flex-col gap-8">
+                {activeHalls.length > 0 && (
+                  <div>
+                    <h2 className="font-heading font-bold text-lg text-primary uppercase mb-3 flex items-center gap-2">
+                      <Icon name="DoorOpen" size={18} className="text-secondary" /> Турнирный зал
+                    </h2>
+                    <div className="flex flex-col gap-3">
+                      {activeHalls.map(a => (
+                        <div key={a.id} className="bg-white rounded-xl border-2 border-secondary/40 shadow-sm px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="font-semibold text-primary">{a.tournament_title}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
+                          </div>
+                          <Link to={`/hall/${a.tournament_id}`}>
+                            <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                              <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
+                            </Button>
+                          </Link>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                <div>
+                  <h2 className="font-heading font-bold text-lg text-primary uppercase mb-1 flex items-center gap-2">
+                    <Icon name="CalendarClock" size={18} className="text-secondary" /> Предстоящие турниры
+                  </h2>
+                  <p className="text-sm text-gray-400 mb-3 flex items-center gap-1.5">
+                    <Icon name="Info" size={14} className="shrink-0" /> Турнирный зал открывается за полчаса до начала турнира
+                  </p>
+                  {appsLoading ? (
+                    <div className="text-gray-400 py-6"><Icon name="Loader2" size={20} className="animate-spin inline mr-2" />Загрузка...</div>
+                  ) : ongoing.length === 0 ? (
+                    <div className="text-center py-10 bg-muted/40 rounded-xl text-gray-400">
+                      <Icon name="Swords" size={32} className="mx-auto mb-2 opacity-30" />
+                      <p>Вы пока не подавали заявок на турниры</p>
+                      <Link to="/turnir" className="text-secondary font-semibold hover:underline mt-2 inline-block">Посмотреть турниры →</Link>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {ongoing.map(a => <ApplicationCard key={a.id} a={a} />)}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h2 className="font-heading font-bold text-lg text-primary uppercase mb-3 flex items-center gap-2">
+                    <Icon name="History" size={18} className="text-secondary" /> История участия
+                  </h2>
+                  {!appsLoading && history.length === 0 ? (
+                    <div className="text-center py-10 bg-muted/40 rounded-xl text-gray-400">
+                      <p>Пока нет завершённых турниров</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {history.map(a => <ApplicationCard key={a.id} a={a} />)}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            <div>
-              <h2 className="font-heading font-bold text-xl text-primary uppercase mb-1 flex items-center gap-2">
-                <Icon name="CalendarClock" size={20} className="text-secondary" /> Предстоящие турниры
-              </h2>
-              <p className="text-sm text-gray-400 mb-4 flex items-center gap-1.5">
-                <Icon name="Info" size={14} className="shrink-0" /> Турнирный зал открывается за полчаса до начала турнира
-              </p>
-              {appsLoading ? (
-                <div className="text-gray-400 py-6"><Icon name="Loader2" size={20} className="animate-spin inline mr-2" />Загрузка...</div>
-              ) : ongoing.length === 0 ? (
-                <div className="text-center py-10 bg-muted/40 rounded-xl text-gray-400">
-                  <Icon name="Swords" size={32} className="mx-auto mb-2 opacity-30" />
-                  <p>Вы пока не подавали заявок на турниры</p>
-                  <Link to="/turnir" className="text-secondary font-semibold hover:underline mt-2 inline-block">Посмотреть турниры →</Link>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {ongoing.map(a => <ApplicationCard key={a.id} a={a} />)}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h2 className="font-heading font-bold text-xl text-primary uppercase mb-4 flex items-center gap-2">
-                <Icon name="History" size={20} className="text-secondary" /> История участия
-              </h2>
-              {!appsLoading && history.length === 0 ? (
-                <div className="text-center py-10 bg-muted/40 rounded-xl text-gray-400">
-                  <p>Пока нет завершённых турниров</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {history.map(a => <ApplicationCard key={a.id} a={a} />)}
-                </div>
-              )}
-            </div>
+            {tab === 'profile' && <ProfileSection />}
+            {tab === 'balance' && <BalanceSection />}
+            {tab === 'games' && (
+              <ComingSoon icon="History" title="История партий" description="Здесь появится список сыгранных вами партий с возможностью пересмотра ходов." />
+            )}
+            {tab === 'orders' && (
+              <ComingSoon icon="Package" title="Заказы атрибутики" description="Здесь появится история ваших заказов кубков, медалей и другой турнирной атрибутики." />
+            )}
           </div>
-        )}
-
-        {tab === 'profile' && <ProfileSection />}
+        </div>
       </section>
 
       <Footer />

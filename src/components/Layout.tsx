@@ -126,7 +126,7 @@ export function Header() {
             user ? (
               <div className="flex items-center gap-3">
                 <a
-                  href="/cabinet?tab=profile"
+                  href="/cabinet?tab=balance"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-sm font-semibold text-secondary hover:bg-white/15 transition-colors"
                 >
                   <Icon name="Wallet" size={14} />
@@ -144,7 +144,12 @@ export function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <a href="/cabinet?tab=profile" className="flex items-center gap-2 cursor-pointer">
-                        <Icon name="UserCog" size={16} /> Профиль и баланс
+                        <Icon name="UserCog" size={16} /> Профиль
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="/cabinet?tab=balance" className="flex items-center gap-2 cursor-pointer">
+                        <Icon name="Wallet" size={16} /> Баланс
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -179,7 +184,7 @@ export function Header() {
           {!loading && (
             user ? (
               <div className="flex flex-col gap-1 pt-1">
-                <a href="/cabinet?tab=profile" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
+                <a href="/cabinet?tab=balance" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
                   <Icon name="Wallet" size={16} />
                   {balance === null ? <Icon name="Loader2" size={14} className="animate-spin" /> : `${balance.toLocaleString('ru')} ₽`}
                 </a>
