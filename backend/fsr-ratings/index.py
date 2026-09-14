@@ -80,7 +80,7 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
     total_rows = 0
     matched_count = 0
     batch = []
-    BATCH_SIZE = 2000
+    BATCH_SIZE = 10000
     for row in reader:
         if not row or not row[0]:
             continue
@@ -96,12 +96,12 @@ def process_csv_and_save(cur, conn, rating_type, file_name, data):
         batch.append((fsr_id, rating_value))
         total_rows += 1
         if len(batch) >= BATCH_SIZE:
-            execute_values(cur, update_sql, batch, template="(%s, %s::integer)")
+            execute_values(cur, update_sql, batch, template="(%s, %s::integer)", page_size=BATCH_SIZE)
             matched_count += cur.rowcount
             batch.clear()
 
     if batch:
-        execute_values(cur, update_sql, batch, template="(%s, %s::integer)")
+        execute_values(cur, update_sql, batch, template="(%s, %s::integer)", page_size=len(batch))
         matched_count += cur.rowcount
         batch.clear()
 
