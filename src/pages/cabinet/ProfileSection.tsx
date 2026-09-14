@@ -110,50 +110,53 @@ export default function ProfileSection() {
   const age = calcAge(user.birth_date);
 
   return (
-    <div className="flex flex-col gap-6 max-w-xl">
-      {/* Карточка профиля: аватар, ФИО, рейтинги */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5 flex-wrap">
-        <div className="relative shrink-0">
-          <Avatar className="w-20 h-20 border-2 border-secondary/30">
-            <AvatarImage src={user.avatar_url || undefined} alt={user.first_name} />
-            <AvatarFallback className="bg-primary text-white font-heading font-bold text-xl">
-              {initials(user.last_name, user.first_name)}
-            </AvatarFallback>
-          </Avatar>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingAvatar}
-            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shadow hover:bg-secondary/90 transition-colors"
-            title="Загрузить фото"
-          >
-            <Icon name={uploadingAvatar ? 'Loader2' : 'Camera'} size={14} className={uploadingAvatar ? 'animate-spin' : ''} />
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+    <div className="grid lg:grid-cols-[minmax(0,380px)_1fr] gap-6 items-start">
+      {/* ЛЕВАЯ КОЛОНКА: аватар, ФИО, рейтинги, баланс */}
+      <div className="flex flex-col gap-6 min-w-0">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center text-center gap-4">
+          <div className="relative shrink-0">
+            <Avatar className="w-20 h-20 border-2 border-secondary/30">
+              <AvatarImage src={user.avatar_url || undefined} alt={user.first_name} />
+              <AvatarFallback className="bg-primary text-white font-heading font-bold text-xl">
+                {initials(user.last_name, user.first_name)}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shadow hover:bg-secondary/90 transition-colors"
+              title="Загрузить фото"
+            >
+              <Icon name={uploadingAvatar ? 'Loader2' : 'Camera'} size={14} className={uploadingAvatar ? 'animate-spin' : ''} />
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+          </div>
+
+          <div>
+            <p className="font-heading font-bold text-lg text-primary">{user.last_name} {user.first_name} {user.middle_name || ''}</p>
+            <p className="text-sm text-gray-400">{user.email}</p>
+            {age !== null && <p className="text-sm text-gray-400 mt-0.5">{age} лет</p>}
+          </div>
+
+          <div className="flex gap-3">
+            <div className="bg-muted/50 rounded-xl px-4 py-2.5 text-center min-w-[84px]">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Блиц</p>
+              <p className="font-heading font-bold text-lg text-primary">{user.rating_blitz ?? '—'}</p>
+            </div>
+            <div className="bg-muted/50 rounded-xl px-4 py-2.5 text-center min-w-[84px]">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Рапид</p>
+              <p className="font-heading font-bold text-lg text-primary">{user.rating_rapid ?? '—'}</p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 min-w-[160px]">
-          <p className="font-heading font-bold text-lg text-primary">{user.last_name} {user.first_name} {user.middle_name || ''}</p>
-          <p className="text-sm text-gray-400">{user.email}</p>
-          {age !== null && <p className="text-sm text-gray-400 mt-0.5">{age} лет</p>}
-        </div>
-
-        <div className="flex gap-3">
-          <div className="bg-muted/50 rounded-xl px-4 py-2.5 text-center min-w-[84px]">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Блиц</p>
-            <p className="font-heading font-bold text-lg text-primary">{user.rating_blitz ?? '—'}</p>
-          </div>
-          <div className="bg-muted/50 rounded-xl px-4 py-2.5 text-center min-w-[84px]">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Рапид</p>
-            <p className="font-heading font-bold text-lg text-primary">{user.rating_rapid ?? '—'}</p>
-          </div>
-        </div>
+        {/* Баланс: пополнение, промокод, история операций */}
+        <BalanceSection />
       </div>
 
-      {/* Баланс: пополнение, промокод, история операций */}
-      <BalanceSection />
-
-      {/* Данные профиля: просмотр или редактирование */}
+      {/* ПРАВАЯ КОЛОНКА: данные профиля — просмотр или редактирование */}
+      <div className="min-w-0">
       {!editing ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
@@ -203,6 +206,7 @@ export default function ProfileSection() {
           </div>
         </form>
       )}
+      </div>
     </div>
   );
 }

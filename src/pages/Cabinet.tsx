@@ -87,7 +87,7 @@ export default function Cabinet() {
         </div>
       </section>
 
-      <section className="container px-4 py-8 max-w-4xl mx-auto">
+      <section className={`container px-4 py-8 mx-auto ${tab === 'profile' ? 'max-w-6xl' : 'max-w-4xl'}`}>
         <div className="flex gap-2 mb-6 border-b border-border">
           <button onClick={() => setTab('tournaments')} className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === 'tournaments' ? 'border-secondary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
             Мои турниры
