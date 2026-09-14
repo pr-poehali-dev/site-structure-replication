@@ -196,7 +196,9 @@ def sync_one_rating_type(cur, conn, rating_type: str):
             f"INSERT INTO fsr_official_cache (fsr_id, {cache_col}) VALUES %s "
             f"ON CONFLICT (fsr_id) DO UPDATE SET {cache_col} = EXCLUDED.{cache_col}, updated_at = now()"
         )
-        execute_values(cur, upsert_sql, rows_batch, template="(%s, %s::integer)", page_size=20000)
+        # Одним пакетом (минимум обращений к удалённой БД) — иначе на 400+ тыс. строк набегает
+        # много сетевых round-trip'ов и функция не укладывается в лимит времени
+        execute_values(cur, upsert_sql, rows_batch, template="(%s, %s::integer)", page_size=len(rows_batch))
 
     cur.execute(
         "INSERT INTO fsr_official_sync_log (rating_type, total_players, matched_users) VALUES (%s, %s, %s)",
