@@ -20,6 +20,8 @@ export interface UserProfile {
   avatar_url: string | null;
   rating_blitz: number | null;
   rating_rapid: number | null;
+  fsr_rating_blitz: number | null;
+  fsr_rating_rapid: number | null;
 }
 
 export interface RegisterPayload {

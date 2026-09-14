@@ -22,6 +22,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
   const [editUser, setEditUser] = useState<UserAccount | null>(null);
   const [ratingBlitz, setRatingBlitz] = useState('');
   const [ratingRapid, setRatingRapid] = useState('');
+  const [fsrRatingBlitz, setFsrRatingBlitz] = useState('');
+  const [fsrRatingRapid, setFsrRatingRapid] = useState('');
   const [saving, setSaving] = useState(false);
 
   const fetchUsers = useCallback(async (q = '') => {
@@ -39,6 +41,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
     setEditUser(u);
     setRatingBlitz(u.rating_blitz != null ? String(u.rating_blitz) : '');
     setRatingRapid(u.rating_rapid != null ? String(u.rating_rapid) : '');
+    setFsrRatingBlitz(u.fsr_rating_blitz != null ? String(u.fsr_rating_blitz) : '');
+    setFsrRatingRapid(u.fsr_rating_rapid != null ? String(u.fsr_rating_rapid) : '');
   }
 
   async function handleSaveRatings(e: React.FormEvent) {
@@ -53,6 +57,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
         user_id: editUser.id,
         rating_blitz: ratingBlitz ? Number(ratingBlitz) : null,
         rating_rapid: ratingRapid ? Number(ratingRapid) : null,
+        fsr_rating_blitz: fsrRatingBlitz ? Number(fsrRatingBlitz) : null,
+        fsr_rating_rapid: fsrRatingRapid ? Number(fsrRatingRapid) : null,
       }),
     });
     setSaving(false);
@@ -107,13 +113,25 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 <p className="text-sm text-gray-400">{u.email}</p>
               </div>
               <div className="flex gap-3 shrink-0">
-                <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Блиц</p>
-                  <p className="font-bold text-primary">{u.rating_blitz ?? '—'}</p>
+                <div className="flex gap-1.5">
+                  <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">МШ Блиц</p>
+                    <p className="font-bold text-primary">{u.rating_blitz ?? '—'}</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">МШ Рапид</p>
+                    <p className="font-bold text-primary">{u.rating_rapid ?? '—'}</p>
+                  </div>
                 </div>
-                <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Рапид</p>
-                  <p className="font-bold text-primary">{u.rating_rapid ?? '—'}</p>
+                <div className="flex gap-1.5">
+                  <div className="bg-secondary/10 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">ФШР Блиц</p>
+                    <p className="font-bold text-primary">{u.fsr_rating_blitz ?? '—'}</p>
+                  </div>
+                  <div className="bg-secondary/10 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
+                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">ФШР Рапид</p>
+                    <p className="font-bold text-primary">{u.fsr_rating_rapid ?? '—'}</p>
+                  </div>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => openEdit(u)} className="shrink-0">
@@ -132,14 +150,32 @@ export default function UsersSection({ password }: UsersSectionProps) {
               <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
             </div>
             <p className="text-sm text-gray-500 mb-4">{editUser.last_name} {editUser.first_name}</p>
-            <form onSubmit={handleSaveRatings} className="flex flex-col gap-3">
+            <form onSubmit={handleSaveRatings} className="flex flex-col gap-4">
               <div>
-                <Label>Рейтинг Блиц</Label>
-                <Input type="number" className="mt-1" value={ratingBlitz} onChange={e => setRatingBlitz(e.target.value)} placeholder="Например: 1450" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Рейтинг МШ</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Блиц</Label>
+                    <Input type="number" className="mt-1" value={ratingBlitz} onChange={e => setRatingBlitz(e.target.value)} placeholder="Например: 1450" />
+                  </div>
+                  <div>
+                    <Label>Рапид</Label>
+                    <Input type="number" className="mt-1" value={ratingRapid} onChange={e => setRatingRapid(e.target.value)} placeholder="Например: 1520" />
+                  </div>
+                </div>
               </div>
               <div>
-                <Label>Рейтинг Рапид</Label>
-                <Input type="number" className="mt-1" value={ratingRapid} onChange={e => setRatingRapid(e.target.value)} placeholder="Например: 1520" />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Рейтинг ФШР</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Блиц</Label>
+                    <Input type="number" className="mt-1" value={fsrRatingBlitz} onChange={e => setFsrRatingBlitz(e.target.value)} placeholder="Например: 1450" />
+                  </div>
+                  <div>
+                    <Label>Рапид</Label>
+                    <Input type="number" className="mt-1" value={fsrRatingRapid} onChange={e => setFsrRatingRapid(e.target.value)} placeholder="Например: 1520" />
+                  </div>
+                </div>
               </div>
               <div className="flex gap-2 mt-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setEditUser(null)}>Отмена</Button>

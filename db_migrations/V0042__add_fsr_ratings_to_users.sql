@@ -1,0 +1,3 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS fsr_rating_blitz INTEGER,
+  ADD COLUMN IF NOT EXISTS fsr_rating_rapid INTEGER;

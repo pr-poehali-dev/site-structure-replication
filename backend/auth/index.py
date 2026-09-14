@@ -47,7 +47,7 @@ def hash_password(password: str, salt: str) -> str:
 
 USER_COLS = ['id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
              'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
-             'avatar_url', 'rating_blitz', 'rating_rapid']
+             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid']
 
 USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
 
@@ -175,8 +175,9 @@ def handler(event: dict, context) -> dict:
     if method == 'POST' and action == 'update_ratings' and is_admin(event):
         user_id = body.get('user_id')
         cur.execute(
-            "UPDATE users SET rating_blitz = %s, rating_rapid = %s WHERE id = %s",
-            (body.get('rating_blitz'), body.get('rating_rapid'), user_id)
+            "UPDATE users SET rating_blitz = %s, rating_rapid = %s, fsr_rating_blitz = %s, fsr_rating_rapid = %s WHERE id = %s",
+            (body.get('rating_blitz'), body.get('rating_rapid'),
+             body.get('fsr_rating_blitz'), body.get('fsr_rating_rapid'), user_id)
         )
         conn.commit()
         cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
