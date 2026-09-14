@@ -61,7 +61,9 @@ def file_to_dict(row):
 
 
 def parse_ratings_csv(data: bytes):
-    """Парсит CSV-файл рейтинга ФШР (формат Swiss Master), возвращает {fsr_id: rating}. Рейтинг — 5-е поле (индекс 4)."""
+    """Парсит CSV-файл рейтинга ФШР, возвращает {fsr_id: rating}.
+    Поддерживает два формата: короткий (ID;рейтинг — 2 столбца) и полный (формат Swiss Master,
+    рейтинг в 5-м столбце, индекс 4)."""
     try:
         text = data.decode('utf-8-sig')
     except UnicodeDecodeError:
@@ -83,8 +85,9 @@ def parse_ratings_csv(data: bytes):
         fsr_id = str(row[0]).strip()
         if not fsr_id or not fsr_id[0].isdigit():
             continue
+        rating_field = row[1] if len(row) == 2 else (row[4] if len(row) > 4 else None)
         try:
-            rating_value = int(float(row[4])) if len(row) > 4 and row[4] else None
+            rating_value = int(float(rating_field)) if rating_field else None
         except (ValueError, TypeError):
             rating_value = None
         if rating_value is None:
@@ -95,18 +98,23 @@ def parse_ratings_csv(data: bytes):
 
 def parse_ratings_bytes_fast(data: bytes):
     """Быстрый построчный разбор официального CSV ФШР без декодирования всего файла в текст и без csv-модуля.
-    Формат: fsr_id;ФИО;;регион;рейтинг;...  Рейтинг — 5-е поле (индекс 4)."""
+    Формат Swiss Master: fsr_id;ФИО;;регион;рейтинг;...  Рейтинг — 5-е поле (индекс 4).
+    Также поддерживает короткий формат: fsr_id;рейтинг (2 столбца)."""
     ratings_by_fsr_id = {}
     for line in data.split(b'\n'):
         if not line:
             continue
         parts = line.split(b';')
-        if len(parts) < 5:
+        if len(parts) == 2:
+            rating_idx = 1
+        elif len(parts) >= 5:
+            rating_idx = 4
+        else:
             continue
         fsr_id_b = parts[0].strip()
         if not fsr_id_b or not fsr_id_b[0:1].isdigit():
             continue
-        rating_b = parts[4].strip()
+        rating_b = parts[rating_idx].strip()
         if not rating_b:
             continue
         try:
