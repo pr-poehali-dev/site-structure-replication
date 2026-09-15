@@ -7,8 +7,11 @@
 фактических очков от ожидаемых по всем партиям турнира и применяем один
 итоговый сдвиг (см. R' = R + K * (S_турнир - E_турнир)).
 
-Бай (техническая победа без игры) в расчёте не участвует — у него нет
-соперника, поэтому ожидаемое очко посчитать нельзя.
+Бай (техническая победа без игры) учитывается как партия против «зеркального»
+соперника с точно таким же рейтингом: ожидаемый результат 0,5, фактический —
+1,0. Поэтому бай даёт небольшую прибавку к рейтингу (половину от K_FACTOR при
+равных рейтингах), как обычная победа над равным по силе соперником, но не
+может дать столько же, сколько победа над более сильным игроком.
 """
 
 K_FACTOR = 32
@@ -20,8 +23,8 @@ def expected_score(own_rating, opponent_rating):
 
 def compute_rating_changes(cur, tournament_id):
     """Возвращает список словарей с изменением рейтинга для каждого игрока,
-    у которого есть привязанный пользователь и хотя бы одна сыгранная партия
-    (бай не считается)."""
+    у которого есть привязанный пользователь и хотя бы одна учтённая партия
+    (обычная партия или бай)."""
     cur.execute(
         "SELECT id, user_id, rating FROM tournament_players WHERE tournament_id = %s",
         (tournament_id,)
@@ -29,8 +32,8 @@ def compute_rating_changes(cur, tournament_id):
     players = {r[0]: {'user_id': r[1], 'rating': r[2]} for r in cur.fetchall()}
 
     cur.execute(
-        """SELECT white_player_id, black_player_id, result FROM tournament_games
-           WHERE tournament_id = %s AND black_player_id IS NOT NULL AND status = 'finished' AND result IS NOT NULL""",
+        """SELECT white_player_id, black_player_id, is_bye, result FROM tournament_games
+           WHERE tournament_id = %s AND status = 'finished' AND result IS NOT NULL""",
         (tournament_id,)
     )
     games = cur.fetchall()
@@ -39,7 +42,16 @@ def compute_rating_changes(cur, tournament_id):
     expected = {pid: 0.0 for pid in players}
     games_count = {pid: 0 for pid in players}
 
-    for white_id, black_id, result in games:
+    for white_id, black_id, is_bye, result in games:
+        if is_bye:
+            if white_id not in players:
+                continue
+            own_rating = players[white_id]['rating']
+            actual[white_id] += 1.0
+            expected[white_id] += expected_score(own_rating, own_rating)
+            games_count[white_id] += 1
+            continue
+
         if white_id not in players or black_id not in players:
             continue
         white_rating = players[white_id]['rating']
