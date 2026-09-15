@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 
 interface MyApplication {
@@ -67,6 +68,15 @@ export default function ApplicationCard({ a }: { a: MyApplication }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${s.className}`}>{s.label}</span>
+          {a.hall_status === 'finished' && (
+            <Link
+              to={`/hall/${a.tournament_id}`}
+              onClick={e => e.stopPropagation()}
+              className="text-xs px-2.5 py-1 rounded-full font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+            >
+              <Icon name="Eye" size={12} /> Ход турнира
+            </Link>
+          )}
           {hasDetails && <Icon name={expanded ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-gray-400" />}
         </div>
       </button>

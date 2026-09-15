@@ -246,9 +246,21 @@ def handler(event: dict, context) -> dict:
             (tournament_id,)
         )
         players = [
-            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7]}
+            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7], 'rating_delta': None}
             for r in cur.fetchall()
         ]
+
+        if tournament['hall_status'] == 'finished':
+            cur.execute(
+                """SELECT tp.id, rh.delta FROM rating_history rh
+                   JOIN tournament_players tp ON tp.tournament_id = rh.tournament_id AND tp.user_id = rh.user_id
+                   WHERE rh.tournament_id = %s""",
+                (tournament_id,)
+            )
+            delta_by_player = {r[0]: float(r[1]) for r in cur.fetchall()}
+            for p in players:
+                if p['id'] in delta_by_player:
+                    p['rating_delta'] = delta_by_player[p['id']]
 
         cur.execute(
             "SELECT id, round_number, status, started_at, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number ASC",

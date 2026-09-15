@@ -42,6 +42,7 @@ interface Player {
   wins: number;
   place: number | null;
   joined_late: boolean;
+  rating_delta: number | null;
 }
 
 interface TournamentInfo {
@@ -434,6 +435,11 @@ export default function Hall() {
                                 Подключился(-ась) после начала турнира — за пропущенный 1-й тур начислено 0,5 очка, играет со следующего тура.
                               </HoverCardContent>
                             </HoverCard>
+                          )}
+                          {p.rating_delta !== null && (
+                            <span className={`ml-1.5 text-xs font-semibold ${p.rating_delta > 0 ? 'text-emerald-600' : p.rating_delta < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                              {p.rating_delta > 0 ? '+' : ''}{Math.round(p.rating_delta)}
+                            </span>
                           )}
                         </td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
