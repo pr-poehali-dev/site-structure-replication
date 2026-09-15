@@ -51,8 +51,10 @@ def handler(event: dict, context) -> dict:
             cur.execute(
                 """SELECT a.id, a.tournament_id, a.tournament_title, a.fio, a.age, a.status, a.created_at, COALESCE(t.hall_open, false), COALESCE(t.status, 'active'),
                           t.description, t.date, t.location, t.age_category, t.price, t.time_control, t.time_msk,
-                          t.diploma_sample_url, t.regulation_url, t.announcement_url
+                          t.diploma_sample_url, t.regulation_url, t.announcement_url,
+                          COALESCE(t.hall_status, 'not_started'), tp.place
                    FROM applications a LEFT JOIN tournaments t ON t.id = a.tournament_id
+                          LEFT JOIN tournament_players tp ON tp.tournament_id = a.tournament_id AND tp.user_id = a.user_id
                    WHERE a.user_id = %s ORDER BY a.created_at DESC""",
                 (user_id,)
             )
@@ -60,7 +62,7 @@ def handler(event: dict, context) -> dict:
             conn.close()
             cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'status', 'created_at', 'hall_open', 'tournament_status',
                      'description', 'date', 'location', 'age_category', 'price', 'time_control', 'time_msk',
-                     'diploma_sample_url', 'regulation_url', 'announcement_url']
+                     'diploma_sample_url', 'regulation_url', 'announcement_url', 'hall_status', 'place']
             my_apps = [dict(zip(cols, r)) for r in rows]
             for a in my_apps:
                 a['created_at'] = str(a['created_at'])

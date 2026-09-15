@@ -21,7 +21,11 @@ interface MyApplication {
   diploma_sample_url: string | null;
   regulation_url: string | null;
   announcement_url: string | null;
+  hall_status: string;
+  place: number | null;
 }
+
+const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   new: { label: 'На рассмотрении', className: 'bg-blue-100 text-blue-700' },
@@ -39,6 +43,7 @@ export default function ApplicationCard({ a }: { a: MyApplication }) {
   const [expanded, setExpanded] = useState(false);
   const s = STATUS_LABELS[a.status] || STATUS_LABELS.new;
   const hasDetails = !!(a.description || a.date || a.location || a.age_category || a.price || a.time_control || a.regulation_url || a.announcement_url || a.diploma_sample_url);
+  const showPlace = a.hall_status === 'finished' && !!a.place;
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -47,9 +52,18 @@ export default function ApplicationCard({ a }: { a: MyApplication }) {
         onClick={() => hasDetails && setExpanded(v => !v)}
         className={`w-full px-5 py-4 flex items-center justify-between gap-3 flex-wrap text-left ${hasDetails ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'}`}
       >
-        <div>
-          <p className="font-semibold text-primary">{a.tournament_title}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
+        <div className="flex items-center gap-3">
+          {showPlace && (
+            <span className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${a.place! <= 3 ? 'bg-secondary/10' : 'bg-muted/60 text-gray-500'}`}>
+              {MEDALS[a.place!] || a.place}
+            </span>
+          )}
+          <div>
+            <p className="font-semibold text-primary">{a.tournament_title}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {showPlace ? `${a.place}-е место · ` : ''}Заявка от {formatDate(a.created_at)}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${s.className}`}>{s.label}</span>

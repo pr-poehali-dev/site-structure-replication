@@ -410,7 +410,16 @@ export default function Hall() {
                   <tbody>
                     {players.map((p, i) => (
                       <tr key={p.id} className="border-t border-gray-50">
-                        <td className="py-2 pr-2 text-gray-400">{p.place ?? i + 1}</td>
+                        <td className="py-2 pr-2 text-gray-400">
+                          {isFinished && p.place && p.place <= 3 ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span>{p.place === 1 ? '🥇' : p.place === 2 ? '🥈' : '🥉'}</span>
+                              <span className="font-semibold text-gray-600">{p.place}</span>
+                            </span>
+                          ) : (
+                            p.place ?? i + 1
+                          )}
+                        </td>
                         <td className="py-2 pr-2 font-medium text-gray-800">{shortFio(p.fio)}</td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
                         {rounds.map(r => {

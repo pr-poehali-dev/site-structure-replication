@@ -35,6 +35,8 @@ interface MyApplication {
   diploma_sample_url: string | null;
   regulation_url: string | null;
   announcement_url: string | null;
+  hall_status: string;
+  place: number | null;
 }
 
 const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'games', 'orders'];
