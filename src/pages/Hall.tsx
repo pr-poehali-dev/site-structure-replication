@@ -41,6 +41,7 @@ interface Player {
   buchholz: number;
   wins: number;
   place: number | null;
+  joined_late: boolean;
 }
 
 interface TournamentInfo {
@@ -420,7 +421,21 @@ export default function Hall() {
                             p.place ?? i + 1
                           )}
                         </td>
-                        <td className="py-2 pr-2 font-medium text-gray-800">{shortFio(p.fio)}</td>
+                        <td className="py-2 pr-2 font-medium text-gray-800">
+                          {shortFio(p.fio)}
+                          {p.joined_late && (
+                            <HoverCard>
+                              <HoverCardTrigger asChild>
+                                <span className="ml-1.5 inline-flex align-middle cursor-help">
+                                  <Icon name="Clock" size={12} className="text-orange-400" />
+                                </span>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-64 text-xs leading-relaxed">
+                                Подключился(-ась) после начала турнира — за пропущенный 1-й тур начислено 0,5 очка, играет со следующего тура.
+                              </HoverCardContent>
+                            </HoverCard>
+                          )}
+                        </td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
                         {rounds.map(r => {
                           const game = findPlayerRoundGame(p.id, r);

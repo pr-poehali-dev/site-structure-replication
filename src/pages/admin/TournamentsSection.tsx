@@ -45,7 +45,7 @@ export default function TournamentsSection({
   const announcementInputRef = useRef<HTMLInputElement>(null);
 
   async function handleStartTournament(t: Tournament) {
-    if (!confirm(`Начать турнир «${t.title}»? Будут сформированы пары 1-го тура по оплаченным заявкам. Отменить это действие нельзя.`)) return;
+    if (!confirm(`Начать турнир «${t.title}»? В жеребьёвку 1-го тура попадут только участники, уже зашедшие в турнирный зал. Опоздавшие смогут подключиться позже и сыграют со 2-го тура. Отменить это действие нельзя.`)) return;
     setStartingId(t.id);
     setStartError('');
     const res = await fetch(TOURNAMENT_HALL_URL, {

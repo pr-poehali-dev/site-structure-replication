@@ -206,9 +206,18 @@ def handler(event: dict, context) -> dict:
             r = cur.fetchone()
             my_player_id = r[0] if r else None
 
-            # Если турнир ещё не начался — регистрируем зашедшего в зал пользователя
-            # в таблице участников сразу (по его оплаченной заявке), чтобы он был виден остальным
-            if not my_player_id and tournament['hall_status'] == 'not_started':
+            # До старта турнира — любой зашедший в зал с оплаченной заявкой сразу регистрируется
+            # участником (он попадёт в жеребьёвку 1-го тура).
+            # Пока идёт 1-й тур (или перерыв перед 2-м) — опоздавший тоже регистрируется, чтобы
+            # сыграть со 2-го тура, но получает только 0,5 очка за пропущенный 1-й тур вместо игры.
+            can_join_before_start = tournament['hall_status'] == 'not_started'
+            can_join_late = False
+            if not my_player_id and tournament['hall_status'] == 'active':
+                cur.execute("SELECT MAX(round_number) FROM tournament_rounds WHERE tournament_id = %s", (tournament_id,))
+                max_round_row = cur.fetchone()
+                can_join_late = bool(max_round_row and max_round_row[0] == 1)
+
+            if not my_player_id and (can_join_before_start or can_join_late):
                 cur.execute(
                     "SELECT id, fio FROM applications WHERE tournament_id = %s AND user_id = %s AND status = 'paid' LIMIT 1",
                     (tournament_id, user_id)
@@ -217,12 +226,13 @@ def handler(event: dict, context) -> dict:
                 if app_row:
                     app_id, fio = app_row
                     player_rating = get_player_rating(cur, user_id, tournament['rating_type'])
+                    initial_points = 0.5 if can_join_late else 0
                     cur.execute(
-                        """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
-                           VALUES (%s, %s, %s, %s, %s)
+                        """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating, points, joined_late)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s)
                            ON CONFLICT (tournament_id, application_id) DO NOTHING
                            RETURNING id""",
-                        (tournament_id, user_id, app_id, fio, player_rating)
+                        (tournament_id, user_id, app_id, fio, player_rating, initial_points, can_join_late)
                     )
                     new_row = cur.fetchone()
                     conn.commit()
@@ -231,12 +241,12 @@ def handler(event: dict, context) -> dict:
                         trigger(f'tournament-{tournament_id}', 'player-joined', {})
 
         cur.execute(
-            """SELECT id, fio, rating, points, buchholz, wins, place FROM tournament_players
+            """SELECT id, fio, rating, points, buchholz, wins, place, joined_late FROM tournament_players
                WHERE tournament_id = %s ORDER BY points DESC, buchholz DESC, wins DESC, rating DESC""",
             (tournament_id,)
         )
         players = [
-            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6]}
+            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7]}
             for r in cur.fetchall()
         ]
 
@@ -295,21 +305,28 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир уже запущен'})}
 
+        # В жеребьёвку 1-го тура попадают только те, кто реально зашёл в турнирный зал
+        # к моменту старта (уже есть запись в tournament_players — она создаётся автоматически
+        # при GET-запросе зала). Заявки без привязанного аккаунта (user_id IS NULL, добавлены
+        # админом вручную) не могут "зайти в зал" сами — их регистрируем при старте всегда,
+        # иначе они никогда не попадут в турнир.
         cur.execute(
-            "SELECT id, user_id, fio FROM applications WHERE tournament_id = %s AND status = 'paid'",
+            "SELECT id, user_id, fio FROM applications WHERE tournament_id = %s AND status = 'paid' AND user_id IS NULL",
             (tournament_id,)
         )
-        paid_apps = cur.fetchall()
-        if len(paid_apps) < 2:
+        no_account_apps = cur.fetchall()
+
+        cur.execute(
+            "SELECT COUNT(*) FROM tournament_players WHERE tournament_id = %s",
+            (tournament_id,)
+        )
+        already_in_hall = cur.fetchone()[0]
+
+        if already_in_hall + len(no_account_apps) < 2:
             conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно оплаченных участников (нужно минимум 2)'})}
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно участников в турнирном зале (нужно минимум 2, зашедших в зал)'})}
 
-        cur.execute("SELECT user_id FROM tournament_players WHERE tournament_id = %s AND user_id IS NOT NULL", (tournament_id,))
-        existing_user_ids = {r[0] for r in cur.fetchall()}
-
-        for app_id, user_id, fio in paid_apps:
-            if user_id and user_id in existing_user_ids:
-                continue
+        for app_id, user_id, fio in no_account_apps:
             player_rating = get_player_rating(cur, user_id, tournament['rating_type'])
             cur.execute(
                 """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
@@ -317,8 +334,6 @@ def handler(event: dict, context) -> dict:
                    ON CONFLICT (tournament_id, application_id) DO NOTHING""",
                 (tournament_id, user_id, app_id, fio, player_rating)
             )
-            if user_id:
-                existing_user_ids.add(user_id)
 
         cur.execute("UPDATE tournaments SET hall_status = 'active' WHERE id = %s", (tournament_id,))
         conn.commit()
