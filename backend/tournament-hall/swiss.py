@@ -2,11 +2,55 @@
 
 Первый тур: полностью случайная жеребьёвка (перемешивание списка участников).
 Со 2-го тура: игроки сортируются по очкам (затем рейтингу), разбиваются на пары
-внутри групп с одинаковыми очками, избегая повторных встреч. Игрок, которому
-не хватило пары, получает технический бай (если он ещё не получал бай в этом
-турнире).
+внутри групп с одинаковыми очками. Игрок, которому не хватило пары, получает
+технический бай (если он ещё не получал бай в этом турнире).
+
+Жёсткое правило: повторная встреча одних и тех же двух игроков ЗАПРЕЩЕНА.
+Пары подбираются полным перебором с возвратом (backtracking), чтобы находить
+корректную расстановку без повторов, если она в принципе существует. Если
+такой тур составить невозможно (единственные варианты пар — уже сыгранные),
+make_pairings возвращает None — турнир в этом случае завершается досрочно
+текущим количеством туров.
 """
 import random
+
+
+def _find_pairing_without_repeats(unpaired, previous_pairs):
+    """Полный перебор с возвратом: пытается разбить unpaired на пары так,
+    чтобы ни одна пара не встречалась в previous_pairs. Порядок игроков в
+    unpaired задаёт приоритет (первый по порядку игрок паруется первым,
+    перебираются его возможные соперники по порядку списка).
+    Возвращает список пар [(p1, p2), ...] или None, если решения нет."""
+    n = len(unpaired)
+    if n == 0:
+        return []
+
+    used = [False] * n
+    result = [None] * (n // 2)
+
+    def backtrack(pair_index, start_from):
+        if pair_index == n // 2:
+            return True
+        i = start_from
+        while used[i]:
+            i += 1
+        used[i] = True
+        for j in range(i + 1, n):
+            if used[j]:
+                continue
+            if frozenset({unpaired[i]['id'], unpaired[j]['id']}) in previous_pairs:
+                continue
+            used[j] = True
+            result[pair_index] = (unpaired[i], unpaired[j])
+            if backtrack(pair_index + 1, i + 1):
+                return True
+            used[j] = False
+        used[i] = False
+        return False
+
+    if backtrack(0, 0):
+        return result
+    return None
 
 
 def make_pairings(players, previous_pairs, bye_used_ids, round_number=1):
@@ -17,59 +61,43 @@ def make_pairings(players, previous_pairs, bye_used_ids, round_number=1):
     round_number: номер тура — 1-й тур жеребьюется полностью случайно
 
     Возвращает список пар: [{'white_id':.., 'black_id':.., 'bye': False}, ...]
+    либо None, если тур без повторных встреч составить невозможно.
     """
     if round_number <= 1:
         pool = players[:]
         random.shuffle(pool)
     else:
         pool = sorted(players, key=lambda p: (-p['points'], -p['rating']))
-    pairs = []
-    unpaired = pool[:]
 
     # Нечётное число участников — бай получает игрок с наименьшим числом очков,
-    # который ещё не получал бай
+    # который ещё не получал бай. Если такого нет — минимально очковый игрок.
+    bye_pair = None
+    unpaired = pool[:]
     if len(unpaired) % 2 == 1:
         for i in range(len(unpaired) - 1, -1, -1):
             if unpaired[i]['id'] not in bye_used_ids:
                 bye_player = unpaired.pop(i)
-                pairs.append({'white_id': bye_player['id'], 'black_id': None, 'bye': True})
+                bye_pair = {'white_id': bye_player['id'], 'black_id': None, 'bye': True}
                 break
         else:
             bye_player = unpaired.pop()
-            pairs.append({'white_id': bye_player['id'], 'black_id': None, 'bye': True})
+            bye_pair = {'white_id': bye_player['id'], 'black_id': None, 'bye': True}
 
-    used = set()
-    for i in range(len(unpaired)):
-        if unpaired[i]['id'] in used:
-            continue
-        p1 = unpaired[i]
-        opponent = None
-        for j in range(i + 1, len(unpaired)):
-            p2 = unpaired[j]
-            if p2['id'] in used:
-                continue
-            if frozenset({p1['id'], p2['id']}) in previous_pairs:
-                continue
-            opponent = p2
-            break
-        if opponent is None:
-            for j in range(i + 1, len(unpaired)):
-                p2 = unpaired[j]
-                if p2['id'] not in used:
-                    opponent = p2
-                    break
-        if opponent is None:
-            continue
-        used.add(p1['id'])
-        used.add(opponent['id'])
+    matched = _find_pairing_without_repeats(unpaired, previous_pairs)
+    if matched is None:
+        return None
 
-        if p1['color_balance'] > opponent['color_balance']:
-            white, black = opponent, p1
-        elif p1['color_balance'] < opponent['color_balance']:
-            white, black = p1, opponent
+    pairs = []
+    if bye_pair:
+        pairs.append(bye_pair)
+
+    for p1, p2 in matched:
+        if p1['color_balance'] > p2['color_balance']:
+            white, black = p2, p1
+        elif p1['color_balance'] < p2['color_balance']:
+            white, black = p1, p2
         else:
-            white, black = p1, opponent
-
+            white, black = p1, p2
         pairs.append({'white_id': white['id'], 'black_id': black['id'], 'bye': False})
 
     return pairs

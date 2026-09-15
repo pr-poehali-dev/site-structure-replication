@@ -73,6 +73,17 @@ def get_previous_pairs(cur, tournament_id):
     return {frozenset({r[0], r[1]}) for r in cur.fetchall()}
 
 
+def finish_tournament_early(cur, tournament, rounds_played):
+    """Завершает турнир раньше срока: очередной тур без повторных встреч
+    составить нельзя. Официальное число туров турнира уменьшается до
+    количества фактически сыгранных."""
+    cur.execute("UPDATE tournaments SET rounds_count = %s WHERE id = %s", (rounds_played, tournament['id']))
+    assign_places(cur, tournament['id'])
+    apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
+    cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
+    trigger(f"tournament-{tournament['id']}", 'finished', {})
+
+
 def start_next_round(cur, tournament, round_number):
     cur.execute("SELECT id, rating, points, color_balance FROM tournament_players WHERE tournament_id = %s AND active = true", (tournament['id'],))
     players = [{'id': r[0], 'rating': r[1], 'points': float(r[2]), 'color_balance': r[3]} for r in cur.fetchall()]
@@ -84,6 +95,11 @@ def start_next_round(cur, tournament, round_number):
     bye_used = {r[0] for r in cur.fetchall()}
 
     pairs = make_pairings(players, previous_pairs, bye_used, round_number=round_number)
+    if pairs is None:
+        # Нельзя составить тур без повторной встречи — турнир завершается
+        # досрочно тем числом туров, что уже сыграно.
+        finish_tournament_early(cur, tournament, round_number - 1)
+        return None
 
     cur.execute(
         "INSERT INTO tournament_rounds (tournament_id, round_number, status, started_at) VALUES (%s, %s, 'active', now()) RETURNING id",
