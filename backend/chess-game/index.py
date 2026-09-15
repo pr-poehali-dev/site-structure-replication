@@ -6,6 +6,8 @@ import psycopg2
 
 from chess_rules import Board
 from pusher_client import trigger
+from swiss import assign_places, update_buchholz
+from rating import apply_rating_changes
 
 CHECKMATE = 'checkmate'
 STALEMATE = 'stalemate'
@@ -118,10 +120,16 @@ def compute_first_move_grace_ms(game):
 
 
 def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_player_id=None):
+    """Помечает партию завершённой и начисляет очки. Условие "AND status = 'active'" в UPDATE
+    делает операцию атомарной: если два параллельных запроса (резервный опрос раз в 15 секунд
+    и push-уведомление) одновременно решат, что время истекло, очки начислятся только один раз —
+    второй вызов увидит rowcount = 0 и ничего не сделает."""
     cur.execute(
-        "UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now() WHERE id = %s",
+        "UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now() WHERE id = %s AND status = 'active'",
         (result, reason, game_id)
     )
+    if cur.rowcount == 0:
+        return False
     if winner_player_id:
         cur.execute("UPDATE tournament_players SET points = points + 1, wins = wins + 1 WHERE id = %s", (winner_player_id,))
     if result == '1/2-1/2':
@@ -129,11 +137,13 @@ def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_playe
             "UPDATE tournament_players SET points = points + 0.5 WHERE id IN (SELECT white_player_id FROM tournament_games WHERE id = %s UNION SELECT black_player_id FROM tournament_games WHERE id = %s)",
             (game_id, game_id)
         )
+    return True
 
 
 def check_round_completion(cur, tournament_id, round_id):
-    """Если только что завершённая партия была последней активной в туре — закрывает тур
-    и сразу запускает отсчёт до следующего тура, не дожидаясь захода кого-либо в зал."""
+    """Если только что завершённая партия была последней активной в туре — закрывает тур.
+    Если это был последний тур турнира — сразу проставляет итоговые места (медали)
+    и пересчитывает рейтинг участников, как это делает турнирный зал по завершении тура."""
     cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s FOR UPDATE", (round_id,))
     row = cur.fetchone()
     if not row:
@@ -145,9 +155,12 @@ def check_round_completion(cur, tournament_id, round_id):
     if cur.fetchone()[0] > 0:
         return
     cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
-    cur.execute("SELECT rounds_count FROM tournaments WHERE id = %s", (tournament_id,))
-    rounds_count = cur.fetchone()[0]
+    cur.execute("SELECT rounds_count, title, rating_type FROM tournaments WHERE id = %s", (tournament_id,))
+    rounds_count, title, rating_type = cur.fetchone()
+    update_buchholz(cur, tournament_id)
     if round_number >= rounds_count:
+        assign_places(cur, tournament_id)
+        apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
         cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament_id,))
         trigger(f"tournament-{tournament_id}", 'finished', {})
     else:
