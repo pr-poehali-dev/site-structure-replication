@@ -123,7 +123,7 @@ def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_playe
         (result, reason, game_id)
     )
     if winner_player_id:
-        cur.execute("UPDATE tournament_players SET points = points + 1 WHERE id = %s", (winner_player_id,))
+        cur.execute("UPDATE tournament_players SET points = points + 1, wins = wins + 1 WHERE id = %s", (winner_player_id,))
     if result == '1/2-1/2':
         cur.execute(
             "UPDATE tournament_players SET points = points + 0.5 WHERE id IN (SELECT white_player_id FROM tournament_games WHERE id = %s UNION SELECT black_player_id FROM tournament_games WHERE id = %s)",

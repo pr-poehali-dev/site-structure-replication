@@ -192,6 +192,7 @@ export default function TournamentsSection({
       announcement_url: t.announcement_url || '',
       hall_open: !!t.hall_open,
       rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
+      rating_type: t.rating_type || 'rapid',
     });
     setTError('');
     setTShowForm(true);
@@ -306,6 +307,17 @@ export default function TournamentsSection({
           <div><Label>Контроль времени</Label><Input className="mt-1" placeholder="10+0" value={tForm.time_control} onChange={e => setTForm({ ...tForm, time_control: e.target.value })} /></div>
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
           <div><Label>Число туров (швейцарская система)</Label><Input type="number" min={1} max={15} className="mt-1" value={tForm.rounds_count} onChange={e => setTForm({ ...tForm, rounds_count: e.target.value })} /></div>
+          <div>
+            <Label>Тип рейтинга</Label>
+            <select
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={tForm.rating_type}
+              onChange={e => setTForm({ ...tForm, rating_type: e.target.value as 'blitz' | 'rapid' })}
+            >
+              <option value="rapid">Рапид</option>
+              <option value="blitz">Блиц</option>
+            </select>
+          </div>
           <div className="md:col-span-2 flex items-center gap-2 border-t border-gray-100 pt-4">
             <input type="checkbox" id="hall_open" className="w-4 h-4 accent-secondary" checked={tForm.hall_open} onChange={e => setTForm({ ...tForm, hall_open: e.target.checked })} />
             <Label htmlFor="hall_open" className="cursor-pointer mb-0">Открыт турнирный зал (участники видят ссылку в кабинете)</Label>

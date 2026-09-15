@@ -39,6 +39,8 @@ interface Player {
   rating: number;
   points: number;
   buchholz: number;
+  wins: number;
+  place: number | null;
 }
 
 interface TournamentInfo {
@@ -48,7 +50,10 @@ interface TournamentInfo {
   rounds_count: number;
   hall_status: string;
   round_break_seconds: number;
+  rating_type?: 'blitz' | 'rapid';
 }
+
+const RATING_TYPE_LABELS: Record<string, string> = { blitz: 'Блиц', rapid: 'Рапид' };
 
 interface HallData {
   tournament: TournamentInfo;
@@ -294,7 +299,7 @@ export default function Hall() {
                   <Icon name="Rabbit" size={22} />
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  {tournament.time_control || '—'} · Рапид
+                  {tournament.time_control || '—'} · {RATING_TYPE_LABELS[tournament.rating_type || 'rapid']}
                 </p>
                 <p className="text-sm text-gray-500 mb-3">
                   {rounds.length}/{tournament.rounds_count} туров · Швейцарский
@@ -392,7 +397,7 @@ export default function Hall() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-400 text-xs uppercase">
-                      <th className="pb-2 pr-2 font-medium">#</th>
+                      <th className="pb-2 pr-2 font-medium">Место</th>
                       <th className="pb-2 pr-2 font-medium">Участник</th>
                       <th className="pb-2 pr-2 font-medium text-right">Рейтинг</th>
                       {rounds.map(r => (
@@ -405,7 +410,7 @@ export default function Hall() {
                   <tbody>
                     {players.map((p, i) => (
                       <tr key={p.id} className="border-t border-gray-50">
-                        <td className="py-2 pr-2 text-gray-400">{i + 1}</td>
+                        <td className="py-2 pr-2 text-gray-400">{p.place ?? i + 1}</td>
                         <td className="py-2 pr-2 font-medium text-gray-800">{shortFio(p.fio)}</td>
                         <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
                         {rounds.map(r => {

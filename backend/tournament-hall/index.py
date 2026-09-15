@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import psycopg2
 
-from swiss import make_pairings
+from swiss import make_pairings, assign_places, update_buchholz
 from pusher_client import trigger
 
 DEFAULT_BASE_MS = 600000
@@ -82,7 +82,7 @@ def start_next_round(cur, tournament, round_number):
     cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND byes_used > 0", (tournament['id'],))
     bye_used = {r[0] for r in cur.fetchall()}
 
-    pairs = make_pairings(players, previous_pairs, bye_used)
+    pairs = make_pairings(players, previous_pairs, bye_used, round_number=round_number)
 
     cur.execute(
         "INSERT INTO tournament_rounds (tournament_id, round_number, status, started_at) VALUES (%s, %s, 'active', now()) RETURNING id",
@@ -113,7 +113,9 @@ def maybe_advance(cur, tournament):
         unfinished = cur.fetchone()[0]
         if unfinished == 0:
             cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
+            update_buchholz(cur, tournament['id'])
             if round_number >= tournament['rounds_count']:
+                assign_places(cur, tournament['id'])
                 cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
                 trigger(f"tournament-{tournament['id']}", 'finished', {})
             else:
@@ -137,13 +139,27 @@ def maybe_advance(cur, tournament):
 
 def get_tournament(cur, tournament_id):
     cur.execute(
-        "SELECT id, title, time_control, rounds_count, hall_status, round_break_seconds FROM tournaments WHERE id = %s",
+        "SELECT id, title, time_control, rounds_count, hall_status, round_break_seconds, rating_type FROM tournaments WHERE id = %s",
         (tournament_id,)
     )
     row = cur.fetchone()
     if not row:
         return None
-    return {'id': row[0], 'title': row[1], 'time_control': row[2], 'rounds_count': row[3], 'hall_status': row[4], 'round_break_seconds': row[5]}
+    return {
+        'id': row[0], 'title': row[1], 'time_control': row[2], 'rounds_count': row[3],
+        'hall_status': row[4], 'round_break_seconds': row[5], 'rating_type': row[6] or 'rapid',
+    }
+
+
+def get_player_rating(cur, user_id, rating_type):
+    """Стартовый рейтинг игрока в турнире = его рейтинг МШ (блиц/рапид, в зависимости
+    от контроля времени турнира). Если рейтинга ещё нет — 1200 по умолчанию."""
+    if not user_id:
+        return 1200
+    column = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
+    cur.execute(f"SELECT {column} FROM users WHERE id = %s", (user_id,))
+    row = cur.fetchone()
+    return row[0] if row and row[0] is not None else 1200
 
 
 def handler(event: dict, context) -> dict:
@@ -198,12 +214,13 @@ def handler(event: dict, context) -> dict:
                 app_row = cur.fetchone()
                 if app_row:
                     app_id, fio = app_row
+                    player_rating = get_player_rating(cur, user_id, tournament['rating_type'])
                     cur.execute(
                         """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
-                           VALUES (%s, %s, %s, %s, 1200)
+                           VALUES (%s, %s, %s, %s, %s)
                            ON CONFLICT (tournament_id, application_id) DO NOTHING
                            RETURNING id""",
-                        (tournament_id, user_id, app_id, fio)
+                        (tournament_id, user_id, app_id, fio, player_rating)
                     )
                     new_row = cur.fetchone()
                     conn.commit()
@@ -212,10 +229,14 @@ def handler(event: dict, context) -> dict:
                         trigger(f'tournament-{tournament_id}', 'player-joined', {})
 
         cur.execute(
-            "SELECT id, fio, rating, points, buchholz FROM tournament_players WHERE tournament_id = %s ORDER BY points DESC, rating DESC",
+            """SELECT id, fio, rating, points, buchholz, wins, place FROM tournament_players
+               WHERE tournament_id = %s ORDER BY points DESC, buchholz DESC, wins DESC, rating DESC""",
             (tournament_id,)
         )
-        players = [{'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4])} for r in cur.fetchall()]
+        players = [
+            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6]}
+            for r in cur.fetchall()
+        ]
 
         cur.execute(
             "SELECT id, round_number, status, started_at, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number ASC",
@@ -287,11 +308,12 @@ def handler(event: dict, context) -> dict:
         for app_id, user_id, fio in paid_apps:
             if user_id and user_id in existing_user_ids:
                 continue
+            player_rating = get_player_rating(cur, user_id, tournament['rating_type'])
             cur.execute(
                 """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
-                   VALUES (%s, %s, %s, %s, 1200)
+                   VALUES (%s, %s, %s, %s, %s)
                    ON CONFLICT (tournament_id, application_id) DO NOTHING""",
-                (tournament_id, user_id, app_id, fio)
+                (tournament_id, user_id, app_id, fio, player_rating)
             )
             if user_id:
                 existing_user_ids.add(user_id)
