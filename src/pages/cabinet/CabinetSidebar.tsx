@@ -8,12 +8,13 @@ import func2url from '../../../backend/func2url.json';
 
 const BALANCE_URL = func2url['balance'];
 
-export type CabinetTab = 'tournaments' | 'profile' | 'balance' | 'games' | 'orders';
+export type CabinetTab = 'tournaments' | 'profile' | 'balance' | 'rating' | 'games' | 'orders';
 
 const MENU: { key: CabinetTab; label: string; icon: string; soon?: boolean }[] = [
   { key: 'tournaments', label: 'Мои турниры', icon: 'Swords' },
   { key: 'profile', label: 'Профиль', icon: 'UserCog' },
   { key: 'balance', label: 'Баланс', icon: 'Wallet' },
+  { key: 'rating', label: 'История рейтинга', icon: 'TrendingUp' },
   { key: 'games', label: 'История партий', icon: 'History', soon: true },
   { key: 'orders', label: 'Заказы атрибутики', icon: 'Package', soon: true },
 ];

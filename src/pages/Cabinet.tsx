@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ApplicationCard from './cabinet/ApplicationCard';
 import ProfileSection from './cabinet/ProfileSection';
 import BalanceSection from './cabinet/BalanceSection';
+import RatingHistorySection from './cabinet/RatingHistorySection';
 import ComingSoon from './cabinet/ComingSoon';
 import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
 import { formatDate } from './cabinet/utils';
@@ -39,7 +40,7 @@ interface MyApplication {
   place: number | null;
 }
 
-const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'games', 'orders'];
+const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders'];
 
 export default function Cabinet() {
   const { user, token, loading } = useAuth();
@@ -169,6 +170,7 @@ export default function Cabinet() {
 
             {tab === 'profile' && <ProfileSection />}
             {tab === 'balance' && <BalanceSection />}
+            {tab === 'rating' && <RatingHistorySection />}
             {tab === 'games' && (
               <ComingSoon icon="History" title="История партий" description="Здесь появится список сыгранных вами партий с возможностью пересмотра ходов." />
             )}

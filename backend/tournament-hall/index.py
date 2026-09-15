@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import psycopg2
 
 from swiss import make_pairings, assign_places, update_buchholz
+from rating import apply_rating_changes
 from pusher_client import trigger
 
 DEFAULT_BASE_MS = 600000
@@ -116,6 +117,7 @@ def maybe_advance(cur, tournament):
             update_buchholz(cur, tournament['id'])
             if round_number >= tournament['rounds_count']:
                 assign_places(cur, tournament['id'])
+                apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
                 cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
                 trigger(f"tournament-{tournament['id']}", 'finished', {})
             else:
