@@ -9,6 +9,7 @@ import ApplicationCard from './cabinet/ApplicationCard';
 import ProfileSection from './cabinet/ProfileSection';
 import BalanceSection from './cabinet/BalanceSection';
 import RatingHistorySection from './cabinet/RatingHistorySection';
+import GamesHistorySection from './cabinet/GamesHistorySection';
 import ComingSoon from './cabinet/ComingSoon';
 import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
 import { formatDate } from './cabinet/utils';
@@ -171,9 +172,7 @@ export default function Cabinet() {
             {tab === 'profile' && <ProfileSection />}
             {tab === 'balance' && <BalanceSection />}
             {tab === 'rating' && <RatingHistorySection />}
-            {tab === 'games' && (
-              <ComingSoon icon="History" title="История партий" description="Здесь появится список сыгранных вами партий с возможностью пересмотра ходов." />
-            )}
+            {tab === 'games' && <GamesHistorySection />}
             {tab === 'orders' && (
               <ComingSoon icon="Package" title="Заказы атрибутики" description="Здесь появится история ваших заказов кубков, медалей и другой турнирной атрибутики." />
             )}

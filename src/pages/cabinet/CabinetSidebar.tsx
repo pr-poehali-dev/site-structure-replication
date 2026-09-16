@@ -15,7 +15,7 @@ const MENU: { key: CabinetTab; label: string; icon: string; soon?: boolean }[] =
   { key: 'profile', label: 'Профиль', icon: 'UserCog' },
   { key: 'balance', label: 'Баланс', icon: 'Wallet' },
   { key: 'rating', label: 'История рейтинга', icon: 'TrendingUp' },
-  { key: 'games', label: 'История партий', icon: 'History', soon: true },
+  { key: 'games', label: 'История партий', icon: 'History' },
   { key: 'orders', label: 'Заказы атрибутики', icon: 'Package', soon: true },
 ];
 
