@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
@@ -129,6 +129,8 @@ function formatClock(ms: number): string {
 export default function Game() {
   const { gameId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromCabinet = searchParams.get('from') === 'cabinet';
   const { user, token, loading } = useAuth();
   const [game, setGame] = useState<GameData | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -473,9 +475,15 @@ export default function Game() {
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-6xl mx-auto">
           <div className="flex items-center justify-between gap-2 mb-4">
-            <Link to="/cabinet?tab=games" className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
-              <Icon name="ArrowLeft" size={16} /> В кабинет
-            </Link>
+            {fromCabinet ? (
+              <Link to="/cabinet?tab=games" className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+                <Icon name="ArrowLeft" size={16} /> В кабинет
+              </Link>
+            ) : (
+              <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+                <Icon name="ArrowLeft" size={16} /> В турнирный зал
+              </Link>
+            )}
             <button
               onClick={toggleSound}
               title={soundOn ? 'Выключить звук' : 'Включить звук'}

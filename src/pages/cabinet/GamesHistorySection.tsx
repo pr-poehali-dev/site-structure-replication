@@ -90,7 +90,7 @@ export default function GamesHistorySection() {
               return (
                 <Link
                   key={g.id}
-                  to={`/game/${g.id}`}
+                  to={`/game/${g.id}?from=cabinet`}
                   className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
                 >
                   <MiniChessBoard fen={g.fen} size={96} />
