@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from './utils';
@@ -62,7 +63,9 @@ export default function RatingHistorySection() {
               return (
                 <div key={h.id} className="px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-medium text-gray-800">{h.tournament_title}</p>
+                    <Link to={`/hall/${h.tournament_id}`} className="font-medium text-gray-800 hover:text-secondary hover:underline">
+                      {h.tournament_title}
+                    </Link>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {formatDateTime(h.created_at)} · {RATING_TYPE_LABELS[h.rating_type] || h.rating_type} · {h.points} из {h.games_count} партий
                     </p>
