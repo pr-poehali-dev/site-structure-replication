@@ -190,7 +190,7 @@ export default function PlayerProfile() {
               </h3>
               <dl className="flex flex-col gap-2.5 text-sm">
                 <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">ID ФШР</dt><dd className="font-medium text-gray-800 mt-0.5">{profile.fsr_id || '—'}</dd></div>
-                <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">Дата рождения</dt><dd className="font-medium text-gray-800 mt-0.5">{profile.birth_date ? formatDate(profile.birth_date) : '—'}</dd></div>
+                <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">Возраст</dt><dd className="font-medium text-gray-800 mt-0.5">{age !== null ? `${age} лет` : '—'}</dd></div>
                 <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">ФИО тренера</dt><dd className="font-medium text-gray-800 mt-0.5">{profile.coach_fio || '—'}</dd></div>
                 <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">Учреждение</dt><dd className="font-medium text-gray-800 mt-0.5">{profile.institution || '—'}</dd></div>
                 <div><dt className="text-[10px] text-gray-400 uppercase tracking-wide">Страна / Город</dt><dd className="font-medium text-gray-800 mt-0.5">{profile.country_city || '—'}</dd></div>
