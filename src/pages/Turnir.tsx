@@ -39,7 +39,7 @@ export default function Turnir() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string }[]>([]);
+  const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string; hall_open: boolean; hall_status: string }[]>([]);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [balance, setBalance] = useState(0);
 
@@ -176,6 +176,7 @@ export default function Turnir() {
           onOpenParticipants={openParticipants}
           onOpenImagePreview={setImagePreview}
           appliedTournamentIds={myApplications.map(a => a.tournament_id)}
+          myApplications={myApplications}
           onCancelApplication={handleCancelApplication}
           cancellingId={cancellingId}
         />

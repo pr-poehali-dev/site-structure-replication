@@ -1,6 +1,15 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Tournament, formatDate } from './types';
+
+interface MyApplication {
+  tournament_id: number;
+  status: string;
+  hall_open: boolean;
+  hall_status: string;
+}
 
 interface TournamentsListProps {
   tournaments: Tournament[];
@@ -9,13 +18,14 @@ interface TournamentsListProps {
   onOpenParticipants: (t: Tournament) => void;
   onOpenImagePreview: (preview: { url: string; title: string }) => void;
   appliedTournamentIds: number[];
+  myApplications: MyApplication[];
   onCancelApplication: (t: Tournament) => void;
   cancellingId: number | null;
 }
 
 export default function TournamentsList({
   tournaments, loading, onOpenModal, onOpenParticipants, onOpenImagePreview,
-  appliedTournamentIds, onCancelApplication, cancellingId,
+  appliedTournamentIds, myApplications, onCancelApplication, cancellingId,
 }: TournamentsListProps) {
   return (
     <div className="lg:col-span-2">
@@ -40,6 +50,8 @@ export default function TournamentsList({
             const isOpen = t.status !== 'closed';
             const hasPreviews = !!(t.announcement_url || t.diploma_sample_url);
             const isApplied = appliedTournamentIds.includes(t.id);
+            const myApp = myApplications.find(a => a.tournament_id === t.id);
+            const hallOpen = myApp?.hall_open || false;
             return (
             <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col md:flex-row overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
               <div className="flex-1 flex flex-col min-w-0">
@@ -70,6 +82,28 @@ export default function TournamentsList({
                     )}
                   </div>
                 </div>
+                {isApplied && (
+                  <div className="px-6 pb-3">
+                    {hallOpen ? (
+                      <Link to={`/hall/${t.id}`}>
+                        <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                          <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 text-gray-400 font-semibold py-2.5 text-sm cursor-help">
+                            <Icon name="Lock" size={15} /> Войти в турнирный зал
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
+                          Турнирный зал открывается за полчаса до начала турнира
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                )}
                 <div className="px-6 pb-5 flex flex-col sm:flex-row gap-2">
                   {isApplied ? (
                     <Button
