@@ -29,9 +29,10 @@ def replay_moves_from_pgn(pgn):
     board = Board()
     result = []
     for san in sans:
+        bare_san = san.rstrip('+#')
         found = None
         for mv in board.legal_moves():
-            if board.move_to_san(mv) == san:
+            if board.move_to_san(mv) == bare_san:
                 found = mv
                 break
         if not found:
@@ -277,6 +278,13 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недопустимый ход'})}
         san = board.move_to_san(mv)
         board.apply_move(mv)
+
+        # Добавляем в SAN признак шаха "+" или мата "#" — используется фронтендом
+        # для выбора звукового эффекта хода.
+        if board.is_checkmate():
+            san += '#'
+        elif board.in_check(board.turn):
+            san += '+'
 
         white_ms, black_ms = compute_live_times(game)
         inc = game['increment_ms']

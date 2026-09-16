@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
 import { getLegalTargets } from '@/lib/chessMoves';
+import { playMoveSound, playCaptureSound, playCheckSound, playGameEndSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds';
 import func2url from '../../backend/func2url.json';
 
 const CHESS_URL = func2url['chess-game'];
@@ -145,8 +146,19 @@ export default function Game() {
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const knownGameIdRef = useRef<number | null>(null);
+  const lastMoveCountRef = useRef<number | null>(null);
+  const soundedFinishRef = useRef(false);
+
+  useEffect(() => { setSoundOn(isSoundEnabled()); }, []);
+
+  function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+  }
 
   const fetchGame = useCallback(async () => {
     if (!gameId) return;
@@ -250,6 +262,43 @@ export default function Game() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat.length]);
+
+  // Звук хода/взятия/шаха — определяем по нотации SAN последнего добавленного хода.
+  useEffect(() => {
+    if (!game) return;
+    const moveList = game.moves || [];
+    const count = moveList.length;
+    if (lastMoveCountRef.current === null) {
+      lastMoveCountRef.current = count;
+      return;
+    }
+    if (count > lastMoveCountRef.current) {
+      const lastSan = moveList[count - 1]?.san || '';
+      if (lastSan.includes('+') || lastSan.includes('#')) {
+        playCheckSound();
+      } else if (lastSan.includes('x')) {
+        playCaptureSound();
+      } else {
+        playMoveSound();
+      }
+    }
+    lastMoveCountRef.current = count;
+  }, [game?.moves?.length]);
+
+  // Звук окончания партии — один раз при переходе в статус finished.
+  useEffect(() => {
+    if (!game || game.status !== 'finished' || soundedFinishRef.current) return;
+    soundedFinishRef.current = true;
+    let outcome: 'win' | 'loss' | 'draw' = 'draw';
+    if (game.result === '1/2-1/2' || !myRole) {
+      outcome = 'draw';
+    } else if ((game.result === '1-0' && myRole === 'white') || (game.result === '0-1' && myRole === 'black')) {
+      outcome = 'win';
+    } else {
+      outcome = 'loss';
+    }
+    playGameEndSound(outcome);
+  }, [game?.status]);
 
   async function postAction(action: string, extra: Record<string, unknown> = {}) {
     if (!token) return;
@@ -423,10 +472,17 @@ export default function Game() {
 
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-6xl mx-auto">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
               <Icon name="ArrowLeft" size={16} /> В турнирный зал
             </Link>
+            <button
+              onClick={toggleSound}
+              title={soundOn ? 'Выключить звук' : 'Включить звук'}
+              className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-primary transition-colors"
+            >
+              <Icon name={soundOn ? 'Volume2' : 'VolumeX'} size={17} />
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-stretch">
