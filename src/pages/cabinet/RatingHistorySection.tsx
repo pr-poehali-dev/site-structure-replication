@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Icon from '@/components/ui/icon';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from './utils';
 import func2url from '../../../backend/func2url.json';
@@ -21,10 +23,26 @@ interface RatingHistoryItem {
   created_at: string;
 }
 
+interface ChartPoint {
+  date: string;
+  label: string;
+  blitz?: number;
+  rapid?: number;
+}
+
 const RATING_TYPE_LABELS: Record<string, string> = { blitz: 'Блиц', rapid: 'Рапид' };
 
+const chartConfig: ChartConfig = {
+  blitz: { label: 'Блиц', color: 'hsl(44 90% 52%)' },
+  rapid: { label: 'Рапид', color: 'hsl(217 91% 60%)' },
+};
+
+function shortDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
 export default function RatingHistorySection() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [history, setHistory] = useState<RatingHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +54,24 @@ export default function RatingHistorySection() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  const chartData = useMemo<ChartPoint[]>(() => {
+    const chronological = [...history].reverse();
+    const points: ChartPoint[] = [];
+    let lastBlitz: number | undefined;
+    let lastRapid: number | undefined;
+    for (const h of chronological) {
+      if (h.rating_type === 'blitz') lastBlitz = h.rating_after;
+      else lastRapid = h.rating_after;
+      points.push({
+        date: h.created_at,
+        label: shortDate(h.created_at),
+        blitz: lastBlitz,
+        rapid: lastRapid,
+      });
+    }
+    return points;
+  }, [history]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -46,6 +82,42 @@ export default function RatingHistorySection() {
           Рейтинг МШ пересчитывается по итогам каждого завершённого турнира: сравнивается фактический результат с ожидаемым по силе соперников.
         </p>
       </div>
+
+      {!loading && chartData.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="flex flex-col md:flex-row gap-6 items-stretch">
+            <div className="flex-1 min-w-0">
+              <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full">
+                <LineChart data={chartData} margin={{ left: 4, right: 12, top: 8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} domain={['dataMin - 20', 'dataMax + 20']} />
+                  <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
+                  <Line type="monotone" dataKey="blitz" stroke="var(--color-blitz)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls name="Блиц" />
+                  <Line type="monotone" dataKey="rapid" stroke="var(--color-rapid)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls name="Рапид" />
+                </LineChart>
+              </ChartContainer>
+            </div>
+
+            <div className="flex md:flex-col gap-3 shrink-0 md:w-36">
+              <div className="flex-1 bg-secondary/10 rounded-xl px-4 py-3 text-center">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Блиц сейчас</p>
+                <p className="font-heading font-bold text-2xl text-primary flex items-center justify-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: 'hsl(44 90% 52%)' }} />
+                  {user?.rating_blitz ?? '—'}
+                </p>
+              </div>
+              <div className="flex-1 bg-blue-500/10 rounded-xl px-4 py-3 text-center">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Рапид сейчас</p>
+                <p className="font-heading font-bold text-2xl text-primary flex items-center justify-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: 'hsl(217 91% 60%)' }} />
+                  {user?.rating_rapid ?? '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {loading ? (
