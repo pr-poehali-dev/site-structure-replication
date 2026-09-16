@@ -388,7 +388,11 @@ export default function Hall() {
                 </div>
                 <div className="flex flex-col gap-2">
                   {currentRound?.games.map(g => (
-                    <div key={g.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors">
+                    <div
+                      key={g.id}
+                      onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}`)}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
+                    >
                       {g.is_bye ? (
                         <span className="text-sm text-gray-600 flex items-center gap-2">
                           <Icon name="Moon" size={14} className="text-gray-400" />
@@ -404,7 +408,7 @@ export default function Hall() {
                             {g.status === 'finished' ? (
                               <span className="text-sm font-bold text-primary">{RESULT_LABELS[g.result || ''] || g.result}</span>
                             ) : (
-                              <Link to={`/game/${g.id}`} className="text-xs text-secondary hover:underline font-medium">Смотреть</Link>
+                              <span className="text-xs text-secondary hover:underline font-medium">Смотреть</span>
                             )}
                           </div>
                           <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
