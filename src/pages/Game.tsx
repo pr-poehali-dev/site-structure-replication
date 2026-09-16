@@ -473,8 +473,8 @@ export default function Game() {
       <main className="flex-1 py-6 px-4">
         <div className="container max-w-6xl mx-auto">
           <div className="flex items-center justify-between gap-2 mb-4">
-            <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
-              <Icon name="ArrowLeft" size={16} /> В турнирный зал
+            <Link to="/cabinet?tab=games" className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
+              <Icon name="ArrowLeft" size={16} /> В кабинет
             </Link>
             <button
               onClick={toggleSound}

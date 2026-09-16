@@ -93,7 +93,7 @@ export default function GamesHistorySection() {
                   to={`/game/${g.id}`}
                   className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
                 >
-                  <MiniChessBoard fen={g.fen} size={64} />
+                  <MiniChessBoard fen={g.fen} size={96} />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
