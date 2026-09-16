@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import { getLegalTargets } from '@/lib/chessMoves';
 import { playMoveSound, playCaptureSound, playCheckSound, playGameEndSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds';
 import func2url from '../../backend/func2url.json';
@@ -31,6 +32,8 @@ interface GameData {
   moves: MoveEntry[];
   white_fio: string | null;
   black_fio: string | null;
+  white_avatar_url: string | null;
+  black_avatar_url: string | null;
   white_time_ms: number;
   black_time_ms: number;
   first_move_grace_ms: number | null;
@@ -504,10 +507,12 @@ export default function Game() {
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
+                    <PlayerAvatar fio={game.white_fio} avatarUrl={game.white_avatar_url} size={22} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.white_fio) || '—'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                    <PlayerAvatar fio={game.black_fio} avatarUrl={game.black_avatar_url} size={22} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
                   </div>
                 </div>
@@ -555,6 +560,11 @@ export default function Game() {
               <div className={`lg:hidden w-full max-w-[560px] rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
+                  <PlayerAvatar
+                    fio={myRole === 'black' ? game.white_fio : game.black_fio}
+                    avatarUrl={myRole === 'black' ? game.white_avatar_url : game.black_avatar_url}
+                    size={22}
+                  />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-xl font-bold tabular-nums shrink-0">
@@ -651,6 +661,11 @@ export default function Game() {
               <div className={`lg:hidden w-full max-w-[560px] rounded-2xl shadow-sm border px-4 py-3 flex items-center justify-between ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                  <PlayerAvatar
+                    fio={myRole === 'black' ? game.black_fio : game.white_fio}
+                    avatarUrl={myRole === 'black' ? game.black_avatar_url : game.white_avatar_url}
+                    size={22}
+                  />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-xl font-bold tabular-nums shrink-0">
@@ -665,6 +680,11 @@ export default function Game() {
               <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
+                  <PlayerAvatar
+                    fio={myRole === 'black' ? game.white_fio : game.black_fio}
+                    avatarUrl={myRole === 'black' ? game.white_avatar_url : game.black_avatar_url}
+                    size={22}
+                  />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-xl font-bold tabular-nums shrink-0">
@@ -738,6 +758,11 @@ export default function Game() {
               <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                  <PlayerAvatar
+                    fio={myRole === 'black' ? game.black_fio : game.white_fio}
+                    avatarUrl={myRole === 'black' ? game.black_avatar_url : game.white_avatar_url}
+                    size={22}
+                  />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-xl font-bold tabular-nums shrink-0">

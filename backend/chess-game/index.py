@@ -68,10 +68,12 @@ def load_game(cur, game_id):
         """SELECT g.id, g.round_id, g.tournament_id, g.white_player_id, wp.fio, wp.user_id,
                   g.black_player_id, bp.fio, bp.user_id, g.status, g.result, g.result_reason,
                   g.fen, g.pgn, g.turn, g.white_time_ms, g.black_time_ms, g.increment_ms,
-                  g.last_move_at, g.draw_offered_by, t.title, g.moves
+                  g.last_move_at, g.draw_offered_by, t.title, g.moves, wu.avatar_url, bu.avatar_url
            FROM tournament_games g
            LEFT JOIN tournament_players wp ON wp.id = g.white_player_id
            LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
+           LEFT JOIN users wu ON wu.id = wp.user_id
+           LEFT JOIN users bu ON bu.id = bp.user_id
            LEFT JOIN tournaments t ON t.id = g.tournament_id
            WHERE g.id = %s""",
         (game_id,)
@@ -91,7 +93,7 @@ def load_game(cur, game_id):
         'fen': row[12], 'pgn': pgn, 'turn': row[14],
         'white_time_ms': row[15], 'black_time_ms': row[16], 'increment_ms': row[17],
         'last_move_at': row[18], 'draw_offered_by': row[19], 'tournament_title': row[20],
-        'moves': moves,
+        'moves': moves, 'white_avatar_url': row[22], 'black_avatar_url': row[23],
     }
 
 
@@ -241,6 +243,7 @@ def handler(event: dict, context) -> dict:
                 'id': game['id'], 'status': game['status'], 'result': game['result'], 'result_reason': game['result_reason'],
                 'fen': game['fen'], 'pgn': game['pgn'], 'turn': game['turn'], 'moves': game['moves'],
                 'white_fio': game['white_fio'], 'black_fio': game['black_fio'],
+                'white_avatar_url': game['white_avatar_url'], 'black_avatar_url': game['black_avatar_url'],
                 'white_time_ms': white_ms, 'black_time_ms': black_ms,
                 'first_move_grace_ms': first_move_grace_ms,
                 'draw_offered_by': game['draw_offered_by'], 'tournament_title': game['tournament_title'],

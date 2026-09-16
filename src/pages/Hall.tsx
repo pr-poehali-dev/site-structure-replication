@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import MiniChessBoard from '@/components/MiniChessBoard';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import func2url from '../../backend/func2url.json';
@@ -18,9 +19,11 @@ interface Game {
   white_player_id: number | null;
   white_fio: string | null;
   white_user_id: number | null;
+  white_avatar_url: string | null;
   black_player_id: number | null;
   black_fio: string | null;
   black_user_id: number | null;
+  black_avatar_url: string | null;
   is_bye: boolean;
   status: string;
   result: string | null;
@@ -39,6 +42,7 @@ interface Player {
   id: number;
   fio: string;
   user_id: number | null;
+  avatar_url: string | null;
   rating: number;
   points: number;
   buchholz: number;
@@ -98,13 +102,20 @@ function GameCellContent({ score }: { score: string | null }) {
   return score ?? <span className="text-gray-300">—</span>;
 }
 
-/** ФИО игрока — ссылка на его публичный профиль, если известен user_id (аккаунт на платформе),
- * иначе обычный текст (участник без аккаунта, добавлен админом вручную). */
-function PlayerLink({ userId, fio, className }: { userId: number | null | undefined; fio: string | null; className?: string }) {
-  if (!userId) return <span className={className}>{shortFio(fio)}</span>;
+/** ФИО игрока (опционально с аватаром) — ссылка на его публичный профиль, если известен
+ * user_id (аккаунт на платформе), иначе обычный текст (участник без аккаунта, добавлен админом вручную). */
+function PlayerLink({ userId, fio, avatarUrl, avatarSize, className }: { userId: number | null | undefined; fio: string | null; avatarUrl?: string | null; avatarSize?: number; className?: string }) {
+  const content = (
+    <>
+      {avatarSize && <PlayerAvatar fio={fio} avatarUrl={avatarUrl} size={avatarSize} />}
+      <span className="truncate">{shortFio(fio)}</span>
+    </>
+  );
+  const wrapperClass = avatarSize ? `inline-flex items-center gap-1.5 ${className || ''}` : className;
+  if (!userId) return <span className={wrapperClass}>{content}</span>;
   return (
-    <Link to={`/player/${userId}`} className={`hover:underline hover:text-secondary ${className || ''}`} onClick={e => e.stopPropagation()}>
-      {shortFio(fio)}
+    <Link to={`/player/${userId}`} className={`hover:underline hover:text-secondary ${wrapperClass || ''}`} onClick={e => e.stopPropagation()}>
+      {content}
     </Link>
   );
 }
@@ -381,13 +392,13 @@ export default function Hall() {
                       {g.is_bye ? (
                         <span className="text-sm text-gray-600 flex items-center gap-2">
                           <Icon name="Moon" size={14} className="text-gray-400" />
-                          <PlayerLink userId={g.white_user_id} fio={g.white_fio} /> — технический бай (+1)
+                          <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={20} /> — технический бай (+1)
                         </span>
                       ) : (
                         <>
                           <div className="flex-1 flex items-center gap-2 min-w-0">
                             <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
-                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} className="truncate text-sm font-medium text-gray-800" />
+                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800" />
                           </div>
                           <div className="px-3 shrink-0">
                             {g.status === 'finished' ? (
@@ -397,7 +408,7 @@ export default function Hall() {
                             )}
                           </div>
                           <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} className="truncate text-sm font-medium text-gray-800 text-right" />
+                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} avatarUrl={g.black_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 text-right flex-row-reverse" />
                             <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0" />
                           </div>
                         </>
@@ -438,7 +449,7 @@ export default function Hall() {
                           )}
                         </td>
                         <td className="py-2 pr-2 font-medium text-gray-800">
-                          <PlayerLink userId={p.user_id} fio={p.fio} />
+                          <PlayerLink userId={p.user_id} fio={p.fio} avatarUrl={p.avatar_url} avatarSize={22} />
                           {p.joined_late && (
                             <HoverCard>
                               <HoverCardTrigger asChild>
