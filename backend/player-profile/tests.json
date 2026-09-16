@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "GET without user_id returns 400",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    },
+    {
+      "name": "GET with unknown user_id returns 404",
+      "method": "GET",
+      "path": "/?user_id=999999999",
+      "expectedStatus": 404
+    },
+    {
+      "name": "OPTIONS preflight returns 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

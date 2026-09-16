@@ -17,8 +17,10 @@ interface Game {
   id: number;
   white_player_id: number | null;
   white_fio: string | null;
+  white_user_id: number | null;
   black_player_id: number | null;
   black_fio: string | null;
+  black_user_id: number | null;
   is_bye: boolean;
   status: string;
   result: string | null;
@@ -36,6 +38,7 @@ interface Round {
 interface Player {
   id: number;
   fio: string;
+  user_id: number | null;
   rating: number;
   points: number;
   buchholz: number;
@@ -95,6 +98,17 @@ function GameCellContent({ score }: { score: string | null }) {
   return score ?? <span className="text-gray-300">—</span>;
 }
 
+/** ФИО игрока — ссылка на его публичный профиль, если известен user_id (аккаунт на платформе),
+ * иначе обычный текст (участник без аккаунта, добавлен админом вручную). */
+function PlayerLink({ userId, fio, className }: { userId: number | null | undefined; fio: string | null; className?: string }) {
+  if (!userId) return <span className={className}>{shortFio(fio)}</span>;
+  return (
+    <Link to={`/player/${userId}`} className={`hover:underline hover:text-secondary ${className || ''}`} onClick={e => e.stopPropagation()}>
+      {shortFio(fio)}
+    </Link>
+  );
+}
+
 function RoundResultCell({ playerId, game, score }: { playerId: number; game: Game; score: string | null }) {
   const isWhite = game.white_player_id === playerId;
   const myScore = score === '1' ? '1' : score === '0' ? '0' : score === '½' ? '½' : '';
@@ -118,12 +132,12 @@ function RoundResultCell({ playerId, game, score }: { playerId: number; game: Ga
       <HoverCardContent className="w-auto p-3" align="center">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
-            <span className="truncate max-w-[110px]">{shortFio(game.black_fio)}</span>
+            <PlayerLink userId={game.black_user_id} fio={game.black_fio} className="truncate max-w-[110px]" />
             <span className="text-gray-400">{blackScore}</span>
           </div>
           <MiniChessBoard fen={game.fen} size={160} />
           <div className="flex items-center justify-between gap-3 text-xs font-medium text-gray-700">
-            <span className="truncate max-w-[110px]">{shortFio(game.white_fio)}</span>
+            <PlayerLink userId={game.white_user_id} fio={game.white_fio} className="truncate max-w-[110px]" />
             <span className="text-gray-400">{whiteScore}</span>
           </div>
         </div>
@@ -366,13 +380,14 @@ export default function Hall() {
                     <div key={g.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors">
                       {g.is_bye ? (
                         <span className="text-sm text-gray-600 flex items-center gap-2">
-                          <Icon name="Moon" size={14} className="text-gray-400" /> {shortFio(g.white_fio)} — технический бай (+1)
+                          <Icon name="Moon" size={14} className="text-gray-400" />
+                          <PlayerLink userId={g.white_user_id} fio={g.white_fio} /> — технический бай (+1)
                         </span>
                       ) : (
                         <>
                           <div className="flex-1 flex items-center gap-2 min-w-0">
                             <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
-                            <span className="truncate text-sm font-medium text-gray-800">{shortFio(g.white_fio)}</span>
+                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} className="truncate text-sm font-medium text-gray-800" />
                           </div>
                           <div className="px-3 shrink-0">
                             {g.status === 'finished' ? (
@@ -382,7 +397,7 @@ export default function Hall() {
                             )}
                           </div>
                           <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-                            <span className="truncate text-sm font-medium text-gray-800 text-right">{shortFio(g.black_fio)}</span>
+                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} className="truncate text-sm font-medium text-gray-800 text-right" />
                             <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0" />
                           </div>
                         </>
@@ -423,7 +438,7 @@ export default function Hall() {
                           )}
                         </td>
                         <td className="py-2 pr-2 font-medium text-gray-800">
-                          {shortFio(p.fio)}
+                          <PlayerLink userId={p.user_id} fio={p.fio} />
                           {p.joined_late && (
                             <HoverCard>
                               <HoverCardTrigger asChild>

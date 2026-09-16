@@ -257,12 +257,12 @@ def handler(event: dict, context) -> dict:
                         trigger(f'tournament-{tournament_id}', 'player-joined', {})
 
         cur.execute(
-            """SELECT id, fio, rating, points, buchholz, wins, place, joined_late FROM tournament_players
+            """SELECT id, fio, rating, points, buchholz, wins, place, joined_late, user_id FROM tournament_players
                WHERE tournament_id = %s ORDER BY points DESC, buchholz DESC, wins DESC, rating DESC""",
             (tournament_id,)
         )
         players = [
-            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7], 'rating_delta': None}
+            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7], 'user_id': r[8], 'rating_delta': None}
             for r in cur.fetchall()
         ]
 
@@ -288,7 +288,7 @@ def handler(event: dict, context) -> dict:
         for rr in rounds_rows:
             round_id, round_number, r_status, started_at, completed_at = rr
             cur.execute(
-                """SELECT g.id, g.white_player_id, wp.fio, g.black_player_id, bp.fio, g.is_bye, g.status, g.result, g.fen
+                """SELECT g.id, g.white_player_id, wp.fio, wp.user_id, g.black_player_id, bp.fio, bp.user_id, g.is_bye, g.status, g.result, g.fen
                    FROM tournament_games g
                    LEFT JOIN tournament_players wp ON wp.id = g.white_player_id
                    LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
@@ -298,11 +298,11 @@ def handler(event: dict, context) -> dict:
             games = []
             for g in cur.fetchall():
                 games.append({
-                    'id': g[0], 'white_player_id': g[1], 'white_fio': g[2],
-                    'black_player_id': g[3], 'black_fio': g[4], 'is_bye': g[5],
-                    'status': g[6], 'result': g[7], 'fen': g[8],
+                    'id': g[0], 'white_player_id': g[1], 'white_fio': g[2], 'white_user_id': g[3],
+                    'black_player_id': g[4], 'black_fio': g[5], 'black_user_id': g[6], 'is_bye': g[7],
+                    'status': g[8], 'result': g[9], 'fen': g[10],
                 })
-                if my_player_id and g[6] != 'finished' and (g[1] == my_player_id or g[3] == my_player_id):
+                if my_player_id and g[8] != 'finished' and (g[1] == my_player_id or g[4] == my_player_id):
                     my_game_id = g[0]
             rounds.append({
                 'round_number': round_number, 'status': r_status,
