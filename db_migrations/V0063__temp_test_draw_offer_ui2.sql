@@ -1,0 +1,1 @@
+UPDATE tournament_games SET status = 'active', result = NULL, result_reason = NULL, draw_offered_by = white_player_id, white_time_ms=580000, black_time_ms=580000, last_move_at = now(), pgn = 'e4', turn='black' WHERE id = 73;

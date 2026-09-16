@@ -38,6 +38,7 @@ interface GameData {
   black_time_ms: number;
   first_move_grace_ms: number | null;
   draw_offered_by: number | null;
+  draw_offered_by_role: 'white' | 'black' | null;
   tournament_title: string;
   tournament_id: number;
 }
@@ -752,6 +753,32 @@ export default function Game() {
                     </div>
                   </>
                 )}
+
+                {myRole && !finished && (
+                  <div className="flex gap-2 shrink-0 mt-3 pt-3 border-t border-gray-100">
+                    {game.draw_offered_by_role && game.draw_offered_by_role !== myRole ? (
+                      <>
+                        <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('accept_draw')}>
+                          <Icon name="Check" size={15} className="mr-1" /> Принять
+                        </Button>
+                        <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('decline_draw')}>
+                          <Icon name="X" size={15} className="mr-1" /> Отклонить
+                        </Button>
+                      </>
+                    ) : game.draw_offered_by_role === myRole ? (
+                      <div className="flex-1 flex items-center justify-center gap-2 text-sm text-gray-400 py-2">
+                        <Icon name="Clock" size={14} /> Ничья предложена, ждём ответа
+                      </div>
+                    ) : (
+                      <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
+                        <Icon name="Handshake" size={15} className="mr-1" /> Ничья
+                      </Button>
+                    )}
+                    <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
+                      <Icon name="Flag" size={15} className="mr-1" /> Сдаться
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Часы игрока (мои) — на мобильных дублируются под доской, здесь скрыты */}
@@ -782,28 +809,6 @@ export default function Game() {
                     {RESULT_LABELS(game.result)}
                   </p>
                   <p className="text-sm text-gray-500">{RESULT_REASON_LABELS[game.result_reason || ''] || game.result_reason}</p>
-                </div>
-              )}
-
-              {myRole && !finished && (
-                <div className="flex gap-2 shrink-0">
-                  {game.draw_offered_by ? (
-                    <>
-                      <Button variant="outline" className="flex-1" onClick={() => postAction('accept_draw')}>
-                        <Icon name="Check" size={15} className="mr-1" /> Принять
-                      </Button>
-                      <Button variant="outline" className="flex-1" onClick={() => postAction('decline_draw')}>
-                        <Icon name="X" size={15} className="mr-1" /> Отклонить
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
-                      <Icon name="Handshake" size={15} className="mr-1" /> Ничья
-                    </Button>
-                  )}
-                  <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
-                    <Icon name="Flag" size={15} className="mr-1" /> Сдаться
-                  </Button>
                 </div>
               )}
             </div>

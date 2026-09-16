@@ -238,6 +238,12 @@ def handler(event: dict, context) -> dict:
 
         conn.close()
         role = player_role(game, user_id)
+        draw_offered_by_role = None
+        if game['draw_offered_by']:
+            if game['draw_offered_by'] == game['white_player_id']:
+                draw_offered_by_role = 'white'
+            elif game['draw_offered_by'] == game['black_player_id']:
+                draw_offered_by_role = 'black'
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
             'game': {
                 'id': game['id'], 'status': game['status'], 'result': game['result'], 'result_reason': game['result_reason'],
@@ -246,7 +252,8 @@ def handler(event: dict, context) -> dict:
                 'white_avatar_url': game['white_avatar_url'], 'black_avatar_url': game['black_avatar_url'],
                 'white_time_ms': white_ms, 'black_time_ms': black_ms,
                 'first_move_grace_ms': first_move_grace_ms,
-                'draw_offered_by': game['draw_offered_by'], 'tournament_title': game['tournament_title'],
+                'draw_offered_by': game['draw_offered_by'], 'draw_offered_by_role': draw_offered_by_role,
+                'tournament_title': game['tournament_title'],
                 'tournament_id': game['tournament_id'],
             },
             'chat': chat, 'my_role': role,
