@@ -255,6 +255,18 @@ function applyMove(state: ParsedFen, mv: Move): Board {
 }
 
 /**
+ * Возвращает клетку короля стороны, чей сейчас ход, если этот король под шахом
+ * в переданной позиции (например 'e1'), иначе null. Используется для подсветки
+ * шаха на доске.
+ */
+export function getCheckedKingSquare(fen: string): string | null {
+  const state = parseFenFull(fen);
+  if (!inCheck(state.board, state.turn)) return null;
+  const kingPos = findKing(state.board, state.turn);
+  return kingPos ? sq(kingPos[0], kingPos[1]) : null;
+}
+
+/**
  * Возвращает список клеток (например ['e4', 'e5']), на которые фигура на sqName
  * может сходить по правилам шахмат (легальные ходы, с учётом шаха своему королю).
  * Используется только для подсказки на клиенте — окончательную валидацию делает бэкенд.

@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePusherChannel } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
 import PlayerAvatar from '@/components/PlayerAvatar';
-import { getLegalTargets } from '@/lib/chessMoves';
+import { getLegalTargets, getCheckedKingSquare } from '@/lib/chessMoves';
 import { playMoveSound, playCaptureSound, playCheckSound, playGameEndSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds';
 import func2url from '../../backend/func2url.json';
 
@@ -522,6 +522,7 @@ export default function Game() {
       : moves[viewMoveIndex]?.fen ?? game.fen;
   const board = parseFen(displayedFen);
   const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(game.fen, selected) : [];
+  const checkedKingSquare = getCheckedKingSquare(displayedFen);
   const ranks = myRole === 'black' ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
   const filesOrdered = myRole === 'black' ? [...FILES].reverse() : FILES;
   const finished = game.status === 'finished';
@@ -565,7 +566,7 @@ export default function Game() {
 
           <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-stretch">
             {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат */}
-            <div className="order-3 lg:order-1 flex flex-col gap-4 min-h-0">
+            <div className="order-3 lg:order-1 flex flex-col gap-4 min-h-0 lg:h-[560px]">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 shrink-0">
                 <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-3">
                   <Icon name="Swords" size={16} className="text-secondary shrink-0" />
@@ -674,6 +675,7 @@ export default function Game() {
                     const draggable = !!piece && isOwnPiece(piece) && (isMyTurn() || canPremove()) && viewMoveIndex === null;
                     const isLegalTarget = legalTargets.includes(sqName);
                     const isPremoveSquare = !!premove && (sqName === premove.from || sqName === premove.to);
+                    const isCheckedKing = checkedKingSquare === sqName;
                     return (
                       <button
                         key={sqName}
@@ -684,9 +686,11 @@ export default function Game() {
                           ${isLight ? 'bg-[#f0d9b5]' : 'bg-[#b58863]'}
                           ${isSelected ? 'ring-4 ring-secondary ring-inset' : ''}
                           ${isPremoveSquare ? 'ring-4 ring-amber-500 ring-inset' : ''}
+                          ${isCheckedKing ? 'ring-4 ring-red-600 ring-inset' : ''}
                           ${isMyTurn() || canPremove() ? 'cursor-pointer' : 'cursor-default'}`}
                       >
                         {isPremoveSquare && <span className="absolute inset-0 bg-amber-400/30 pointer-events-none" />}
+                        {isCheckedKing && <span className="absolute inset-0 bg-red-500/25 pointer-events-none" />}
                         {isLastRow && (
                           <span className={`absolute left-0.5 bottom-0 text-[10px] sm:text-xs font-semibold select-none ${isLight ? 'text-[#b58863]' : 'text-[#f0d9b5]'}`}>
                             {f}
@@ -714,7 +718,7 @@ export default function Game() {
                               e.dataTransfer.effectAllowed = 'move';
                             }}
                             onDragEnd={() => setSelected(null)}
-                            className={`w-[80%] h-[80%] select-none ${draggable ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
+                            className={`w-[92%] h-[92%] select-none ${draggable ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
                           />
                         )}
                       </button>
@@ -757,7 +761,7 @@ export default function Game() {
             </div>
 
             {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
-            <div className="order-2 lg:order-3 flex flex-col gap-4 min-h-0">
+            <div className="order-2 lg:order-3 flex flex-col gap-4 min-h-0 lg:h-[560px]">
               {/* Часы соперника (на мобильных дублируются над доской, здесь скрыты) */}
               <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">

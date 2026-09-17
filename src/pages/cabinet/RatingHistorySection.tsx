@@ -148,7 +148,7 @@ export default function RatingHistorySection() {
                       positive ? 'bg-green-100 text-green-700' : negative ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'
                     }`}>
                       <Icon name={positive ? 'ArrowUp' : negative ? 'ArrowDown' : 'Minus'} size={13} />
-                      {positive ? '+' : ''}{h.delta}
+                      {positive ? '+' : ''}{Math.round(h.delta)}
                     </span>
                   </div>
                 </div>
