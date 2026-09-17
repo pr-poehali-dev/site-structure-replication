@@ -148,30 +148,46 @@ def check_round_completion(cur, tournament_id, round_id):
     Если это был последний тур турнира — сразу проставляет итоговые места (медали)
     и пересчитывает рейтинг участников, как это делает турнирный зал по завершении тура.
 
-    Advisory-лок на id турнира сериализует эту проверку с одноимённой в tournament-hall
-    (maybe_advance) — без него параллельные запросы (игрок доигрывает партию + кто-то
-    одновременно открывает турнирный зал) могли закрыть тур или создать следующий раньше,
-    чем реально доиграны все партии текущего тура."""
-    cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament_id,))
-    cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s FOR UPDATE", (round_id,))
+    Турнирный зал опрашивается одновременно всеми участниками, поэтому эта же проверка
+    может параллельно выполниться и здесь, и в tournament-hall (maybe_advance) прямо в
+    момент, когда доигрывается последняя партия тура. Условный UPDATE ... WHERE status =
+    'active' — атомарная операция на уровне БД: если несколько запросов одновременно решат,
+    что тур пора закрыть, обновление и всё, что после него (медали, рейтинг), выполнится
+    только у одного из них — остальные получат 0 обновлённых строк и ничего не сделают.
+    Обычные блокировки (FOR UPDATE/advisory-лок) здесь не используются, так как в этой
+    инфраструктуре не гарантируют удержание между отдельными SQL-запросами одной функции."""
+    cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s", (round_id,))
     row = cur.fetchone()
     if not row:
         return
     round_number, status = row
     if status != 'active':
         return
-    cur.execute("SELECT COUNT(*) FROM tournament_games WHERE round_id = %s AND status != 'finished'", (round_id,))
-    if cur.fetchone()[0] > 0:
+    # total > 0 обязателен: между вставкой строки тура и вставкой его партий в
+    # tournament-hall (start_next_round) есть краткий промежуток, когда у тура ещё 0 партий —
+    # без этой проверки такой тур выглядел бы как "все партии завершены".
+    cur.execute("SELECT COUNT(*), COUNT(*) FILTER (WHERE status != 'finished') FROM tournament_games WHERE round_id = %s", (round_id,))
+    total, unfinished = cur.fetchone()
+    if total == 0 or unfinished > 0:
         return
-    cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
+    cur.execute(
+        "UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status = 'active' RETURNING id",
+        (round_id,)
+    )
+    if not cur.fetchone():
+        return
     cur.execute("SELECT rounds_count, title, rating_type FROM tournaments WHERE id = %s", (tournament_id,))
     rounds_count, title, rating_type = cur.fetchone()
     update_buchholz(cur, tournament_id)
     if round_number >= rounds_count:
-        assign_places(cur, tournament_id)
-        apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
-        cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament_id,))
-        trigger(f"tournament-{tournament_id}", 'finished', {})
+        cur.execute(
+            "UPDATE tournaments SET hall_status = 'finished' WHERE id = %s AND hall_status = 'active' RETURNING id",
+            (tournament_id,)
+        )
+        if cur.fetchone():
+            assign_places(cur, tournament_id)
+            apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
+            trigger(f"tournament-{tournament_id}", 'finished', {})
     else:
         trigger(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})
 

@@ -85,9 +85,28 @@ def finish_tournament_early(cur, tournament, rounds_played):
 
 
 def start_next_round(cur, tournament, round_number):
+    # Резервируем номер тура атомарной вставкой ДО жеребьёвки: на tournament_rounds есть
+    # ограничение уникальности (tournament_id, round_number), поэтому если два параллельных
+    # запроса одновременно решат, что пора начинать этот тур, вставку выполнит только один —
+    # у второго ON CONFLICT DO NOTHING не вернёт строку, и он тут же выйдет, не трогая пары
+    # и партии. Это надёжнее блокировок (FOR UPDATE/advisory-лок), которые в этой инфраструктуре
+    # не гарантируют удержание между отдельными SQL-запросами одной функции.
+    cur.execute(
+        """INSERT INTO tournament_rounds (tournament_id, round_number, status, started_at)
+           VALUES (%s, %s, 'active', now())
+           ON CONFLICT (tournament_id, round_number) DO NOTHING
+           RETURNING id""",
+        (tournament['id'], round_number)
+    )
+    reserved = cur.fetchone()
+    if not reserved:
+        return None
+    round_id = reserved[0]
+
     cur.execute("SELECT id, rating, points, color_balance FROM tournament_players WHERE tournament_id = %s AND active = true", (tournament['id'],))
     players = [{'id': r[0], 'rating': r[1], 'points': float(r[2]), 'color_balance': r[3]} for r in cur.fetchall()]
     if len(players) < 2:
+        cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
         return None
 
     previous_pairs = get_previous_pairs(cur, tournament['id'])
@@ -98,14 +117,10 @@ def start_next_round(cur, tournament, round_number):
     if pairs is None:
         # Нельзя составить тур без повторной встречи — турнир завершается
         # досрочно тем числом туров, что уже сыграно.
+        cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
         finish_tournament_early(cur, tournament, round_number - 1)
         return None
 
-    cur.execute(
-        "INSERT INTO tournament_rounds (tournament_id, round_number, status, started_at) VALUES (%s, %s, 'active', now()) RETURNING id",
-        (tournament['id'], round_number)
-    )
-    round_id = cur.fetchone()[0]
     base_ms, inc_ms = parse_time_control(tournament['time_control'])
     create_round_games(cur, tournament['id'], round_id, pairs, base_ms, inc_ms)
     return round_id
@@ -115,11 +130,11 @@ def maybe_advance(cur, tournament):
     """Возвращает ISO-время старта следующего тура, если сейчас идёт перерыв между турами.
 
     Турнирный зал опрашивается одновременно всеми участниками (обычный поллинг + push-события),
-    поэтому без блокировки несколько параллельных запросов могут одновременно увидеть "все партии
-    тура завершены" и попытаться закрыть тур/создать следующий дважды, либо закрыть тур раньше,
-    чем зафиксировались (закоммитились) партии, только что вставленные другим запросом. Advisory-
-    лок на id турнира сериализует эти проверки между собой и с check_round_completion в chess-game."""
-    cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament['id'],))
+    поэтому несколько параллельных запросов могут одновременно увидеть "все партии тура
+    завершены" и попытаться закрыть тур/создать следующий. Каждый шаг здесь — атомарная
+    условная операция (UPDATE ... WHERE ... RETURNING или INSERT ... ON CONFLICT DO NOTHING
+    в start_next_round), поэтому при гонке реальное действие выполнится только у одного
+    запроса, а остальные увидят, что оно уже сделано, и просто прочитают актуальное состояние."""
     cur.execute(
         "SELECT id, round_number, status, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
         (tournament['id'],)
@@ -130,21 +145,34 @@ def maybe_advance(cur, tournament):
     round_id, round_number, status, completed_at = row
 
     if status == 'active':
+        # Считаем отдельно общее число партий и незавершённых: между вставкой строки тура
+        # и вставкой его партий (в start_next_round) есть краткий промежуток, в течение
+        # которого у тура ещё 0 партий — без проверки total > 0 это выглядело бы как "все
+        # партии завершены" и тур закрывался бы пустым, ещё до жеребьёвки.
         cur.execute(
-            "SELECT COUNT(*) FROM tournament_games WHERE round_id = %s AND status != 'finished'",
+            "SELECT COUNT(*), COUNT(*) FILTER (WHERE status != 'finished') FROM tournament_games WHERE round_id = %s",
             (round_id,)
         )
-        unfinished = cur.fetchone()[0]
-        if unfinished == 0:
-            cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
-            update_buchholz(cur, tournament['id'])
-            if round_number >= tournament['rounds_count']:
-                assign_places(cur, tournament['id'])
-                apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
-                cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
-                trigger(f"tournament-{tournament['id']}", 'finished', {})
-            else:
-                trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
+        total, unfinished = cur.fetchone()
+        if total > 0 and unfinished == 0:
+            cur.execute(
+                "UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status = 'active' RETURNING id",
+                (round_id,)
+            )
+            if cur.fetchone():
+                update_buchholz(cur, tournament['id'])
+                if round_number >= tournament['rounds_count']:
+                    cur.execute(
+                        "UPDATE tournaments SET hall_status = 'finished' WHERE id = %s AND hall_status = 'active' RETURNING id",
+                        (tournament['id'],)
+                    )
+                    if cur.fetchone():
+                        assign_places(cur, tournament['id'])
+                        apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
+                        trigger(f"tournament-{tournament['id']}", 'finished', {})
+                else:
+                    trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
+            if round_number < tournament['rounds_count']:
                 break_seconds = tournament.get('round_break_seconds', 60)
                 return (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat() + 'Z'
         return None

@@ -33,10 +33,6 @@ def sync_finished_tournaments(cur):
     cur.execute("SELECT id, title, rounds_count, rating_type FROM tournaments WHERE hall_status = 'active'")
     active_tournaments = cur.fetchall()
     for tournament_id, title, rounds_count, rating_type in active_tournaments:
-        # Advisory-лок на id турнира сериализует эту проверку с аналогичными в tournament-hall
-        # (maybe_advance) и chess-game (check_round_completion) — иначе можно закрыть тур
-        # раньше, чем реально доиграны все его партии.
-        cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament_id,))
         cur.execute(
             "SELECT id, round_number, status FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
             (tournament_id,)
@@ -54,11 +50,20 @@ def sync_finished_tournaments(cur):
         if cur.fetchone()[0] > 0:
             continue
         if status != 'completed':
-            cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
+            cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status != 'completed'", (round_id,))
+        # Атомарный условный UPDATE вместо блокировки (FOR UPDATE/advisory-лок ненадёжны в этой
+        # инфраструктуре между отдельными SQL-запросами): если этот же турнир параллельно уже
+        # закрыла tournament-hall (maybe_advance) или chess-game (check_round_completion), здесь
+        # обновится 0 строк и медали/рейтинг повторно не начислятся.
+        cur.execute(
+            "UPDATE tournaments SET hall_status = 'finished' WHERE id = %s AND hall_status = 'active' RETURNING id",
+            (tournament_id,)
+        )
+        if not cur.fetchone():
+            continue
         update_buchholz(cur, tournament_id)
         assign_places(cur, tournament_id)
         apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
-        cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament_id,))
         trigger(f"tournament-{tournament_id}", 'finished', {})
 
 def handler(event: dict, context) -> dict:
