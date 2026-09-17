@@ -757,14 +757,17 @@ export default function Game() {
                 {myRole && !finished && (
                   <div className="flex gap-2 shrink-0 mt-3 pt-3 border-t border-gray-100">
                     {game.draw_offered_by_role && game.draw_offered_by_role !== myRole ? (
-                      <>
-                        <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('accept_draw')}>
-                          <Icon name="Check" size={15} className="mr-1" /> Принять
-                        </Button>
-                        <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('decline_draw')}>
-                          <Icon name="X" size={15} className="mr-1" /> Отклонить
-                        </Button>
-                      </>
+                      <div className="flex flex-col gap-2 w-full">
+                        <p className="text-sm text-center text-secondary font-medium">Соперник предлагает ничью</p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('accept_draw')}>
+                            <Icon name="Check" size={15} className="mr-1" /> Принять
+                          </Button>
+                          <Button variant="outline" className="flex-1 animate-pulse border-secondary text-secondary hover:bg-secondary/10" onClick={() => postAction('decline_draw')}>
+                            <Icon name="X" size={15} className="mr-1" /> Отклонить
+                          </Button>
+                        </div>
+                      </div>
                     ) : game.draw_offered_by_role === myRole ? (
                       <div className="flex-1 flex items-center justify-center gap-2 text-sm text-gray-400 py-2">
                         <Icon name="Clock" size={14} /> Ничья предложена, ждём ответа
