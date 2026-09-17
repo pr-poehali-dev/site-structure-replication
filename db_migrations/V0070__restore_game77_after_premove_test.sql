@@ -1,0 +1,1 @@
+UPDATE tournament_games SET status = 'finished', result = '0-1', result_reason = 'first_move_timeout', fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', pgn = '', moves = '[]', turn = 'white' WHERE id = 77;

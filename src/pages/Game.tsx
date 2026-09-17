@@ -146,7 +146,8 @@ export default function Game() {
   const [liveWhiteMs, setLiveWhiteMs] = useState(0);
   const [liveBlackMs, setLiveBlackMs] = useState(0);
   const [firstMoveGraceMs, setFirstMoveGraceMs] = useState<number | null>(null);
-  const [promoChoice, setPromoChoice] = useState<{ from: string; to: string } | null>(null);
+  const [promoChoice, setPromoChoice] = useState<{ from: string; to: string; isPremove?: boolean } | null>(null);
+  const [premove, setPremove] = useState<{ from: string; to: string; promotion?: string } | null>(null);
   const [pusherKey, setPusherKey] = useState<string | null>(null);
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
@@ -265,6 +266,23 @@ export default function Game() {
     fetchGame();
   }, [firstMoveGraceMs, fetchGame]);
 
+  // Как только наступает мой ход — пробуем выполнить запланированный предход.
+  // Если он оказался невозможен (фигуру взяли, путь перекрыт и т.п.) — тихо отменяем.
+  useEffect(() => {
+    if (!premove || !game || !myRole) return;
+    if (game.status !== 'active') { setPremove(null); return; }
+    if (game.turn !== myRole || optimisticFen !== null) return;
+    const targets = getLegalTargets(game.fen, premove.from);
+    if (!targets.includes(premove.to)) {
+      setPremove(null);
+      return;
+    }
+    setOptimisticFen(applyLocalMove(game.fen, premove.from, premove.to, premove.promotion));
+    const { from, to, promotion } = premove;
+    setPremove(null);
+    postAction('move', promotion ? { from, to, promotion } : { from, to }).then(ok => { if (!ok) setOptimisticFen(null); });
+  }, [game, myRole, premove, optimisticFen]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat.length]);
@@ -324,9 +342,25 @@ export default function Game() {
     return !!game && !!myRole && game.status === 'active' && game.turn === myRole && optimisticFen === null;
   }
 
+  function canPremove() {
+    return !!game && !!myRole && game.status === 'active' && game.turn !== myRole && viewMoveIndex === null;
+  }
+
   function isOwnPiece(piece: string | null): boolean {
     if (!piece || !myRole) return false;
     return (myRole === 'white' && piece === piece.toUpperCase()) || (myRole === 'black' && piece === piece.toLowerCase());
+  }
+
+  function pieceAtFen(fen: string, sqName: string): string | null {
+    const board = parseFen(fen);
+    const file = FILES.indexOf(sqName[0]);
+    const rank = parseInt(sqName[1], 10) - 1;
+    return board[7 - rank][file];
+  }
+
+  function pieceAt(sqName: string): string | null {
+    if (!game) return null;
+    return pieceAtFen(game.fen, sqName);
   }
 
   function attemptMove(from: string, to: string) {
@@ -344,10 +378,40 @@ export default function Game() {
     postAction('move', { from, to }).then(ok => { if (!ok) setOptimisticFen(null); });
   }
 
+  function queuePremove(from: string, to: string) {
+    if (from === to || !game) return;
+    const baseFen = premove ? applyLocalMove(game.fen, premove.from, premove.to, premove.promotion) : game.fen;
+    const movingPiece = pieceAtFen(baseFen, from);
+    const isPawn = movingPiece && movingPiece.toUpperCase() === 'P';
+    const destRank = to[1];
+    setSelected(null);
+    if (isPawn && ((myRole === 'white' && destRank === '8') || (myRole === 'black' && destRank === '1'))) {
+      setPromoChoice({ from, to, isPremove: true });
+      return;
+    }
+    setPremove({ from, to });
+  }
+
   function handleSquareClick(sqName: string, piece: string | null) {
     if (!game || !myRole || game.status !== 'active') return;
     if (viewMoveIndex !== null) return;
-    if (!isMyTurn()) return;
+
+    if (!isMyTurn()) {
+      if (!canPremove()) return;
+      if (premove && (sqName === premove.from || sqName === premove.to)) {
+        setPremove(null);
+        setSelected(null);
+        return;
+      }
+      if (!selected) {
+        if (isOwnPiece(piece)) setSelected(sqName);
+        return;
+      }
+      if (selected === sqName) { setSelected(null); return; }
+      if (isOwnPiece(piece)) { setSelected(sqName); return; }
+      queuePremove(selected, sqName);
+      return;
+    }
 
     if (!selected) {
       if (isOwnPiece(piece)) {
@@ -365,27 +429,29 @@ export default function Game() {
 
   function handleDragStart(sqName: string, piece: string | null) {
     if (!game || !myRole || game.status !== 'active') return;
-    if (viewMoveIndex !== null || !isMyTurn()) return;
+    if (viewMoveIndex !== null) return;
+    if (!isMyTurn() && !canPremove()) return;
     if (!isOwnPiece(piece)) return;
     setSelected(sqName);
   }
 
   function handleDrop(sqName: string) {
-    if (!selected || !isMyTurn() || viewMoveIndex !== null) return;
+    if (!selected || viewMoveIndex !== null) return;
     if (selected === sqName) { setSelected(null); return; }
-    attemptMove(selected, sqName);
-  }
-
-  function pieceAt(sqName: string): string | null {
-    if (!game) return null;
-    const board = parseFen(game.fen);
-    const file = FILES.indexOf(sqName[0]);
-    const rank = parseInt(sqName[1], 10) - 1;
-    return board[7 - rank][file];
+    if (isMyTurn()) {
+      attemptMove(selected, sqName);
+    } else if (canPremove()) {
+      queuePremove(selected, sqName);
+    }
   }
 
   async function handlePromotion(piece: string) {
     if (!promoChoice) return;
+    if (promoChoice.isPremove) {
+      setPremove({ from: promoChoice.from, to: promoChoice.to, promotion: piece });
+      setPromoChoice(null);
+      return;
+    }
     setOptimisticFen(applyLocalMove(game!.fen, promoChoice.from, promoChoice.to, piece));
     const { from, to } = promoChoice;
     setPromoChoice(null);
@@ -450,12 +516,12 @@ export default function Game() {
   function goLast() { setViewMoveIndex(null); }
 
   const displayedFen = viewMoveIndex === null
-    ? (optimisticFen ?? game.fen)
+    ? (optimisticFen ?? (premove ? applyLocalMove(game.fen, premove.from, premove.to, premove.promotion) : game.fen))
     : viewMoveIndex === -1
       ? START_FEN
       : moves[viewMoveIndex]?.fen ?? game.fen;
   const board = parseFen(displayedFen);
-  const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(displayedFen, selected) : [];
+  const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(game.fen, selected) : [];
   const ranks = myRole === 'black' ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
   const filesOrdered = myRole === 'black' ? [...FILES].reverse() : FILES;
   const finished = game.status === 'finished';
@@ -583,6 +649,18 @@ export default function Game() {
                 </div>
               )}
 
+              {premove && !finished && (
+                <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Icon name="CornerDownRight" size={14} />
+                    Предход: {premove.from} → {premove.to}
+                  </span>
+                  <button onClick={() => setPremove(null)} className="text-xs font-semibold underline hover:no-underline">
+                    Отменить
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
                 {ranks.map((rIdx, rowPos) => (
                   filesOrdered.map((f, colPos) => {
@@ -593,8 +671,9 @@ export default function Game() {
                     const isSelected = selected === sqName;
                     const isLastCol = colPos === 7;
                     const isLastRow = rowPos === 7;
-                    const draggable = !!piece && isOwnPiece(piece) && isMyTurn() && viewMoveIndex === null;
+                    const draggable = !!piece && isOwnPiece(piece) && (isMyTurn() || canPremove()) && viewMoveIndex === null;
                     const isLegalTarget = legalTargets.includes(sqName);
+                    const isPremoveSquare = !!premove && (sqName === premove.from || sqName === premove.to);
                     return (
                       <button
                         key={sqName}
@@ -604,8 +683,10 @@ export default function Game() {
                         className={`relative aspect-square flex items-center justify-center text-3xl sm:text-4xl select-none
                           ${isLight ? 'bg-[#f0d9b5]' : 'bg-[#b58863]'}
                           ${isSelected ? 'ring-4 ring-secondary ring-inset' : ''}
-                          ${isMyTurn() ? 'cursor-pointer' : 'cursor-default'}`}
+                          ${isPremoveSquare ? 'ring-4 ring-amber-500 ring-inset' : ''}
+                          ${isMyTurn() || canPremove() ? 'cursor-pointer' : 'cursor-default'}`}
                       >
+                        {isPremoveSquare && <span className="absolute inset-0 bg-amber-400/30 pointer-events-none" />}
                         {isLastRow && (
                           <span className={`absolute left-0.5 bottom-0 text-[10px] sm:text-xs font-semibold select-none ${isLight ? 'text-[#b58863]' : 'text-[#f0d9b5]'}`}>
                             {f}

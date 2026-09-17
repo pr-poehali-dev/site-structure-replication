@@ -1,0 +1,1 @@
+UPDATE tournament_games SET draw_offered_by = NULL WHERE id = 77;

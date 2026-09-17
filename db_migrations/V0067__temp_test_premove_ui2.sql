@@ -1,0 +1,1 @@
+UPDATE tournament_games SET status = 'active', result = NULL, result_reason = NULL, fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', pgn = '', moves = '[]', turn = 'white', white_time_ms=580000, black_time_ms=580000, last_move_at = now() WHERE id = 77;
