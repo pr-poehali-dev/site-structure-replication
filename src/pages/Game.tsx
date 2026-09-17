@@ -5,7 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePusherChannel } from '@/hooks/usePusherChannel';
+import { usePusherChannel, usePusherConnectionStatus } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import { getLegalTargets, getCheckedKingSquare } from '@/lib/chessMoves';
@@ -248,6 +248,8 @@ export default function Game() {
     pusherCluster,
     handleGameChannelEvent,
   );
+
+  const connectionStatus = usePusherConnectionStatus(pusherKey, pusherCluster);
 
   // Проверяет, не назначена ли игроку новая партия следующего тура —
   // работает даже когда игрок находится на странице уже завершённой партии,
@@ -612,13 +614,28 @@ export default function Game() {
                 <Icon name="ArrowLeft" size={16} /> В турнирный зал
               </Link>
             )}
-            <button
-              onClick={toggleSound}
-              title={soundOn ? 'Выключить звук' : 'Включить звук'}
-              className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-primary transition-colors"
-            >
-              <Icon name={soundOn ? 'Volume2' : 'VolumeX'} size={17} />
-            </button>
+            <div className="flex items-center gap-3">
+              {connectionStatus !== 'connected' && (
+                <span
+                  title={connectionStatus === 'connecting' ? 'Подключение к серверу...' : 'Связь с сервером прервана — данные могут быть неактуальны'}
+                  className={`flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-1 ${
+                    connectionStatus === 'connecting'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                      : 'bg-red-50 text-red-600 border border-red-200'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${connectionStatus === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
+                  {connectionStatus === 'connecting' ? 'Подключение...' : 'Нет связи'}
+                </span>
+              )}
+              <button
+                onClick={toggleSound}
+                title={soundOn ? 'Выключить звук' : 'Включить звук'}
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-primary transition-colors"
+              >
+                <Icon name={soundOn ? 'Volume2' : 'VolumeX'} size={17} />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-stretch">

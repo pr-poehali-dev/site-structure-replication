@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Pusher, { Channel } from 'pusher-js';
 
 let pusherInstance: Pusher | null = null;
@@ -9,6 +9,36 @@ function getPusher(key: string, cluster: string): Pusher | null {
     pusherInstance = new Pusher(key, { cluster });
   }
   return pusherInstance;
+}
+
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+
+function mapPusherState(state: string): ConnectionStatus {
+  if (state === 'connected') return 'connected';
+  if (state === 'connecting' || state === 'initialized') return 'connecting';
+  return 'disconnected'; // unavailable, disconnected, failed
+}
+
+/**
+ * Следит за состоянием real-time соединения с Pusher — используется для индикатора
+ * связи на странице партии, чтобы игрок видел, если данные на экране могут отставать
+ * от реальных (например, соперник уже сходил, а обновление ещё не дошло).
+ */
+export function usePusherConnectionStatus(pusherKey: string | null, pusherCluster: string | null): ConnectionStatus {
+  const [status, setStatus] = useState<ConnectionStatus>('connecting');
+
+  useEffect(() => {
+    if (!pusherKey) return;
+    const pusher = getPusher(pusherKey, pusherCluster || 'eu');
+    if (!pusher) return;
+
+    setStatus(mapPusherState(pusher.connection.state));
+    const handler = () => setStatus(mapPusherState(pusher.connection.state));
+    pusher.connection.bind('state_change', handler);
+    return () => { pusher.connection.unbind('state_change', handler); };
+  }, [pusherKey, pusherCluster]);
+
+  return status;
 }
 
 /**
