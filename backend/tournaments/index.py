@@ -5,6 +5,10 @@ import uuid
 import psycopg2
 import boto3
 
+from swiss import assign_places, update_buchholz
+from rating import apply_rating_changes
+from pusher_client import trigger
+
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
 
@@ -18,6 +22,40 @@ def get_s3():
 
 def cdn_url(key):
     return f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
+def sync_finished_tournaments(cur):
+    """Подстраховка: если последний раунд турнира со статусом 'active' уже полностью
+    доигран (все партии завершены), но никто не зашёл в турнирный зал после этого —
+    hall_status так и остаётся 'active'. Здесь мы находим такие турниры и переводим их
+    в 'finished' с расстановкой итоговых мест и пересчётом рейтинга — так же, как это
+    делает турнирный зал (tournament-hall/index.py maybe_advance) и chess-game
+    (check_round_completion) сразу по завершении последней партии."""
+    cur.execute("SELECT id, title, rounds_count, rating_type FROM tournaments WHERE hall_status = 'active'")
+    active_tournaments = cur.fetchall()
+    for tournament_id, title, rounds_count, rating_type in active_tournaments:
+        cur.execute(
+            "SELECT id, round_number, status FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
+            (tournament_id,)
+        )
+        row = cur.fetchone()
+        if not row:
+            continue
+        round_id, round_number, status = row
+        if round_number < rounds_count:
+            continue
+        cur.execute("SELECT COUNT(*) FROM tournament_games WHERE round_id = %s", (round_id,))
+        if cur.fetchone()[0] == 0:
+            continue
+        cur.execute("SELECT COUNT(*) FROM tournament_games WHERE round_id = %s AND status != 'finished'", (round_id,))
+        if cur.fetchone()[0] > 0:
+            continue
+        if status != 'completed':
+            cur.execute("UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s", (round_id,))
+        update_buchholz(cur, tournament_id)
+        assign_places(cur, tournament_id)
+        apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
+        cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament_id,))
+        trigger(f"tournament-{tournament_id}", 'finished', {})
 
 def handler(event: dict, context) -> dict:
     """Управление турнирами: создание, получение списка, удаление, загрузка файлов (диплом, положение)"""
@@ -34,6 +72,8 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
 
     if method == 'GET':
+        sync_finished_tournaments(cur)
+        conn.commit()
         cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
