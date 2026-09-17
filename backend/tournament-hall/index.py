@@ -369,7 +369,9 @@ def handler(event: dict, context) -> dict:
                 (tournament_id, user_id, app_id, fio, player_rating)
             )
 
-        cur.execute("UPDATE tournaments SET hall_status = 'active' WHERE id = %s", (tournament_id,))
+        # Приём заявок автоматически закрывается при старте турнира, если организатор
+        # не закрыл его вручную заранее — после старта подать заявку уже бессмысленно.
+        cur.execute("UPDATE tournaments SET hall_status = 'active', status = 'closed' WHERE id = %s", (tournament_id,))
         conn.commit()
         tournament = get_tournament(cur, tournament_id)
         round_id = start_next_round(cur, tournament, 1)
