@@ -753,7 +753,7 @@ export default function Game() {
                               e.dataTransfer.effectAllowed = 'move';
                             }}
                             onDragEnd={() => setSelected(null)}
-                            className={`w-[92%] h-[92%] select-none ${draggable ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
+                            className={`w-[102%] h-[102%] select-none ${draggable ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
                           />
                         )}
                       </button>
