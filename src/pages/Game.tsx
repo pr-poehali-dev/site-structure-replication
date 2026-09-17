@@ -770,13 +770,15 @@ export default function Game() {
                         <Icon name="Clock" size={14} /> Ничья предложена, ждём ответа
                       </div>
                     ) : (
-                      <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
-                        <Icon name="Handshake" size={15} className="mr-1" /> Ничья
-                      </Button>
+                      <>
+                        <Button variant="outline" className="flex-1" onClick={() => postAction('offer_draw')}>
+                          <Icon name="Handshake" size={15} className="mr-1" /> Ничья
+                        </Button>
+                        <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
+                          <Icon name="Flag" size={15} className="mr-1" /> Сдаться
+                        </Button>
+                      </>
                     )}
-                    <Button variant="outline" className="flex-1 text-red-500 border-red-200 hover:bg-red-50" onClick={() => { if (confirm('Сдать партию?')) postAction('resign'); }}>
-                      <Icon name="Flag" size={15} className="mr-1" /> Сдаться
-                    </Button>
                   </div>
                 )}
               </div>
