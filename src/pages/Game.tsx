@@ -80,6 +80,23 @@ function parseFen(fen: string): (string | null)[][] {
   });
 }
 
+// Возвращает клетки, на которых доска отличается между двумя позициями —
+// это клетки последнего хода (откуда ушла и куда пришла фигура; при рокировке
+// и взятии на проходе таких клеток может быть больше двух).
+function diffSquares(prevFen: string, currFen: string): string[] {
+  const prevBoard = parseFen(prevFen);
+  const currBoard = parseFen(currFen);
+  const squares: string[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      if (prevBoard[r]?.[f] !== currBoard[r]?.[f]) {
+        squares.push(`${FILES[f]}${8 - r}`);
+      }
+    }
+  }
+  return squares;
+}
+
 function applyLocalMove(fen: string, from: string, to: string, promotion?: string): string {
   const parts = fen.split(' ');
   const rows = parts[0].split('/');
@@ -523,6 +540,20 @@ export default function Game() {
   const board = parseFen(displayedFen);
   const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(game.fen, selected) : [];
   const checkedKingSquare = getCheckedKingSquare(displayedFen);
+
+  // Клетки последнего сделанного хода (откуда/куда) — подсвечиваются на доске,
+  // чтобы было проще следить за партией. При просмотре истории показывает
+  // клетки просматриваемого хода, иначе — последнего реального хода партии.
+  let lastMoveSquares: string[] = [];
+  if (viewMoveIndex === null) {
+    if (moves.length > 0) {
+      const prevFen = moves.length > 1 ? moves[moves.length - 2].fen : START_FEN;
+      lastMoveSquares = diffSquares(prevFen, moves[moves.length - 1].fen);
+    }
+  } else if (viewMoveIndex >= 0) {
+    const prevFen = viewMoveIndex === 0 ? START_FEN : moves[viewMoveIndex - 1].fen;
+    lastMoveSquares = diffSquares(prevFen, moves[viewMoveIndex].fen);
+  }
   const ranks = myRole === 'black' ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
   const filesOrdered = myRole === 'black' ? [...FILES].reverse() : FILES;
   const finished = game.status === 'finished';
@@ -676,6 +707,7 @@ export default function Game() {
                     const isLegalTarget = legalTargets.includes(sqName);
                     const isPremoveSquare = !!premove && (sqName === premove.from || sqName === premove.to);
                     const isCheckedKing = checkedKingSquare === sqName;
+                    const isLastMoveSquare = lastMoveSquares.includes(sqName);
                     return (
                       <button
                         key={sqName}
@@ -689,6 +721,9 @@ export default function Game() {
                           ${isCheckedKing ? 'ring-4 ring-red-600 ring-inset' : ''}
                           ${isMyTurn() || canPremove() ? 'cursor-pointer' : 'cursor-default'}`}
                       >
+                        {isLastMoveSquare && !isSelected && !isPremoveSquare && (
+                          <span className="absolute inset-0 bg-yellow-300/40 pointer-events-none" />
+                        )}
                         {isPremoveSquare && <span className="absolute inset-0 bg-amber-400/30 pointer-events-none" />}
                         {isCheckedKing && <span className="absolute inset-0 bg-red-500/25 pointer-events-none" />}
                         {isLastRow && (
