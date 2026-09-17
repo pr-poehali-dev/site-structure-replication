@@ -216,11 +216,37 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [fetchGame]);
 
+  // Данные хода приходят прямо в push-событии (см. game_update_payload на бэкенде) —
+  // применяем их сразу, без отдельного HTTP-запроса за состоянием партии. Это убирает
+  // лишний круг задержки, который был особенно заметен в быстрых партиях. На случай
+  // неполного/устаревшего payload (старая версия бэкенда, обрыв соединения) падаем
+  // обратно на полный fetchGame().
+  const handleGameChannelEvent = useCallback((event: string, data: unknown) => {
+    if (event === 'update' && data && typeof data === 'object' && 'fen' in data) {
+      const upd = data as GameData;
+      setGame(prev => (prev ? { ...prev, ...upd } : prev));
+      setOptimisticFen(null);
+      setLiveWhiteMs(upd.white_time_ms);
+      setLiveBlackMs(upd.black_time_ms);
+      // Событие приходит только когда партия уже началась/изменилась — льготный
+      // период на первый ход к этому моменту всегда неактуален.
+      setFirstMoveGraceMs(null);
+      setViewMoveIndex(prev => (prev !== null && upd.moves && prev >= upd.moves.length ? null : prev));
+      return;
+    }
+    if (event === 'chat' && data && typeof data === 'object' && 'message' in data) {
+      const msg = data as { message: string; fio: string; player_id: number | null };
+      setChat(prev => [...prev, { message: msg.message, fio: msg.fio, player_id: msg.player_id, created_at: new Date().toISOString() }]);
+      return;
+    }
+    fetchGame();
+  }, [fetchGame]);
+
   usePusherChannel(
     gameId ? `game-${gameId}` : null,
     pusherKey,
     pusherCluster,
-    useCallback(() => { fetchGame(); }, [fetchGame]),
+    handleGameChannelEvent,
   );
 
   // Проверяет, не назначена ли игроку новая партия следующего тура —

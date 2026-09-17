@@ -5,7 +5,7 @@ from datetime import datetime
 import psycopg2
 
 from chess_rules import Board
-from pusher_client import trigger
+from pusher_client import trigger, trigger_async
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
 
@@ -43,8 +43,42 @@ def replay_moves_from_pgn(pgn):
     return result
 
 
+_conn = None
+
+
 def get_conn():
-    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    """Переиспользует соединение с БД между вызовами функции на одном "тёплом" контейнере —
+    установка нового TCP+TLS соединения с Postgres при каждом ходе давала заметную задержку
+    в быстрых партиях. Если соединение закрыто/протухло (например, после холодного старта
+    или долгого простоя), открываем новое."""
+    global _conn
+    if _conn is not None:
+        try:
+            if _conn.closed == 0:
+                with _conn.cursor() as probe:
+                    probe.execute("SELECT 1")
+                return _conn
+        except Exception:
+            pass
+        try:
+            _conn.close()
+        except Exception:
+            pass
+        _conn = None
+    _conn = psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    return _conn
+
+
+def release_conn(conn):
+    """Вызывается вместо conn.close() в конце обработки запроса. Соединение НЕ закрывается —
+    оно переиспользуется между вызовами (см. get_conn). Откат неявной транзакции гарантирует
+    чистое состояние для следующего запроса независимо от того, был вызван conn.commit() на
+    этом пути (rollback после commit — no-op) или нет (ранний выход по ошибке без записи)."""
+    global _conn
+    try:
+        conn.rollback()
+    except Exception:
+        _conn = None
 
 
 def cors_headers():
@@ -192,6 +226,25 @@ def check_round_completion(cur, tournament_id, round_id):
         trigger(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})
 
 
+def game_update_payload(game, white_ms, black_ms):
+    """Собирает тот же набор полей, что отдаёт GET, чтобы отправить его прямо в push-событие
+    'update' — тогда соперник применяет новую позицию сразу по событию, без отдельного
+    HTTP-запроса за состоянием партии (тот самый лишний round-trip, что давал заметную
+    задержку в быстрых партиях)."""
+    draw_offered_by_role = None
+    if game['draw_offered_by']:
+        if game['draw_offered_by'] == game['white_player_id']:
+            draw_offered_by_role = 'white'
+        elif game['draw_offered_by'] == game['black_player_id']:
+            draw_offered_by_role = 'black'
+    return {
+        'id': game['id'], 'status': game['status'], 'result': game['result'], 'result_reason': game['result_reason'],
+        'fen': game['fen'], 'pgn': game['pgn'], 'turn': game['turn'], 'moves': game['moves'],
+        'white_time_ms': white_ms, 'black_time_ms': black_ms,
+        'draw_offered_by': game['draw_offered_by'], 'draw_offered_by_role': draw_offered_by_role,
+    }
+
+
 def player_role(game, user_id):
     if user_id and game['white_user_id'] == user_id:
         return 'white'
@@ -219,11 +272,11 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         game_id = params.get('game_id')
         if not game_id:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'game_id required'})}
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
 
         white_ms, black_ms = compute_live_times(game)
@@ -236,8 +289,8 @@ def handler(event: dict, context) -> dict:
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger(f'game-{game_id}', 'update', {})
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
         elif game['status'] == 'active' and (white_ms <= 0 or black_ms <= 0):
             loser_color = 'white' if white_ms <= 0 else 'black'
             winner_id = game['black_player_id'] if loser_color == 'white' else game['white_player_id']
@@ -249,8 +302,8 @@ def handler(event: dict, context) -> dict:
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger(f'game-{game_id}', 'update', {})
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
 
         cur.execute(
             "SELECT gm.message, gm.created_at, gm.player_id, COALESCE(tp.fio, 'Игрок') FROM game_chat_messages gm LEFT JOIN tournament_players tp ON tp.id = gm.player_id WHERE gm.game_id = %s ORDER BY gm.id ASC",
@@ -258,7 +311,7 @@ def handler(event: dict, context) -> dict:
         )
         chat = [{'message': r[0], 'created_at': str(r[1]), 'player_id': r[2], 'fio': r[3]} for r in cur.fetchall()]
 
-        conn.close()
+        release_conn(conn)
         role = player_role(game, user_id)
         draw_offered_by_role = None
         if game['draw_offered_by']:
@@ -287,17 +340,17 @@ def handler(event: dict, context) -> dict:
         game_id = body.get('game_id')
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         role = player_role(game, user_id)
         if not role:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы не участник этой партии'})}
         if game['status'] != 'active':
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия завершена'})}
         if role != game['turn']:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Сейчас не ваш ход'})}
 
         board = Board(game['fen'])
@@ -306,7 +359,7 @@ def handler(event: dict, context) -> dict:
         promotion = body.get('promotion')
         mv = board.find_move(from_sq, to_sq, promotion)
         if not mv:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недопустимый ход'})}
         san = board.move_to_san(mv)
         board.apply_move(mv)
@@ -335,39 +388,52 @@ def handler(event: dict, context) -> dict:
             (new_fen, new_pgn, new_turn, white_ms, black_ms, json.dumps(new_moves), game_id)
         )
 
+        # Обновляем локальную копию партии теми же значениями, что уже записаны в БД —
+        # чтобы собрать payload для push-события без лишнего SELECT обратно к базе.
+        game['fen'], game['pgn'], game['turn'] = new_fen, new_pgn, new_turn
+        game['white_time_ms'], game['black_time_ms'], game['moves'] = white_ms, black_ms, new_moves
+        game['draw_offered_by'] = None
+
         game_finished = False
         if board.is_checkmate():
             winner_id = game['white_player_id'] if role == 'white' else game['black_player_id']
             loser_id = game['black_player_id'] if role == 'white' else game['white_player_id']
             result = '1-0' if role == 'white' else '0-1'
             finish_game(cur, game_id, result, CHECKMATE, winner_id, loser_id)
+            game['status'], game['result'], game['result_reason'] = 'finished', result, CHECKMATE
             game_finished = True
         elif board.is_stalemate():
             finish_game(cur, game_id, '1/2-1/2', STALEMATE)
+            game['status'], game['result'], game['result_reason'] = 'finished', '1/2-1/2', STALEMATE
             game_finished = True
         elif board.is_insufficient_material():
             finish_game(cur, game_id, '1/2-1/2', INSUFFICIENT)
+            game['status'], game['result'], game['result_reason'] = 'finished', '1/2-1/2', INSUFFICIENT
             game_finished = True
 
         if game_finished:
             check_round_completion(cur, game['tournament_id'], game['round_id'])
 
         conn.commit()
-        conn.close()
-        trigger(f'game-{game_id}', 'update', {})
+        release_conn(conn)
+        # trigger_async — не ждём сетевой round-trip до Pusher перед ответом ходившему игроку:
+        # ход уже записан в БД, поэтому подтверждение "ok" можно отдавать немедленно, а
+        # уведомление сопернику уходит фоновым потоком. Полезная нагрузка (fen/ход/часы) в
+        # самом событии избавляет соперника от повторного HTTP-запроса за состоянием партии.
+        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         if game_finished:
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'resign':
         game_id = body.get('game_id')
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         role = player_role(game, user_id)
         if not role or game['status'] != 'active':
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Невозможно сдаться'})}
         winner_id = game['black_player_id'] if role == 'white' else game['white_player_id']
         loser_id = game['white_player_id'] if role == 'white' else game['black_player_id']
@@ -375,79 +441,91 @@ def handler(event: dict, context) -> dict:
         finish_game(cur, game_id, result, RESIGNATION, winner_id, loser_id)
         check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
-        conn.close()
-        trigger(f'game-{game_id}', 'update', {})
-        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        release_conn(conn)
+        white_ms, black_ms = compute_live_times(game)
+        game['status'], game['result'], game['result_reason'] = 'finished', result, RESIGNATION
+        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'offer_draw':
         game_id = body.get('game_id')
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         role = player_role(game, user_id)
         if not role or game['status'] != 'active':
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Невозможно предложить ничью'})}
         player_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         cur.execute("UPDATE tournament_games SET draw_offered_by = %s WHERE id = %s", (player_id, game_id))
         conn.commit()
-        conn.close()
-        trigger(f'game-{game_id}', 'update', {})
+        release_conn(conn)
+        white_ms, black_ms = compute_live_times(game)
+        game['draw_offered_by'] = player_id
+        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'accept_draw':
         game_id = body.get('game_id')
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         role = player_role(game, user_id)
         if not role or game['status'] != 'active' or not game['draw_offered_by']:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нет предложения ничьи'})}
         my_player_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         if game['draw_offered_by'] == my_player_id:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нельзя принять собственное предложение'})}
         finish_game(cur, game_id, '1/2-1/2', DRAW_AGREED)
         check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
-        conn.close()
-        trigger(f'game-{game_id}', 'update', {})
-        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        release_conn(conn)
+        white_ms, black_ms = compute_live_times(game)
+        game['status'], game['result'], game['result_reason'], game['draw_offered_by'] = 'finished', '1/2-1/2', DRAW_AGREED, None
+        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'decline_draw':
         game_id = body.get('game_id')
+        game = load_game(cur, game_id)
+        if not game:
+            release_conn(conn)
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         cur.execute("UPDATE tournament_games SET draw_offered_by = NULL WHERE id = %s", (game_id,))
         conn.commit()
-        conn.close()
-        trigger(f'game-{game_id}', 'update', {})
+        release_conn(conn)
+        white_ms, black_ms = compute_live_times(game)
+        game['draw_offered_by'] = None
+        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'chat':
         game_id = body.get('game_id')
         message = (body.get('message') or '').strip()[:500]
         if not message:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пустое сообщение'})}
         game = load_game(cur, game_id)
         if not game:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         role = player_role(game, user_id)
         if not role:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы не участник этой партии'})}
         player_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         cur.execute("INSERT INTO game_chat_messages (game_id, player_id, message) VALUES (%s, %s, %s)", (game_id, player_id, message))
         conn.commit()
-        conn.close()
+        release_conn(conn)
         fio = game['white_fio'] if role == 'white' else game['black_fio']
-        trigger(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})
+        trigger_async(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
-    conn.close()
+    release_conn(conn)
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}
