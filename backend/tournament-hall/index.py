@@ -112,7 +112,14 @@ def start_next_round(cur, tournament, round_number):
 
 
 def maybe_advance(cur, tournament):
-    """Возвращает ISO-время старта следующего тура, если сейчас идёт перерыв между турами."""
+    """Возвращает ISO-время старта следующего тура, если сейчас идёт перерыв между турами.
+
+    Турнирный зал опрашивается одновременно всеми участниками (обычный поллинг + push-события),
+    поэтому без блокировки несколько параллельных запросов могут одновременно увидеть "все партии
+    тура завершены" и попытаться закрыть тур/создать следующий дважды, либо закрыть тур раньше,
+    чем зафиксировались (закоммитились) партии, только что вставленные другим запросом. Advisory-
+    лок на id турнира сериализует эти проверки между собой и с check_round_completion в chess-game."""
+    cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament['id'],))
     cur.execute(
         "SELECT id, round_number, status, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
         (tournament['id'],)

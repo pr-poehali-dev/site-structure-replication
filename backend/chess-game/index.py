@@ -146,7 +146,13 @@ def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_playe
 def check_round_completion(cur, tournament_id, round_id):
     """Если только что завершённая партия была последней активной в туре — закрывает тур.
     Если это был последний тур турнира — сразу проставляет итоговые места (медали)
-    и пересчитывает рейтинг участников, как это делает турнирный зал по завершении тура."""
+    и пересчитывает рейтинг участников, как это делает турнирный зал по завершении тура.
+
+    Advisory-лок на id турнира сериализует эту проверку с одноимённой в tournament-hall
+    (maybe_advance) — без него параллельные запросы (игрок доигрывает партию + кто-то
+    одновременно открывает турнирный зал) могли закрыть тур или создать следующий раньше,
+    чем реально доиграны все партии текущего тура."""
+    cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament_id,))
     cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s FOR UPDATE", (round_id,))
     row = cur.fetchone()
     if not row:

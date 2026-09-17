@@ -33,6 +33,10 @@ def sync_finished_tournaments(cur):
     cur.execute("SELECT id, title, rounds_count, rating_type FROM tournaments WHERE hall_status = 'active'")
     active_tournaments = cur.fetchall()
     for tournament_id, title, rounds_count, rating_type in active_tournaments:
+        # Advisory-лок на id турнира сериализует эту проверку с аналогичными в tournament-hall
+        # (maybe_advance) и chess-game (check_round_completion) — иначе можно закрыть тур
+        # раньше, чем реально доиграны все его партии.
+        cur.execute("SELECT pg_advisory_xact_lock(%s)", (tournament_id,))
         cur.execute(
             "SELECT id, round_number, status FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
             (tournament_id,)
