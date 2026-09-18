@@ -21,6 +21,7 @@ import PromoCodesSection from './admin/PromoCodesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import FsrRatingsSection from './admin/FsrRatingsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
+import ResetDemoGameButton from './admin/ResetDemoGameButton';
 
 export default function Admin() {
   const [password, setPassword] = useState('');
@@ -255,6 +256,7 @@ export default function Admin() {
           <span className="font-bold text-lg">Мир шахмат — Админка</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <ResetDemoGameButton password={password} />
           <PushNotificationsButton password={password} />
           <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 bg-transparent"
             onClick={() => { sessionStorage.removeItem('admin_password'); setAuthed(false); setPassword(''); }}>

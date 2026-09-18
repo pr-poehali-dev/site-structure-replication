@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, formatDate } from './utils';
+
+// Служебная статичная партия для быстрой проверки игры — создана админом между
+// тестовыми аккаунтами t1 и t2. Ссылка видна только этим двум аккаунтам.
+const DEMO_GAME_ID = 124;
+const DEMO_GAME_USER_IDS = [7, 8];
 
 export default function ProfileSection() {
   const { user, updateProfile } = useAuth();
@@ -57,21 +63,36 @@ export default function ProfileSection() {
   }
 
   return !editing ? (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-heading font-bold text-lg text-primary">Данные профиля</h3>
-        <Button variant="outline" size="sm" onClick={startEditing}>
-          <Icon name="Pencil" size={14} className="mr-2" /> Редактировать
-        </Button>
+    <div className="flex flex-col gap-4">
+      {DEMO_GAME_USER_IDS.includes(user.id) && (
+        <Link
+          to={`/game/${DEMO_GAME_ID}`}
+          className="flex items-center gap-3 bg-secondary/10 border border-secondary/30 rounded-2xl px-5 py-3.5 hover:bg-secondary/20 transition-colors"
+        >
+          <Icon name="Swords" size={20} className="text-secondary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-primary text-sm">Тестовая партия</p>
+            <p className="text-xs text-gray-500">Постоянная ссылка для проверки игры</p>
+          </div>
+          <Icon name="ChevronRight" size={18} className="text-gray-400 shrink-0" />
+        </Link>
+      )}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-heading font-bold text-lg text-primary">Данные профиля</h3>
+          <Button variant="outline" size="sm" onClick={startEditing}>
+            <Icon name="Pencil" size={14} className="mr-2" /> Редактировать
+          </Button>
+        </div>
+        <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div><dt className="text-gray-400">ID ФШР</dt><dd className="font-medium text-gray-800 mt-0.5">{user.fsr_id || '—'}</dd></div>
+          <div><dt className="text-gray-400">Дата рождения</dt><dd className="font-medium text-gray-800 mt-0.5">{user.birth_date ? formatDate(user.birth_date) : '—'}</dd></div>
+          <div><dt className="text-gray-400">ФИО тренера</dt><dd className="font-medium text-gray-800 mt-0.5">{user.coach_fio || '—'}</dd></div>
+          <div><dt className="text-gray-400">Телефон</dt><dd className="font-medium text-gray-800 mt-0.5">{user.phone || '—'}</dd></div>
+          <div><dt className="text-gray-400">Учреждение</dt><dd className="font-medium text-gray-800 mt-0.5">{user.institution || '—'}</dd></div>
+          <div><dt className="text-gray-400">Страна / Город</dt><dd className="font-medium text-gray-800 mt-0.5">{user.country_city || '—'}</dd></div>
+        </dl>
       </div>
-      <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-        <div><dt className="text-gray-400">ID ФШР</dt><dd className="font-medium text-gray-800 mt-0.5">{user.fsr_id || '—'}</dd></div>
-        <div><dt className="text-gray-400">Дата рождения</dt><dd className="font-medium text-gray-800 mt-0.5">{user.birth_date ? formatDate(user.birth_date) : '—'}</dd></div>
-        <div><dt className="text-gray-400">ФИО тренера</dt><dd className="font-medium text-gray-800 mt-0.5">{user.coach_fio || '—'}</dd></div>
-        <div><dt className="text-gray-400">Телефон</dt><dd className="font-medium text-gray-800 mt-0.5">{user.phone || '—'}</dd></div>
-        <div><dt className="text-gray-400">Учреждение</dt><dd className="font-medium text-gray-800 mt-0.5">{user.institution || '—'}</dd></div>
-        <div><dt className="text-gray-400">Страна / Город</dt><dd className="font-medium text-gray-800 mt-0.5">{user.country_city || '—'}</dd></div>
-      </dl>
     </div>
   ) : (
     <form onSubmit={handleSaveProfile} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3">

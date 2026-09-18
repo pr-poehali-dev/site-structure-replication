@@ -4,7 +4,7 @@ from datetime import datetime
 
 import psycopg2
 
-from chess_rules import Board
+from chess_rules import Board, START_FEN
 from pusher_client import trigger, trigger_async
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
@@ -85,7 +85,7 @@ def cors_headers():
     return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-Admin-Password',
     }
 
 
@@ -264,10 +264,45 @@ def handler(event: dict, context) -> dict:
     body = json.loads(event.get('body') or '{}')
     action = body.get('_action', '')
     auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token', '')
+    admin_password = headers.get('X-Admin-Password', '')
+    is_admin = bool(admin_password) and admin_password == os.environ.get('ADMIN_PASSWORD', '')
 
     conn = get_conn()
     cur = conn.cursor()
     user_id = get_user_id_by_token(cur, auth_token)
+
+    if method == 'POST' and action == 'admin_reset':
+        # Сброс служебной статичной партии (для быстрой проверки игры админом) к начальной
+        # позиции — сохраняет игроков и возвращает часы на полный контроль времени. base_ms
+        # приходит из админки (контроль партии известен заранее); если не передан — берём
+        # больший из текущих остатков как разумный запасной вариант.
+        if not is_admin:
+            release_conn(conn)
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        game_id = body.get('game_id')
+        game = load_game(cur, game_id)
+        if not game:
+            release_conn(conn)
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
+        base_ms = body.get('base_ms') or max(game['white_time_ms'], game['black_time_ms'], 1)
+        cur.execute(
+            """UPDATE tournament_games SET
+                   fen = %s, pgn = '', turn = 'white', status = 'active', result = NULL, result_reason = NULL,
+                   white_time_ms = %s, black_time_ms = %s, last_move_at = now(), draw_offered_by = NULL,
+                   moves = '[]'::jsonb, started_at = now(), finished_at = NULL
+               WHERE id = %s""",
+            (START_FEN, base_ms, base_ms, game_id)
+        )
+        cur.execute("DELETE FROM game_chat_messages WHERE game_id = %s", (game_id,))
+        conn.commit()
+        release_conn(conn)
+        trigger_async(f'game-{game_id}', 'update', {
+            'id': int(game_id), 'status': 'active', 'result': None, 'result_reason': None,
+            'fen': START_FEN, 'pgn': '', 'turn': 'white', 'moves': [],
+            'white_time_ms': base_ms, 'black_time_ms': base_ms,
+            'draw_offered_by': None, 'draw_offered_by_role': None,
+        })
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'GET':
         game_id = params.get('game_id')
