@@ -754,7 +754,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
                   {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
                 </span>
               </div>
@@ -877,7 +877,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
                   {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
                 </span>
               </div>
@@ -899,7 +899,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
                   {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
                 </span>
               </div>
@@ -1027,7 +1027,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-xl font-bold tabular-nums shrink-0">
+                <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
                   {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
                 </span>
               </div>
