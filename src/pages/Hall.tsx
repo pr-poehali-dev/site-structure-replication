@@ -5,7 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePusherChannel } from '@/hooks/usePusherChannel';
+import { usePusherChannel, usePusherConnectionStatus, ConnectionStatus } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import MiniChessBoard from '@/components/MiniChessBoard';
@@ -227,6 +227,35 @@ export default function Hall() {
     pusherCluster,
     useCallback(() => { fetchHall(); }, [fetchHall]),
   );
+
+  const connectionStatus = usePusherConnectionStatus(pusherKey, pusherCluster);
+
+  // Push-события Pusher не хранятся и не повторяются: если во время короткого обрыва
+  // связи (мобильный интернет моргнул, вкладка была свёрнута) игроку назначили партию —
+  // уведомление об этом теряется безвозвратно, и он узнаёт о новой партии только на
+  // следующем резервном опросе (раз в 20 секунд). Поэтому при восстановлении соединения
+  // и при возврате на вкладку сразу принудительно подтягиваем актуальные данные зала,
+  // не дожидаясь таймера (см. такое же решение в Game.tsx).
+  const prevConnectionStatusRef = useRef<ConnectionStatus>(connectionStatus);
+  useEffect(() => {
+    const wasDisconnected = prevConnectionStatusRef.current !== 'connected';
+    prevConnectionStatusRef.current = connectionStatus;
+    if (connectionStatus === 'connected' && wasDisconnected) {
+      fetchHall();
+    }
+  }, [connectionStatus, fetchHall]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchHall();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [fetchHall]);
 
   useEffect(() => {
     if (redirectingGameId === null) return;
