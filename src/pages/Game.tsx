@@ -171,10 +171,43 @@ export default function Game() {
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useState(true);
+  const [boardHeight, setBoardHeight] = useState<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const boardResizeObserverRef = useRef<ResizeObserver | null>(null);
   const knownGameIdRef = useRef<number | null>(null);
   const lastMoveCountRef = useRef<number | null>(null);
   const soundedFinishRef = useRef(false);
+
+  // Боковые колонки (слева — инфо о партии и чат, справа — часы/ходы/кнопки) должны
+  // по высоте точно совпадать с доской, а не быть зафиксированы на глаз — иначе при
+  // сжатии доски на узких экранах они вылезают за её нижнюю границу. Измеряем реальную
+  // высоту доски и синхронизируем с ней высоту колонок через inline style. Применяется
+  // только на десктопе (lg: 3 колонки рядом) — на мобильных колонки идут друг под другом
+  // и должны расти свободно.
+  //
+  // Доска рендерится только когда game уже загружен (после ранних return'ов на loading/
+  // !user/!game выше), поэтому обычный useEffect(..., []) с обычным ref не сработает —
+  // он выполняется один раз при монтировании компонента, когда ref ещё указывает на null
+  // (доски в DOM ещё нет). Callback-ref решает это: вызывается именно в момент, когда узел
+  // доски появляется в DOM (после того как game подгрузился), а также при размонтировании.
+  const boardWrapCallbackRef = useCallback((el: HTMLDivElement | null) => {
+    boardResizeObserverRef.current?.disconnect();
+    boardResizeObserverRef.current = null;
+    if (!el) return;
+    setBoardHeight(el.offsetHeight);
+    const observer = new ResizeObserver(() => setBoardHeight(el.offsetHeight));
+    observer.observe(el);
+    boardResizeObserverRef.current = observer;
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => { setSoundOn(isSoundEnabled()); }, []);
 
@@ -646,40 +679,44 @@ export default function Game() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-stretch">
-            {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат */}
-            <div className="order-3 lg:order-1 flex flex-col gap-4 min-h-0 lg:h-[560px]">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 shrink-0">
-                <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-start">
+            {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат — фиксированная высота, равная доске,
+                не должна вылезать за её нижнюю границу. Скролл — только внутри чата. */}
+            <div
+              className="order-3 lg:order-1 flex flex-col gap-3 min-h-0 overflow-hidden"
+              style={isDesktop && boardHeight ? { height: boardHeight } : undefined}
+            >
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 shrink-0">
+                <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-2">
                   <Icon name="Swords" size={16} className="text-secondary shrink-0" />
                   <span className="truncate">{game.tournament_title}</span>
                 </Link>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
-                    <PlayerAvatar fio={game.white_fio} avatarUrl={game.white_avatar_url} size={22} />
+                    <PlayerAvatar fio={game.white_fio} avatarUrl={game.white_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.white_fio) || '—'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
-                    <PlayerAvatar fio={game.black_fio} avatarUrl={game.black_avatar_url} size={22} />
+                    <PlayerAvatar fio={game.black_fio} avatarUrl={game.black_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
                   </div>
                 </div>
                 {finished ? (
-                  <p className="text-sm font-semibold text-primary bg-secondary/20 rounded-lg px-3 py-2 mt-3">
+                  <p className="text-sm font-semibold text-primary bg-secondary/20 rounded-lg px-3 py-1.5 mt-2">
                     {gameOutcomeText(game.result, game.result_reason)}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
                     {game.turn === 'white' ? 'Ход белых' : 'Ход чёрных'}
                   </p>
                 )}
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Чат</p>
-                <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col flex-1 min-h-0">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 shrink-0">Чат</p>
+                <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 min-h-0">
                   {chat.map((m, i) => (
                     <div key={i} className="text-sm">
                       <span className="font-medium text-primary">{shortFio(m.fio)}: </span>
@@ -690,7 +727,7 @@ export default function Game() {
                   <div ref={chatEndRef} />
                 </div>
                 {myRole && (
-                  <form onSubmit={handleSendChat} className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                  <form onSubmit={handleSendChat} className="flex gap-2 mt-2 pt-2 border-t border-gray-100 shrink-0">
                     <input
                       value={chatText}
                       onChange={e => setChatText(e.target.value)}
@@ -744,7 +781,7 @@ export default function Game() {
                 </div>
               )}
 
-              <div className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
+              <div ref={boardWrapCallbackRef} className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
                 {ranks.map((rIdx, rowPos) => (
                   filesOrdered.map((f, colPos) => {
                     const fIdx = FILES.indexOf(f);
@@ -847,8 +884,11 @@ export default function Game() {
             </div>
 
             {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
-            <div className="order-2 lg:order-3 flex flex-col gap-4 min-h-0 lg:h-[560px]">
-              {/* Часы соперника (на мобильных дублируются над доской, здесь скрыты) */}
+            <div
+              className="order-2 lg:order-3 flex flex-col gap-3 min-h-0 overflow-hidden"
+              style={isDesktop && boardHeight ? { height: boardHeight } : undefined}
+            >
+              {/* Часы соперника — верхняя граница правой колонки (на мобильных дублируются над доской, здесь скрыты) */}
               <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0 ring-1 ring-white/30" />
@@ -955,9 +995,28 @@ export default function Game() {
                     )}
                   </div>
                 )}
+
+                {/* Ошибка хода и итог партии — внутри карточки ходов, а не отдельными
+                    блоками снизу, чтобы общая высота колонки не "плыла" и не выходила
+                    за пределы доски. */}
+                {moveError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-3 py-2 flex items-center gap-2 shrink-0 mt-2">
+                    <Icon name="AlertCircle" size={14} /> {moveError}
+                  </div>
+                )}
+
+                {finished && (
+                  <div className="bg-secondary/10 border border-secondary/30 rounded-xl px-4 py-3 text-center shrink-0 mt-3">
+                    <p className="font-heading font-bold text-base text-primary mb-0.5">
+                      {RESULT_LABELS(game.result)}
+                    </p>
+                    <p className="text-xs text-gray-500">{RESULT_REASON_LABELS[game.result_reason || ''] || game.result_reason}</p>
+                  </div>
+                )}
               </div>
 
-              {/* Часы игрока (мои) — на мобильных дублируются под доской, здесь скрыты */}
+              {/* Часы игрока (мои) — нижняя граница правой колонки, совпадает с нижней
+                  границей доски. На мобильных дублируются под доской, здесь скрыты. */}
               <div className={`hidden lg:flex rounded-2xl shadow-sm border px-4 py-3 items-center justify-between shrink-0 ${game.turn === (myRole === 'black' ? 'black' : 'white') && !finished ? 'bg-primary border-primary text-primary-foreground' : 'bg-white border-gray-100 text-gray-800'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
                   <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
@@ -972,21 +1031,6 @@ export default function Game() {
                   {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
                 </span>
               </div>
-
-              {moveError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2 flex items-center gap-2 shrink-0">
-                  <Icon name="AlertCircle" size={14} /> {moveError}
-                </div>
-              )}
-
-              {finished && (
-                <div className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-center shadow-sm shrink-0">
-                  <p className="font-heading font-bold text-lg text-primary mb-1">
-                    {RESULT_LABELS(game.result)}
-                  </p>
-                  <p className="text-sm text-gray-500">{RESULT_REASON_LABELS[game.result_reason || ''] || game.result_reason}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
