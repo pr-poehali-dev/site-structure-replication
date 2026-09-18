@@ -5,7 +5,7 @@ from datetime import datetime
 import psycopg2
 
 from chess_rules import Board, START_FEN
-from pusher_client import trigger, trigger_async
+from pusher_client import trigger
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
 
@@ -296,7 +296,7 @@ def handler(event: dict, context) -> dict:
         cur.execute("DELETE FROM game_chat_messages WHERE game_id = %s", (game_id,))
         conn.commit()
         release_conn(conn)
-        trigger_async(f'game-{game_id}', 'update', {
+        trigger(f'game-{game_id}', 'update', {
             'id': int(game_id), 'status': 'active', 'result': None, 'result_reason': None,
             'fen': START_FEN, 'pgn': '', 'turn': 'white', 'moves': [],
             'white_time_ms': base_ms, 'black_time_ms': base_ms,
@@ -324,8 +324,8 @@ def handler(event: dict, context) -> dict:
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         elif game['status'] == 'active' and (white_ms <= 0 or black_ms <= 0):
             loser_color = 'white' if white_ms <= 0 else 'black'
             winner_id = game['black_player_id'] if loser_color == 'white' else game['white_player_id']
@@ -337,8 +337,8 @@ def handler(event: dict, context) -> dict:
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
 
         cur.execute(
             "SELECT gm.message, gm.created_at, gm.player_id, COALESCE(tp.fio, 'Игрок') FROM game_chat_messages gm LEFT JOIN tournament_players tp ON tp.id = gm.player_id WHERE gm.game_id = %s ORDER BY gm.id ASC",
@@ -451,13 +451,17 @@ def handler(event: dict, context) -> dict:
 
         conn.commit()
         release_conn(conn)
-        # trigger_async — не ждём сетевой round-trip до Pusher перед ответом ходившему игроку:
-        # ход уже записан в БД, поэтому подтверждение "ok" можно отдавать немедленно, а
-        # уведомление сопернику уходит фоновым потоком. Полезная нагрузка (fen/ход/часы) в
-        # самом событии избавляет соперника от повторного HTTP-запроса за состоянием партии.
-        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        # Синхронный trigger (дожидается ответа Pusher) — в serverless-окружении процесс
+        # может быть заморожен сразу после возврата HTTP-ответа, поэтому фоновый поток,
+        # запущенный перед return, не гарантированно успевает отправить запрос: событие
+        # могло уйти только при следующем "тёплом" вызове функции, из-за чего соперник
+        # получал уведомление о ходе с задержкой. Синхронная отправка добавляет ~100-200мс
+        # к ответу ходившему игроку, зато гарантирует мгновенную доставку сопернику.
+        # Полезная нагрузка (fen/ход/часы) в самом событии избавляет его от повторного
+        # HTTP-запроса за состоянием партии.
+        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         if game_finished:
-            trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'resign':
@@ -479,8 +483,8 @@ def handler(event: dict, context) -> dict:
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'] = 'finished', result, RESIGNATION
-        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-        trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'offer_draw':
@@ -499,7 +503,7 @@ def handler(event: dict, context) -> dict:
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['draw_offered_by'] = player_id
-        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'accept_draw':
@@ -522,8 +526,8 @@ def handler(event: dict, context) -> dict:
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'], game['draw_offered_by'] = 'finished', '1/2-1/2', DRAW_AGREED, None
-        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-        trigger_async(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'decline_draw':
@@ -537,7 +541,7 @@ def handler(event: dict, context) -> dict:
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['draw_offered_by'] = None
-        trigger_async(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'chat':
@@ -559,7 +563,7 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         release_conn(conn)
         fio = game['white_fio'] if role == 'white' else game['black_fio']
-        trigger_async(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})
+        trigger(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     release_conn(conn)
