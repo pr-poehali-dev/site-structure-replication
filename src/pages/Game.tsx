@@ -409,7 +409,12 @@ export default function Game() {
   }
 
   function attemptMove(from: string, to: string) {
-    if (from === to) return;
+    if (from === to || !game) return;
+    // Проверяем легальность ДО любого визуального изменения — фигура не должна даже на
+    // мгновение переместиться на клетку, куда ходить нельзя. Раньше ход сперва применялся
+    // локально (optimisticFen), и только после отказа сервера откатывался обратно, из-за
+    // чего невозможный ход был на экране доли секунды.
+    if (!getLegalTargets(game.fen, from).includes(to)) return;
     const movingPiece = pieceAt(from);
     const isPawn = movingPiece && movingPiece.toUpperCase() === 'P';
     const destRank = to[1];
@@ -418,7 +423,7 @@ export default function Game() {
       setSelected(null);
       return;
     }
-    setOptimisticFen(applyLocalMove(game!.fen, from, to));
+    setOptimisticFen(applyLocalMove(game.fen, from, to));
     setSelected(null);
     postAction('move', { from, to }).then(ok => { if (!ok) setOptimisticFen(null); });
   }
@@ -426,6 +431,9 @@ export default function Game() {
   function queuePremove(from: string, to: string) {
     if (from === to || !game) return;
     const baseFen = premove ? applyLocalMove(game.fen, premove.from, premove.to, premove.promotion) : game.fen;
+    // Та же проверка легальности для предхода: не даём поставить в очередь ход, который
+    // прямо сейчас (в текущей позиции до ответа соперника) заведомо невозможен для этой фигуры.
+    if (!getLegalTargets(baseFen, from).includes(to)) { setSelected(null); return; }
     const movingPiece = pieceAtFen(baseFen, from);
     const isPawn = movingPiece && movingPiece.toUpperCase() === 'P';
     const destRank = to[1];
