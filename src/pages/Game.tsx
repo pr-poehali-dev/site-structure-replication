@@ -5,7 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePusherChannel, usePusherConnectionStatus } from '@/hooks/usePusherChannel';
+import { usePusherChannel, usePusherConnectionStatus, ConnectionStatus } from '@/hooks/usePusherChannel';
 import { shortFio } from '@/lib/fio';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import { getLegalTargets, getCheckedKingSquare } from '@/lib/chessMoves';
@@ -283,6 +283,34 @@ export default function Game() {
   );
 
   const connectionStatus = usePusherConnectionStatus(pusherKey, pusherCluster);
+
+  // Push-события Pusher не хранятся и не повторяются: если во время короткого обрыва
+  // связи (мобильный интернет моргнул, вкладка была свёрнута) соперник сделал ход —
+  // это уведомление теряется безвозвратно, и игрок узнаёт о нём только на следующем
+  // резервном опросе (раз в 15 секунд). В длинной партии это и давало ощутимые
+  // задержки хода и рассинхрон часов. Поэтому при восстановлении соединения (переход
+  // в 'connected' после 'disconnected'/'connecting') и при возврате на вкладку сразу
+  // принудительно подтягиваем актуальное состояние партии, не дожидаясь таймера.
+  const prevConnectionStatusRef = useRef<ConnectionStatus>(connectionStatus);
+  useEffect(() => {
+    const wasDisconnected = prevConnectionStatusRef.current !== 'connected';
+    prevConnectionStatusRef.current = connectionStatus;
+    if (connectionStatus === 'connected' && wasDisconnected) {
+      fetchGame();
+    }
+  }, [connectionStatus, fetchGame]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchGame();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [fetchGame]);
 
   // Проверяет, не назначена ли игроку новая партия следующего тура —
   // работает даже когда игрок находится на странице уже завершённой партии,
