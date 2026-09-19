@@ -253,6 +253,28 @@ def handler(event: dict, context) -> dict:
         user_id = get_user_id_by_token(cur, auth_token) if not is_admin else None
         my_player_id = None
         if user_id:
+            # Зал опрашивается автоматически каждые ~20 секунд, пока открыта вкладка —
+            # без троттлинга каждый такой опрос попадал бы в лог как отдельный "заход в зал".
+            # Пишем новую запись, только если с прошлого захода в ЭТОТ турнир прошло от
+            # 5 минут (значит вкладка была закрыта/неактивна и это действительно новый визит).
+            cur.execute(
+                """SELECT 1 FROM user_activity_logs
+                   WHERE user_id = %s AND event_type = 'hall_enter' AND meta->>'tournament_id' = %s
+                     AND created_at > now() - interval '5 minutes'""",
+                (user_id, str(tournament_id))
+            )
+            if not cur.fetchone():
+                cur.execute(
+                    "INSERT INTO user_activity_logs (user_id, event_type, meta) VALUES (%s, 'hall_enter', %s)",
+                    (user_id, json.dumps({'tournament_id': str(tournament_id), 'tournament_title': tournament['title']}))
+                )
+            cur.execute(
+                """INSERT INTO user_online_status (user_id, last_seen) VALUES (%s, now())
+                   ON CONFLICT (user_id) DO UPDATE SET last_seen = now()""",
+                (user_id,)
+            )
+            conn.commit()
+
             cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND user_id = %s", (tournament_id, user_id))
             r = cur.fetchone()
             my_player_id = r[0] if r else None

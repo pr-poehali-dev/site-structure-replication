@@ -72,6 +72,25 @@ def get_user_by_token(cur, token: str):
     return user_to_dict(row) if row else None
 
 
+def log_event(cur, user_id, event_type, meta=None):
+    """Пишет событие активности пользователя (вход/выход/онлайн) в общую ленту логов
+    для раздела "Логи" в админке."""
+    cur.execute(
+        "INSERT INTO user_activity_logs (user_id, event_type, meta) VALUES (%s, %s, %s)",
+        (user_id, event_type, json.dumps(meta) if meta is not None else None)
+    )
+
+
+def touch_online(cur, user_id):
+    """Обновляет отметку "последний раз онлайн" — вызывается при входе/выходе и по
+    периодическому heartbeat от открытой вкладки."""
+    cur.execute(
+        """INSERT INTO user_online_status (user_id, last_seen) VALUES (%s, now())
+           ON CONFLICT (user_id) DO UPDATE SET last_seen = now()""",
+        (user_id,)
+    )
+
+
 def handler(event: dict, context) -> dict:
     """Регистрация, вход и профиль участников турниров, включая аватар и рейтинги"""
     if event.get('httpMethod') == 'OPTIONS':
@@ -135,6 +154,10 @@ def handler(event: dict, context) -> dict:
         new_token = secrets.token_hex(32)
         expires_at = datetime.utcnow() + timedelta(days=SESSION_DAYS)
         cur.execute("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (user_id, new_token, expires_at))
+        source_ip = (event.get('requestContext', {}) or {}).get('identity', {}).get('sourceIp')
+        log_event(cur, user_id, 'register', {'ip': source_ip} if source_ip else None)
+        log_event(cur, user_id, 'login', {'ip': source_ip} if source_ip else None)
+        touch_online(cur, user_id)
         conn.commit()
 
         cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
@@ -157,6 +180,9 @@ def handler(event: dict, context) -> dict:
         new_token = secrets.token_hex(32)
         expires_at = datetime.utcnow() + timedelta(days=SESSION_DAYS)
         cur.execute("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (user_id, new_token, expires_at))
+        source_ip = (event.get('requestContext', {}) or {}).get('identity', {}).get('sourceIp')
+        log_event(cur, user_id, 'login', {'ip': source_ip} if source_ip else None)
+        touch_online(cur, user_id)
         conn.commit()
 
         cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
@@ -167,8 +193,24 @@ def handler(event: dict, context) -> dict:
     # Выход
     if method == 'POST' and action == 'logout':
         if token:
+            user = get_user_by_token(cur, token)
             cur.execute("DELETE FROM user_sessions WHERE token = %s", (token,))
+            if user:
+                log_event(cur, user['id'], 'logout')
+                touch_online(cur, user['id'])
             conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
+    # Heartbeat: периодический сигнал "пользователь на сайте" от открытой вкладки —
+    # используется для точного статуса "онлайн сейчас" в разделе "Логи" админки.
+    if method == 'POST' and action == 'heartbeat':
+        user = get_user_by_token(cur, token)
+        if not user:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+        touch_online(cur, user['id'])
+        conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 

@@ -69,6 +69,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Периодический сигнал "пользователь на сайте" — пока открыта вкладка авторизованного
+  // пользователя, раз в 2 минуты обновляем отметку "последний раз онлайн" для раздела
+  // "Логи" в админке. Без heartbeat статус "онлайн" определялся бы только по моментам
+  // входа/выхода и был бы неточным для долгих сессий на сайте.
+  useEffect(() => {
+    if (!token) return;
+    const ping = () => {
+      fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ _action: 'heartbeat' }),
+      }).catch(() => {});
+    };
+    ping();
+    const interval = setInterval(ping, 120000);
+    return () => clearInterval(interval);
+  }, [token]);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(AUTH_URL, {
       method: 'POST',

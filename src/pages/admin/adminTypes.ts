@@ -82,6 +82,7 @@ export const TOURNAMENT_HALL_URL = 'https://functions.poehali.dev/8e8afc0d-8119-
 export const CHESS_GAME_URL = 'https://functions.poehali.dev/6f01cd2f-f475-4924-82d7-e4c47dc8622c';
 export const AUTH_URL = 'https://functions.poehali.dev/e53e4b4d-a551-44e6-8b21-6ed31203615b';
 export const FSR_RATINGS_URL = 'https://functions.poehali.dev/de8fad97-4436-42d8-ae73-4dd429bcc3d4';
+export const USER_LOGS_URL = 'https://functions.poehali.dev/2bca9207-343b-46d4-8cb2-3189d6acadae';
 
 export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false, rounds_count: '5', rating_type: 'rapid' as 'blitz' | 'rapid' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
@@ -92,7 +93,16 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings' | 'logs';
+
+export interface ActivityLog {
+  id: number; user_id: number; fio: string; email: string;
+  event_type: string; event_label: string; meta: Record<string, unknown>; created_at: string;
+}
+
+export interface OnlineStatus {
+  user_id: number; fio: string; email: string; last_seen: string; is_online: boolean;
+}
 
 export interface FsrRatingFile {
   id: number; rating_type: 'blitz' | 'rapid'; file_name: string; file_url: string;

@@ -20,6 +20,7 @@ import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import FsrRatingsSection from './admin/FsrRatingsSection';
+import LogsSection from './admin/LogsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 import ResetDemoGameButton from './admin/ResetDemoGameButton';
 
@@ -280,6 +281,7 @@ export default function Admin() {
             ['promo-codes', 'Gift', 'Промокоды'],
             ['subscription-plans', 'Ticket', 'Абонементы'],
             ['fsr-ratings', 'FileSpreadsheet', 'Файлы рейтинга'],
+            ['logs', 'ScrollText', 'Логи'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${section === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
@@ -466,6 +468,11 @@ export default function Admin() {
             fetchFiles={fetchFsrFiles}
             lastSync={fsrLastSync}
           />
+        )}
+
+        {/* === ЛОГИ === */}
+        {section === 'logs' && (
+          <LogsSection password={password} />
         )}
 
       </div>
