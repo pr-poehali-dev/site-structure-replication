@@ -156,15 +156,27 @@ def compute_first_move_grace_ms(game):
     return max(0, FIRST_MOVE_GRACE_MS - int(elapsed))
 
 
-def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_player_id=None):
+def finish_game(cur, game_id, result, reason, winner_player_id=None, loser_player_id=None, white_time_ms=None, black_time_ms=None):
     """Помечает партию завершённой и начисляет очки. Условие "AND status = 'active'" в UPDATE
     делает операцию атомарной: если два параллельных запроса (резервный опрос раз в 15 секунд
     и push-уведомление) одновременно решат, что время истекло, очки начислятся только один раз —
-    второй вызов увидит rowcount = 0 и ничего не сделает."""
-    cur.execute(
-        "UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now() WHERE id = %s AND status = 'active'",
-        (result, reason, game_id)
-    )
+    второй вызов увидит rowcount = 0 и ничего не сделает.
+
+    white_time_ms/black_time_ms (если переданы) — актуальные "живые" часы на момент завершения
+    (посчитанные compute_live_times), которые нужно зафиксировать в БД. Без этого в столбцах
+    оставалось бы устаревшее значение с момента последнего хода: например, при завершении по
+    таймауту часы проигравшего должны показывать 0:00, а не то время, что было час назад."""
+    if white_time_ms is not None and black_time_ms is not None:
+        cur.execute(
+            "UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now(), "
+            "white_time_ms = %s, black_time_ms = %s WHERE id = %s AND status = 'active'",
+            (result, reason, white_time_ms, black_time_ms, game_id)
+        )
+    else:
+        cur.execute(
+            "UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now() WHERE id = %s AND status = 'active'",
+            (result, reason, game_id)
+        )
     if cur.rowcount == 0:
         return False
     if winner_player_id:
@@ -331,7 +343,7 @@ def handler(event: dict, context) -> dict:
             winner_id = game['black_player_id'] if loser_color == 'white' else game['white_player_id']
             loser_id = game['white_player_id'] if loser_color == 'white' else game['black_player_id']
             result = '0-1' if loser_color == 'white' else '1-0'
-            finish_game(cur, game['id'], result, TIMEOUT, winner_id, loser_id)
+            finish_game(cur, game['id'], result, TIMEOUT, winner_id, loser_id, white_ms, black_ms)
             check_round_completion(cur, game['tournament_id'], game['round_id'])
             conn.commit()
             game = load_game(cur, game_id)

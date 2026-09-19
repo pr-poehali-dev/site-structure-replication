@@ -372,6 +372,17 @@ export default function Game() {
     fetchGame();
   }, [firstMoveGraceMs, fetchGame]);
 
+  // Как только локальные часы кого-то из игроков дотикали до нуля — сразу опрашиваем
+  // сервер, чтобы он проверил таймаут и завершил партию, не дожидаясь резервного опроса
+  // раз в 15 секунд (раньше это давало заметную задержку между "0:00 на экране" и
+  // фактическим завершением партии).
+  useEffect(() => {
+    if (!game || game.status !== 'active') return;
+    if (firstMoveGraceMs !== null) return;
+    if (liveWhiteMs > 0 && liveBlackMs > 0) return;
+    fetchGame();
+  }, [liveWhiteMs, liveBlackMs, game, firstMoveGraceMs, fetchGame]);
+
   // Как только наступает мой ход — пробуем выполнить запланированный предход.
   // Если он оказался невозможен (фигуру взяли, путь перекрыт и т.п.) — тихо отменяем.
   useEffect(() => {
