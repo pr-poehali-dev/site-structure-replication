@@ -98,8 +98,16 @@ function playerRoundScore(playerId: number, game: Game | null): string | null {
   return null;
 }
 
+/** Цвет очка за тур: победа — зелёный, поражение — красный, ничья/бай — чёрный. */
+function scoreColorClass(score: string | null): string {
+  if (score === '1') return 'text-emerald-600';
+  if (score === '0') return 'text-red-500';
+  return 'text-gray-800';
+}
+
 function GameCellContent({ score }: { score: string | null }) {
-  return score ?? <span className="text-gray-300">—</span>;
+  if (!score) return <span className="text-gray-300">—</span>;
+  return <span className={`font-semibold ${scoreColorClass(score)}`}>{score}</span>;
 }
 
 /** ФИО игрока (опционально с аватаром) — ссылка на его публичный профиль, если известен
@@ -522,8 +530,10 @@ export default function Hall() {
                             <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
                               {clickable ? (
                                 <RoundResultCell playerId={p.id} game={game!} score={score} gameHref={`/game/${game!.id}${isObserver ? '?observer=1' : ''}`} />
+                              ) : score ? (
+                                <span className="font-semibold text-gray-800">{score}</span>
                               ) : (
-                                score ?? <span className="text-gray-300">—</span>
+                                <span className="text-gray-300">—</span>
                               )}
                             </td>
                           );
