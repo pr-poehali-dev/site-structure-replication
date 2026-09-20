@@ -152,7 +152,12 @@ export default function Game() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromCabinet = searchParams.get('from') === 'cabinet';
-  const { user, token, loading } = useAuth();
+  // Партию можно открыть из турнирного зала в режиме наблюдателя (?observer=1, см. Hall.tsx) —
+  // администратор смотрит партию со стороны, без токена обычного игрока, чтобы случайно
+  // не задействовать свой аккаунт как участника этой партии.
+  const isObserver = searchParams.get('observer') === '1';
+  const { user, token: authToken, loading } = useAuth();
+  const token = isObserver ? null : authToken;
   const [game, setGame] = useState<GameData | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [myRole, setMyRole] = useState<'white' | 'black' | null>(null);
@@ -599,7 +604,7 @@ export default function Game() {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !isObserver) return <Navigate to="/login" replace />;
 
   if (fetchError && !game) {
     return (

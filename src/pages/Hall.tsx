@@ -120,7 +120,7 @@ function PlayerLink({ userId, fio, avatarUrl, avatarSize, className }: { userId:
   );
 }
 
-function RoundResultCell({ playerId, game, score }: { playerId: number; game: Game; score: string | null }) {
+function RoundResultCell({ playerId, game, score, gameHref }: { playerId: number; game: Game; score: string | null; gameHref: string }) {
   const isWhite = game.white_player_id === playerId;
   const myScore = score === '1' ? '1' : score === '0' ? '0' : score === '½' ? '½' : '';
   const oppScore = myScore === '1' ? '0' : myScore === '0' ? '1' : myScore === '½' ? '½' : '';
@@ -128,7 +128,7 @@ function RoundResultCell({ playerId, game, score }: { playerId: number; game: Ga
   const blackScore = isWhite ? oppScore : myScore;
   if (!game.fen) {
     return (
-      <Link to={`/game/${game.id}`} className="hover:underline hover:text-secondary font-medium">
+      <Link to={gameHref} className="hover:underline hover:text-secondary font-medium">
         <GameCellContent score={score} />
       </Link>
     );
@@ -136,7 +136,7 @@ function RoundResultCell({ playerId, game, score }: { playerId: number; game: Ga
   return (
     <HoverCard openDelay={150} closeDelay={0}>
       <HoverCardTrigger asChild>
-        <Link to={`/game/${game.id}`} className="hover:underline hover:text-secondary font-medium">
+        <Link to={gameHref} className="hover:underline hover:text-secondary font-medium">
           <GameCellContent score={score} />
         </Link>
       </HoverCardTrigger>
@@ -432,7 +432,7 @@ export default function Hall() {
                   {currentRound?.games.map(g => (
                     <div
                       key={g.id}
-                      onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}`)}
+                      onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}${isObserver ? '?observer=1' : ''}`)}
                       className={`flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
                     >
                       {g.is_bye ? (
@@ -522,7 +522,7 @@ export default function Hall() {
                           return (
                             <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
                               {clickable ? (
-                                <RoundResultCell playerId={p.id} game={game!} score={score} />
+                                <RoundResultCell playerId={p.id} game={game!} score={score} gameHref={`/game/${game!.id}${isObserver ? '?observer=1' : ''}`} />
                               ) : (
                                 score ?? <span className="text-gray-300">—</span>
                               )}
