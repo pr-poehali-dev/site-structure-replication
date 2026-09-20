@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
@@ -160,7 +160,14 @@ function RoundResultCell({ playerId, game, score }: { playerId: number; game: Ga
 export default function Hall() {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
-  const { user, token, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Ссылка "Зал" из админки открывает страницу в режиме наблюдателя (?observer=1) —
+  // используется, чтобы администратор мог просто посмотреть на ход турнира, не рискуя
+  // случайно попасть в жеребьёвку/участники, если в этом же браузере у него ещё и
+  // сохранён токен обычного игрока с оплаченной заявкой на этот же турнир.
+  const isObserver = searchParams.get('observer') === '1';
+  const { user, token: authToken, loading } = useAuth();
+  const token = isObserver ? null : authToken;
   const [data, setData] = useState<HallData | null>(null);
   const [fetchError, setFetchError] = useState('');
   const [activeRound, setActiveRound] = useState<number | null>(null);
@@ -321,6 +328,12 @@ export default function Hall() {
     <div className="min-h-screen bg-muted text-foreground flex flex-col">
       <Seo title={`${tournament.title} — турнирный зал`} description="Турнирный зал" path={`/hall/${tournamentId}`} noindex />
       <Header />
+
+      {isObserver && (
+        <div className="bg-primary text-primary-foreground text-sm text-center py-2 px-4 flex items-center justify-center gap-2">
+          <Icon name="Eye" size={14} /> Режим наблюдателя — вы смотрите зал со стороны, не как участник
+        </div>
+      )}
 
       {redirectingGameId !== null && (
         <div className="fixed inset-0 bg-primary/95 flex flex-col items-center justify-center z-50 px-4 text-center gap-4">

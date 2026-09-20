@@ -435,10 +435,10 @@ export default function TournamentsSection({
                           {resettingId === t.id ? 'Сбрасываю...' : 'Сбросить турнир'}
                         </Button>
                       )}
-                      {t.hall_status && t.hall_status !== 'not_started' && (
-                        <a href={`/hall/${t.id}`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="outline" size="sm">
-                            <Icon name="ExternalLink" size={14} className="mr-1" /> Зал
+                      {t.hall_open && (
+                        <a href={`/hall/${t.id}?observer=1`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" size="sm" title="Открыть зал в режиме наблюдателя — без участия в турнире">
+                            <Icon name="Eye" size={14} className="mr-1" /> Зал
                           </Button>
                         </a>
                       )}
