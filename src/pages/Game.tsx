@@ -858,7 +858,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-3xl font-extrabold tabular-nums shrink-0">
+                <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
                 </span>
               </div>
@@ -981,7 +981,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-3xl font-extrabold tabular-nums shrink-0">
+                <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
                 </span>
               </div>
@@ -1003,7 +1003,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-3xl font-extrabold tabular-nums shrink-0">
+                <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
                 </span>
               </div>
@@ -1131,7 +1131,7 @@ export default function Game() {
                   />
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
-                <span className="font-mono text-3xl font-extrabold tabular-nums shrink-0">
+                <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
                 </span>
               </div>
