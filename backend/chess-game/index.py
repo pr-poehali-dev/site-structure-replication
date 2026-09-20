@@ -17,7 +17,7 @@ TIMEOUT = 'timeout'
 INSUFFICIENT = 'insufficient_material'
 FIRST_MOVE_TIMEOUT = 'first_move_timeout'
 
-FIRST_MOVE_GRACE_MS = 30000
+FIRST_MOVE_GRACE_MS = 60000
 
 
 def replay_moves_from_pgn(pgn):

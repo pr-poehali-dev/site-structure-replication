@@ -62,7 +62,7 @@ function pieceIcon(piece: string): string {
 const RESULT_REASON_LABELS: Record<string, string> = {
   checkmate: 'мат', stalemate: 'пат', draw_agreed: 'согласие сторон',
   resignation: 'сдача', timeout: 'закончилось время', insufficient_material: 'недостаточно материала для мата',
-  bye: 'технический бай', first_move_timeout: 'не сделан первый ход за 30 секунд',
+  bye: 'технический бай', first_move_timeout: 'не сделан первый ход за 1 минуту',
 };
 
 function parseFen(fen: string): (string | null)[][] {
