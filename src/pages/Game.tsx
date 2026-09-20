@@ -746,8 +746,8 @@ export default function Game() {
         </div>
       )}
 
-      <main className="flex-1 py-6 px-4">
-        <div className="container max-w-6xl mx-auto">
+      <main className="flex-1 py-6 px-2 sm:px-4">
+        <div className="w-full max-w-6xl mx-auto lg:px-4">
           <div className="flex items-center justify-between gap-2 mb-4">
             {fromCabinet ? (
               <Link to="/cabinet?tab=games" className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
