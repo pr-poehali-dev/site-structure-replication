@@ -151,6 +151,14 @@ function formatClock(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function formatCountdown(ms: number): string {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function Game() {
   const { gameId } = useParams();
   const navigate = useNavigate();
@@ -179,6 +187,7 @@ export default function Game() {
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
+  const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useState(true);
   const [boardHeight, setBoardHeight] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -321,9 +330,10 @@ export default function Game() {
     };
   }, [fetchGame]);
 
-  // Проверяет, не назначена ли игроку новая партия следующего тура —
-  // работает даже когда игрок находится на странице уже завершённой партии,
-  // а не только в турнирном зале.
+  // Проверяет, не назначена ли игроку новая партия следующего тура — работает даже когда
+  // игрок находится на странице уже завершённой партии, а не только в турнирном зале.
+  // Заодно подтягивает отсчёт до старта следующего тура (next_round_at), чтобы его тоже
+  // было видно здесь, а не только в зале.
   const checkNewGame = useCallback(async () => {
     if (!game || !token) return;
     try {
@@ -331,6 +341,7 @@ export default function Game() {
         headers: { 'X-Auth-Token': token },
       });
       const json = await res.json();
+      setNextRoundMs(json.next_round_at ? new Date(json.next_round_at).getTime() - Date.now() : null);
       const newGameId: number | null = json.my_game_id || null;
       if (newGameId && newGameId !== knownGameIdRef.current) {
         knownGameIdRef.current = newGameId;
@@ -355,11 +366,39 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [game?.status, checkNewGame]);
 
+  // Живой обратный отсчёт до старта следующего тура, тикает раз в секунду (та же логика,
+  // что и в турнирном зале Hall.tsx).
+  useEffect(() => {
+    if (nextRoundMs === null) return;
+    const tick = setInterval(() => {
+      setNextRoundMs(ms => {
+        if (ms === null) return null;
+        const next = ms - 1000;
+        if (next <= 0) {
+          checkNewGame();
+          return null;
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [nextRoundMs !== null, checkNewGame]);
+
   useEffect(() => {
     if (redirectingGameId === null) return;
     const timer = setTimeout(() => { navigate(`/game/${redirectingGameId}`); }, 1500);
     return () => clearTimeout(timer);
   }, [redirectingGameId, navigate]);
+
+  // Страница не перемонтируется при переходе со старой партии на новую (роут тот же
+  // компонент, меняется только :gameId в адресе) — без явного сброса здесь оверлей
+  // "У Вас начинается партия" остался бы висеть на экране навсегда поверх уже открытой
+  // новой партии.
+  useEffect(() => {
+    setRedirectingGameId(null);
+    setNextRoundMs(null);
+    knownGameIdRef.current = null;
+  }, [gameId]);
 
   useEffect(() => {
     if (!game || game.status !== 'active') return;
@@ -735,6 +774,14 @@ export default function Game() {
               </button>
             </div>
           </div>
+
+          {finished && nextRoundMs !== null && redirectingGameId === null && (
+            <div className="bg-primary text-primary-foreground rounded-2xl shadow-sm p-4 text-center mb-4 flex items-center justify-center gap-3">
+              <Icon name="Clock" size={18} className="text-secondary" />
+              <span className="text-sm text-white/70">Следующий тур через</span>
+              <span className="font-heading font-bold text-2xl text-secondary tabular-nums">{formatCountdown(nextRoundMs)}</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-start">
             {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат — фиксированная высота, равная доске,
