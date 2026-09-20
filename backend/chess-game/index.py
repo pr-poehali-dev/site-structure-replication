@@ -5,7 +5,7 @@ from datetime import datetime
 import psycopg2
 
 from chess_rules import Board, START_FEN
-from pusher_client import trigger
+from pusher_client import trigger, trigger_many
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
 
@@ -194,6 +194,13 @@ def check_round_completion(cur, tournament_id, round_id):
     Если это был последний тур турнира — сразу проставляет итоговые места (медали)
     и пересчитывает рейтинг участников, как это делает турнирный зал по завершении тура.
 
+    Возвращает список отложенных push-событий (не отправляет их сама) — вызывающий код
+    должен отправить их ОДНИМ batch-запросом вместе с остальными событиями этого хода
+    (см. trigger_many в pusher_client.py). Раньше здесь был прямой синхронный trigger(),
+    из-за чего при завершении партии, закрывающей заодно тур и весь турнир, уходило
+    несколько последовательных HTTP-запросов к Pusher подряд — суммарная задержка
+    ответа игроку могла доходить до нескольких секунд.
+
     Турнирный зал опрашивается одновременно всеми участниками, поэтому эта же проверка
     может параллельно выполниться и здесь, и в tournament-hall (maybe_advance) прямо в
     момент, когда доигрывается последняя партия тура. Условный UPDATE ... WHERE status =
@@ -205,23 +212,23 @@ def check_round_completion(cur, tournament_id, round_id):
     cur.execute("SELECT round_number, status FROM tournament_rounds WHERE id = %s", (round_id,))
     row = cur.fetchone()
     if not row:
-        return
+        return []
     round_number, status = row
     if status != 'active':
-        return
+        return []
     # total > 0 обязателен: между вставкой строки тура и вставкой его партий в
     # tournament-hall (start_next_round) есть краткий промежуток, когда у тура ещё 0 партий —
     # без этой проверки такой тур выглядел бы как "все партии завершены".
     cur.execute("SELECT COUNT(*), COUNT(*) FILTER (WHERE status != 'finished') FROM tournament_games WHERE round_id = %s", (round_id,))
     total, unfinished = cur.fetchone()
     if total == 0 or unfinished > 0:
-        return
+        return []
     cur.execute(
         "UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status = 'active' RETURNING id",
         (round_id,)
     )
     if not cur.fetchone():
-        return
+        return []
     cur.execute("SELECT rounds_count, title, rating_type FROM tournaments WHERE id = %s", (tournament_id,))
     rounds_count, title, rating_type = cur.fetchone()
     update_buchholz(cur, tournament_id)
@@ -233,9 +240,9 @@ def check_round_completion(cur, tournament_id, round_id):
         if cur.fetchone():
             assign_places(cur, tournament_id)
             apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
-            trigger(f"tournament-{tournament_id}", 'finished', {})
-    else:
-        trigger(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})
+            return [(f"tournament-{tournament_id}", 'finished', {})]
+        return []
+    return [(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})]
 
 
 def game_update_payload(game, white_ms, black_ms):
@@ -331,26 +338,32 @@ def handler(event: dict, context) -> dict:
 
         if game['status'] == 'active' and first_move_grace_ms == 0:
             finish_game(cur, game['id'], '0-1', FIRST_MOVE_TIMEOUT, game['black_player_id'], game['white_player_id'])
-            check_round_completion(cur, game['tournament_id'], game['round_id'])
+            round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
             conn.commit()
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger_many([
+                (f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms)),
+                (f"tournament-{game['tournament_id']}", 'game-finished', {}),
+                *round_events,
+            ])
         elif game['status'] == 'active' and (white_ms <= 0 or black_ms <= 0):
             loser_color = 'white' if white_ms <= 0 else 'black'
             winner_id = game['black_player_id'] if loser_color == 'white' else game['white_player_id']
             loser_id = game['white_player_id'] if loser_color == 'white' else game['black_player_id']
             result = '0-1' if loser_color == 'white' else '1-0'
             finish_game(cur, game['id'], result, TIMEOUT, winner_id, loser_id, white_ms, black_ms)
-            check_round_completion(cur, game['tournament_id'], game['round_id'])
+            round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
             conn.commit()
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
-            trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            trigger_many([
+                (f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms)),
+                (f"tournament-{game['tournament_id']}", 'game-finished', {}),
+                *round_events,
+            ])
 
         cur.execute(
             "SELECT gm.message, gm.created_at, gm.player_id, COALESCE(tp.fio, 'Игрок') FROM game_chat_messages gm LEFT JOIN tournament_players tp ON tp.id = gm.player_id WHERE gm.game_id = %s ORDER BY gm.id ASC",
@@ -461,8 +474,7 @@ def handler(event: dict, context) -> dict:
             game['status'], game['result'], game['result_reason'] = 'finished', '1/2-1/2', INSUFFICIENT
             game_finished = True
 
-        if game_finished:
-            check_round_completion(cur, game['tournament_id'], game['round_id'])
+        round_events = check_round_completion(cur, game['tournament_id'], game['round_id']) if game_finished else []
 
         conn.commit()
         release_conn(conn)
@@ -473,10 +485,14 @@ def handler(event: dict, context) -> dict:
         # получал уведомление о ходе с задержкой. Синхронная отправка добавляет ~100-200мс
         # к ответу ходившему игроку, зато гарантирует мгновенную доставку сопернику.
         # Полезная нагрузка (fen/ход/часы) в самом событии избавляет его от повторного
-        # HTTP-запроса за состоянием партии.
-        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
+        # HTTP-запроса за состоянием партии. Все события отправляются ОДНИМ batch-запросом
+        # (trigger_many) — если ход завершает ещё и тур/турнир, это экономит несколько
+        # последовательных HTTP round-trip'ов к Pusher.
+        events = [(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))]
         if game_finished:
-            trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+            events.append((f"tournament-{game['tournament_id']}", 'game-finished', {}))
+        events.extend(round_events)
+        trigger_many(events)
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'resign':
@@ -493,13 +509,16 @@ def handler(event: dict, context) -> dict:
         loser_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         result = '0-1' if role == 'white' else '1-0'
         finish_game(cur, game_id, result, RESIGNATION, winner_id, loser_id)
-        check_round_completion(cur, game['tournament_id'], game['round_id'])
+        round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'] = 'finished', result, RESIGNATION
-        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        trigger_many([
+            (f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms)),
+            (f"tournament-{game['tournament_id']}", 'game-finished', {}),
+            *round_events,
+        ])
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'offer_draw':
@@ -536,13 +555,16 @@ def handler(event: dict, context) -> dict:
             release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нельзя принять собственное предложение'})}
         finish_game(cur, game_id, '1/2-1/2', DRAW_AGREED)
-        check_round_completion(cur, game['tournament_id'], game['round_id'])
+        round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
         conn.commit()
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'], game['draw_offered_by'] = 'finished', '1/2-1/2', DRAW_AGREED, None
-        trigger(f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms))
-        trigger(f"tournament-{game['tournament_id']}", 'game-finished', {})
+        trigger_many([
+            (f'game-{game_id}', 'update', game_update_payload(game, white_ms, black_ms)),
+            (f"tournament-{game['tournament_id']}", 'game-finished', {}),
+            *round_events,
+        ])
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'decline_draw':
