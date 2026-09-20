@@ -63,12 +63,12 @@ def compute_head_to_head(cur, tournament_id):
 
 
 def assign_places(cur, tournament_id):
-    """Проставляет итоговые места: очки → Бухгольц → число побед → личные встречи
-    между претендентами на одинаковое место → рейтинг.
+    """Проставляет итоговые места: очки → Бухгольц → личная встреча между претендентами
+    на одинаковое место → число побед → рейтинг.
 
-    Личные встречи считаются только внутри группы игроков с полностью
-    одинаковыми очками/Бухгольцем/победами — сравнивается, сколько очков они
-    набрали друг против друга в сыгранных между ними партиях."""
+    Личные встречи считаются только внутри группы игроков с полностью одинаковыми
+    очками и Бухгольцем — сравнивается, сколько очков они набрали друг против друга
+    в сыгранных между ними партиях."""
     update_buchholz(cur, tournament_id)
     cur.execute(
         "SELECT id, points, buchholz, wins, rating FROM tournament_players WHERE tournament_id = %s",
@@ -80,21 +80,21 @@ def assign_places(cur, tournament_id):
     ]
     h2h = compute_head_to_head(cur, tournament_id)
 
-    players.sort(key=lambda p: (-p['points'], -p['buchholz'], -p['wins']))
+    players.sort(key=lambda p: (-p['points'], -p['buchholz']))
 
     ordered = []
     i, n = 0, len(players)
     while i < n:
         j = i
-        key = (players[i]['points'], players[i]['buchholz'], players[i]['wins'])
-        while j < n and (players[j]['points'], players[j]['buchholz'], players[j]['wins']) == key:
+        key = (players[i]['points'], players[i]['buchholz'])
+        while j < n and (players[j]['points'], players[j]['buchholz']) == key:
             j += 1
         group = players[i:j]
         if len(group) > 1:
             group_ids = {p['id'] for p in group}
             for p in group:
                 p['h2h_score'] = sum(h2h.get((p['id'], opp_id), 0.0) for opp_id in group_ids if opp_id != p['id'])
-            group.sort(key=lambda p: (-p['h2h_score'], -p['rating']))
+            group.sort(key=lambda p: (-p['h2h_score'], -p['wins'], -p['rating']))
         ordered.extend(group)
         i = j
 
