@@ -731,18 +731,18 @@ export default function Game() {
               style={isDesktop && boardHeight ? { height: boardHeight } : undefined}
             >
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 shrink-0">
-                <Link to={`/hall/${game.tournament_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-2">
-                  <Icon name="Swords" size={16} className="text-secondary shrink-0" />
-                  <span className="truncate">{game.tournament_title}</span>
+                <Link to={`/hall/${game.tournament_id}`} className="flex items-start gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-2">
+                  <Icon name="Swords" size={16} className="text-secondary shrink-0 mt-0.5" />
+                  <span className="break-words">{game.tournament_title}</span>
                 </Link>
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
                     <PlayerAvatar fio={game.white_fio} avatarUrl={game.white_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.white_fio) || '—'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
                     <PlayerAvatar fio={game.black_fio} avatarUrl={game.black_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
                   </div>
