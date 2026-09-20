@@ -331,11 +331,18 @@ def handler(event: dict, context) -> dict:
                         my_player_id = new_row[0]
                         trigger(f'tournament-{tournament_id}', 'player-joined', {})
 
+        # Порядок строк должен совпадать со значением в колонке "Место": пока турнир не
+        # завершён, place ещё не проставлен (NULL у всех) — сортируем по текущим очкам/
+        # доп. показателям. После завершения assign_places() учитывает и личные встречи
+        # между игроками с одинаковыми очками/Бухгольцем/победами — это может дать другой
+        # порядок, чем чистая сортировка по рейтингу (как раньше), поэтому сортируем по
+        # уже готовому place, чтобы 6-е и 7-е места не менялись местами в таблице.
         cur.execute(
             """SELECT tp.id, tp.fio, tp.rating, tp.points, tp.buchholz, tp.wins, tp.place, tp.joined_late, tp.user_id, u.avatar_url
                FROM tournament_players tp
                LEFT JOIN users u ON u.id = tp.user_id
-               WHERE tp.tournament_id = %s ORDER BY tp.points DESC, tp.buchholz DESC, tp.wins DESC, tp.rating DESC""",
+               WHERE tp.tournament_id = %s
+               ORDER BY tp.place NULLS LAST, tp.points DESC, tp.buchholz DESC, tp.wins DESC, tp.rating DESC""",
             (tournament_id,)
         )
         players = [
