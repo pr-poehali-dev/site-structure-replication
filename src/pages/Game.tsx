@@ -19,6 +19,10 @@ interface MoveEntry {
   san: string;
   fen: string;
   color: 'white' | 'black';
+  // Снимок часов сразу после этого хода — есть только у ходов, сделанных после введения
+  // этой записи в БД; у партий постарше (сыгранных раньше) в истории этих полей нет.
+  white_time_ms?: number;
+  black_time_ms?: number;
 }
 
 interface GameData {
@@ -651,6 +655,15 @@ export default function Game() {
       ? START_FEN
       : moves[viewMoveIndex]?.fen ?? game.fen;
   const board = parseFen(displayedFen);
+
+  // Часы при просмотре истории: показываем снимок времени сразу после просматриваемого
+  // хода (сохранён в moves[i].white_time_ms/black_time_ms). У партий, сыгранных до того,
+  // как это стало записываться, и на позиции "до первого хода" снимка нет — тогда часы
+  // просто скрываем (null), а не показываем неверное текущее/финальное время.
+  const viewedMove = viewMoveIndex !== null && viewMoveIndex >= 0 ? moves[viewMoveIndex] : null;
+  const shownWhiteMs = viewMoveIndex === null ? liveWhiteMs : (viewedMove?.white_time_ms ?? null);
+  const shownBlackMs = viewMoveIndex === null ? liveBlackMs : (viewedMove?.black_time_ms ?? null);
+  const clockText = (ms: number | null) => ms === null ? '—:--' : formatClock(ms);
   const legalTargets = selected && viewMoveIndex === null ? getLegalTargets(game.fen, selected) : [];
   const checkedKingSquare = getCheckedKingSquare(displayedFen);
 
@@ -799,7 +812,7 @@ export default function Game() {
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
-                  {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
+                  {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
                 </span>
               </div>
 
@@ -922,7 +935,7 @@ export default function Game() {
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
-                  {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
+                  {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
                 </span>
               </div>
             </div>
@@ -944,7 +957,7 @@ export default function Game() {
                   <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
-                  {formatClock(myRole === 'black' ? liveWhiteMs : liveBlackMs)}
+                  {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
                 </span>
               </div>
 
@@ -1072,7 +1085,7 @@ export default function Game() {
                   <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
                 </span>
                 <span className="font-mono text-2xl font-bold tabular-nums shrink-0">
-                  {formatClock(myRole === 'black' ? liveBlackMs : liveWhiteMs)}
+                  {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
                 </span>
               </div>
             </div>

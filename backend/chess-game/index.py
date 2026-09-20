@@ -428,7 +428,10 @@ def handler(event: dict, context) -> dict:
         new_pgn = (game['pgn'] + ' ' + san).strip()
         new_turn = 'black' if role == 'white' else 'white'
         new_fen = board.to_fen()
-        new_moves = game['moves'] + [{'san': san, 'fen': new_fen, 'color': role}]
+        # white_time_ms/black_time_ms — снимок часов сразу после этого хода (с учётом
+        # инкремента), нужен фронтенду для показа корректного времени при просмотре
+        # истории партии назад/вперёд по ходам.
+        new_moves = game['moves'] + [{'san': san, 'fen': new_fen, 'color': role, 'white_time_ms': white_ms, 'black_time_ms': black_ms}]
 
         cur.execute(
             "UPDATE tournament_games SET fen = %s, pgn = %s, turn = %s, white_time_ms = %s, black_time_ms = %s, last_move_at = now(), draw_offered_by = NULL, moves = %s WHERE id = %s",
