@@ -76,15 +76,25 @@ def get_previous_pairs(cur, tournament_id):
 def finish_tournament_early(cur, tournament, rounds_played):
     """Завершает турнир раньше срока: очередной тур без повторных встреч
     составить нельзя. Официальное число туров турнира уменьшается до
-    количества фактически сыгранных."""
+    количества фактически сыгранных.
+
+    Возвращает список отложенных push-событий (не отправляет их сама) — их нужно
+    разослать ПОСЛЕ conn.commit() в вызывающем коде, иначе игрок может получить
+    уведомление о партии/туре раньше, чем эти данные реально попадут в БД
+    (см. комментарий у maybe_advance)."""
     cur.execute("UPDATE tournaments SET rounds_count = %s WHERE id = %s", (rounds_played, tournament['id']))
     assign_places(cur, tournament['id'])
     apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
     cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
-    trigger(f"tournament-{tournament['id']}", 'finished', {})
+    return [(f"tournament-{tournament['id']}", 'finished', {})]
 
 
 def start_next_round(cur, tournament, round_number):
+    """Возвращает (round_id, events) — round_id нового тура (или None, если тур не создан)
+    и список отложенных push-событий, которые вызывающий код должен отправить ПОСЛЕ
+    conn.commit(). Партии тура должны быть гарантированно видны в БД до того, как игрок
+    получит push-уведомление и запросит их — иначе возможна ситуация "партия не найдена"
+    при обновлении раньше, чем транзакция зафиксировалась."""
     # Резервируем номер тура атомарной вставкой ДО жеребьёвки: на tournament_rounds есть
     # ограничение уникальности (tournament_id, round_number), поэтому если два параллельных
     # запроса одновременно решат, что пора начинать этот тур, вставку выполнит только один —
@@ -100,14 +110,14 @@ def start_next_round(cur, tournament, round_number):
     )
     reserved = cur.fetchone()
     if not reserved:
-        return None
+        return None, []
     round_id = reserved[0]
 
     cur.execute("SELECT id, rating, points, color_balance FROM tournament_players WHERE tournament_id = %s AND active = true", (tournament['id'],))
     players = [{'id': r[0], 'rating': r[1], 'points': float(r[2]), 'color_balance': r[3]} for r in cur.fetchall()]
     if len(players) < 2:
         cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
-        return None
+        return None, []
 
     previous_pairs = get_previous_pairs(cur, tournament['id'])
     cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND byes_used > 0", (tournament['id'],))
@@ -118,16 +128,20 @@ def start_next_round(cur, tournament, round_number):
         # Нельзя составить тур без повторной встречи — турнир завершается
         # досрочно тем числом туров, что уже сыграно.
         cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
-        finish_tournament_early(cur, tournament, round_number - 1)
-        return None
+        events = finish_tournament_early(cur, tournament, round_number - 1)
+        return None, events
 
     base_ms, inc_ms = parse_time_control(tournament['time_control'])
     create_round_games(cur, tournament['id'], round_id, pairs, base_ms, inc_ms)
-    return round_id
+    return round_id, []
 
 
 def maybe_advance(cur, tournament):
-    """Возвращает ISO-время старта следующего тура, если сейчас идёт перерыв между турами.
+    """Возвращает (next_round_at, events): ISO-время старта следующего тура (если сейчас
+    идёт перерыв между турами) и список отложенных push-событий (channel, event, data),
+    которые вызывающий код обязан отправить ПОСЛЕ conn.commit() — иначе игрок может получить
+    push-уведомление о новом туре/партии раньше, чем эти данные реально зафиксируются в БД,
+    и увидеть "Партия не найдена" при первой же попытке её открыть.
 
     Турнирный зал опрашивается одновременно всеми участниками (обычный поллинг + push-события),
     поэтому несколько параллельных запросов могут одновременно увидеть "все партии тура
@@ -141,7 +155,7 @@ def maybe_advance(cur, tournament):
     )
     row = cur.fetchone()
     if not row:
-        return None
+        return None, []
     round_id, round_number, status, completed_at = row
 
     if status == 'active':
@@ -154,6 +168,7 @@ def maybe_advance(cur, tournament):
             (round_id,)
         )
         total, unfinished = cur.fetchone()
+        events = []
         if total > 0 and unfinished == 0:
             cur.execute(
                 "UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status = 'active' RETURNING id",
@@ -169,25 +184,26 @@ def maybe_advance(cur, tournament):
                     if cur.fetchone():
                         assign_places(cur, tournament['id'])
                         apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
-                        trigger(f"tournament-{tournament['id']}", 'finished', {})
+                        events.append((f"tournament-{tournament['id']}", 'finished', {}))
                 else:
-                    trigger(f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number})
+                    events.append((f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number}))
             if round_number < tournament['rounds_count']:
                 break_seconds = tournament.get('round_break_seconds', 60)
-                return (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat() + 'Z'
-        return None
+                next_round_at = (datetime.utcnow() + timedelta(seconds=break_seconds)).isoformat() + 'Z'
+                return next_round_at, events
+        return None, events
 
     if status == 'completed' and round_number < tournament['rounds_count']:
         break_seconds = tournament.get('round_break_seconds', 60)
         next_round_at = completed_at + timedelta(seconds=break_seconds) if completed_at else None
         if completed_at and datetime.utcnow() >= completed_at + timedelta(seconds=break_seconds):
-            new_round_id = start_next_round(cur, tournament, round_number + 1)
+            new_round_id, events = start_next_round(cur, tournament, round_number + 1)
             if new_round_id:
-                trigger(f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number + 1})
-            return None
-        return next_round_at.isoformat() + 'Z' if next_round_at else None
+                events.append((f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number + 1}))
+            return None, events
+        return (next_round_at.isoformat() + 'Z' if next_round_at else None), []
 
-    return None
+    return None, []
 
 
 def get_tournament(cur, tournament_id):
@@ -246,8 +262,10 @@ def handler(event: dict, context) -> dict:
 
         next_round_at = None
         if tournament['hall_status'] == 'active':
-            next_round_at = maybe_advance(cur, tournament)
+            next_round_at, advance_events = maybe_advance(cur, tournament)
             conn.commit()
+            for channel, ev, data in advance_events:
+                trigger(channel, ev, data)
             tournament = get_tournament(cur, tournament_id)
 
         user_id = get_user_id_by_token(cur, auth_token) if not is_admin else None
@@ -431,12 +449,14 @@ def handler(event: dict, context) -> dict:
         cur.execute("UPDATE tournaments SET hall_status = 'active', status = 'closed' WHERE id = %s", (tournament_id,))
         conn.commit()
         tournament = get_tournament(cur, tournament_id)
-        round_id = start_next_round(cur, tournament, 1)
+        round_id, start_events = start_next_round(cur, tournament, 1)
         conn.commit()
         conn.close()
         if not round_id:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось создать пары'})}
         trigger(f'tournament-{tournament_id}', 'round-started', {'round_number': 1})
+        for channel, ev, data in start_events:
+            trigger(channel, ev, data)
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     if method == 'POST' and action == 'reset':
