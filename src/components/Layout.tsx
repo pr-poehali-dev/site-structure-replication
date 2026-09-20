@@ -191,6 +191,13 @@ export function Header() {
                 <a href="/cabinet" onClick={() => setMenuOpen(false)} className="py-2 text-white/85 hover:text-secondary flex items-center gap-2">
                   <Icon name="User" size={16} /> Личный кабинет
                 </a>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); logout(); }}
+                  className="py-2 text-red-400 hover:text-red-300 flex items-center gap-2 text-left"
+                >
+                  <Icon name="LogOut" size={16} /> Выйти
+                </button>
               </div>
             ) : (
               <a href="/login" onClick={() => setMenuOpen(false)} className="py-2 text-secondary font-semibold flex items-center gap-2">
