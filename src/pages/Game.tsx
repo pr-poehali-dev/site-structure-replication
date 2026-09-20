@@ -143,6 +143,13 @@ function applyLocalMove(fen: string, from: string, to: string, promotion?: strin
   return parts.join(' ');
 }
 
+/** Разбивает "Фамилия Имя" на две строки для компактных карточек часов. */
+function fioLines(fio: string): [string, string] {
+  const idx = fio.indexOf(' ');
+  if (idx === -1) return [fio, ''];
+  return [fio.slice(0, idx), fio.slice(idx + 1)];
+}
+
 function formatClock(ms: number): string {
   if (ms < 0) ms = 0;
   const totalSec = Math.floor(ms / 1000);
@@ -856,7 +863,11 @@ export default function Game() {
                     avatarUrl={myRole === 'black' ? game.white_avatar_url : game.black_avatar_url}
                     size={22}
                   />
-                  <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
+                  <span className="flex flex-col leading-tight min-w-0">
+                    {fioLines(shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—').map((line, idx) => (
+                      <span key={idx} className="truncate">{line}</span>
+                    ))}
+                  </span>
                 </span>
                 <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
@@ -979,7 +990,11 @@ export default function Game() {
                     avatarUrl={myRole === 'black' ? game.black_avatar_url : game.white_avatar_url}
                     size={22}
                   />
-                  <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
+                  <span className="flex flex-col leading-tight min-w-0">
+                    {fioLines(shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—').map((line, idx) => (
+                      <span key={idx} className="truncate">{line}</span>
+                    ))}
+                  </span>
                 </span>
                 <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
@@ -1001,7 +1016,11 @@ export default function Game() {
                     avatarUrl={myRole === 'black' ? game.white_avatar_url : game.black_avatar_url}
                     size={22}
                   />
-                  <span className="truncate">{shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—'}</span>
+                  <span className="flex flex-col leading-tight min-w-0">
+                    {fioLines(shortFio(myRole === 'black' ? game.white_fio : game.black_fio) || '—').map((line, idx) => (
+                      <span key={idx} className="truncate">{line}</span>
+                    ))}
+                  </span>
                 </span>
                 <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownWhiteMs : shownBlackMs)}
@@ -1129,7 +1148,11 @@ export default function Game() {
                     avatarUrl={myRole === 'black' ? game.black_avatar_url : game.white_avatar_url}
                     size={22}
                   />
-                  <span className="truncate">{shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—'}</span>
+                  <span className="flex flex-col leading-tight min-w-0">
+                    {fioLines(shortFio(myRole === 'black' ? game.black_fio : game.white_fio) || '—').map((line, idx) => (
+                      <span key={idx} className="truncate">{line}</span>
+                    ))}
+                  </span>
                 </span>
                 <span className="font-mono text-4xl md:text-5xl font-extrabold tabular-nums shrink-0">
                   {clockText(myRole === 'black' ? shownBlackMs : shownWhiteMs)}
