@@ -312,9 +312,9 @@ export default function Hall() {
 
   const { tournament, players, rounds, my_game_id } = data;
   const finishedGames = rounds.reduce((acc, r) => acc + r.games.filter(g => !g.is_bye && g.status === 'finished').length, 0);
-  const whiteWins = rounds.reduce((acc, r) => acc + r.games.filter(g => g.result === '1-0').length, 0);
-  const blackWins = rounds.reduce((acc, r) => acc + r.games.filter(g => g.result === '0-1').length, 0);
-  const draws = rounds.reduce((acc, r) => acc + r.games.filter(g => g.result === '1/2-1/2').length, 0);
+  const whiteWins = rounds.reduce((acc, r) => acc + r.games.filter(g => !g.is_bye && g.result === '1-0').length, 0);
+  const blackWins = rounds.reduce((acc, r) => acc + r.games.filter(g => !g.is_bye && g.result === '0-1').length, 0);
+  const draws = rounds.reduce((acc, r) => acc + r.games.filter(g => !g.is_bye && g.result === '1/2-1/2').length, 0);
   const byes = rounds.reduce((acc, r) => acc + r.games.filter(g => g.is_bye).length, 0);
   const avgRating = players.length ? Math.round(players.reduce((a, p) => a + p.rating, 0) / players.length) : 0;
   const pct = (n: number) => finishedGames ? Math.round((n / finishedGames) * 100) : 0;
