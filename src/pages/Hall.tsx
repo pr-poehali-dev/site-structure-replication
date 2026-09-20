@@ -526,12 +526,17 @@ export default function Hall() {
                           const game = findPlayerRoundGame(p.id, r);
                           const score = playerRoundScore(p.id, game);
                           const clickable = !!game && !game.is_bye;
+                          // Опоздавший участник не сыграл 1-й тур, но за него уже начислено 0,5 очка —
+                          // показываем это в таблице вместо тире, а не пустую ячейку.
+                          const lateJoinScore = !game && r.round_number === 1 && p.joined_late ? '½' : null;
                           return (
                             <td key={r.round_number} className="py-2 pr-2 text-center text-gray-600">
                               {clickable ? (
                                 <RoundResultCell playerId={p.id} game={game!} score={score} gameHref={`/game/${game!.id}${isObserver ? '?observer=1' : ''}`} />
                               ) : score ? (
                                 <span className="font-semibold text-gray-800">{score}</span>
+                              ) : lateJoinScore ? (
+                                <span className="font-semibold text-gray-800">{lateJoinScore}</span>
                               ) : (
                                 <span className="text-gray-300">—</span>
                               )}
