@@ -106,7 +106,7 @@ export default {
 				'fade-in': 'fade-in 0.7s ease-out forwards',
 				'scale-in': 'scale-in 0.5s ease-out forwards',
 				'float': 'float 6s ease-in-out infinite',
-				'shimmer': 'shimmer 2.5s ease-in-out infinite'
+				'shimmer': 'shimmer 8s ease-in-out infinite'
 			}
 		}
 	},

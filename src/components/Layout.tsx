@@ -120,7 +120,7 @@ export function Header() {
               <a
                 key={n.href}
                 href={n.href}
-                className="relative px-4 py-2 rounded-lg text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 bg-[length:200%_100%] bg-gradient-to-r from-orange-500 via-amber-300 to-orange-500 animate-shimmer"
+                className="relative px-4 py-2 rounded-lg text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 bg-[length:200%_100%] bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-600 animate-shimmer"
               >
                 {n.label}
               </a>
@@ -193,7 +193,7 @@ export function Header() {
                 key={n.href}
                 href={n.href}
                 onClick={() => setMenuOpen(false)}
-                className="my-1 px-3 py-2 rounded-lg text-sm font-bold text-white shadow-md bg-[length:200%_100%] bg-gradient-to-r from-orange-500 via-amber-300 to-orange-500 animate-shimmer w-fit"
+                className="my-1 px-3 py-2 rounded-lg text-sm font-bold text-white shadow-md bg-[length:200%_100%] bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-600 animate-shimmer w-fit"
               >
                 {n.label}
               </a>
