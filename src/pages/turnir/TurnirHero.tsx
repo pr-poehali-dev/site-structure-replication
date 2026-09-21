@@ -3,16 +3,17 @@ import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 
 export default function TurnirHero() {
   return (
-    <section className="bg-primary text-white relative overflow-hidden">
+    <section className="bg-amber-50 relative overflow-hidden">
       <div className="absolute inset-0 chess-grid opacity-40" />
+      <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
       <div className="container relative px-4 py-10 md:py-14 max-w-4xl mx-auto text-center">
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
           <Icon name="Trophy" size={15} /> Онлайн-регистрация
         </span>
-        <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight">
+        <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
           <span className="text-secondary">Турниры</span>
         </h1>
-        <p className="mt-5 text-white/75 text-lg max-w-2xl mx-auto">
+        <p className="mt-5 text-foreground/70 text-lg max-w-2xl mx-auto">
           Выберите турнир и подайте заявку на участие онлайн
         </p>
         <div className="mt-6 flex justify-center">

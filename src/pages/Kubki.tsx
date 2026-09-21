@@ -146,17 +146,17 @@ export default function Kubki() {
       <Header />
 
       {/* Hero */}
-      <section className="bg-primary text-white relative overflow-hidden">
+      <section className="bg-amber-50 relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-orange-500/20 blur-3xl animate-float" />
+        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
         <div className="container relative px-4 py-10 md:py-14 max-w-5xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
             <Icon name="Award" size={15} /> Награды для победителей
           </span>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight">
+          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
             Заказать <span className="text-secondary">награды</span>
           </h1>
-          <p className="mt-5 text-white/75 text-lg max-w-2xl mx-auto">
+          <p className="mt-5 text-foreground/70 text-lg max-w-2xl mx-auto">
             Заказать наградную атрибутику можно по результатам турниров и олимпиад центра «Мир шахмат» — на основании итоговых протоколов соревнований.
           </p>
         </div>

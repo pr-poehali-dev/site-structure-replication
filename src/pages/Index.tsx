@@ -68,26 +68,26 @@ const Index = () => {
       <PublicPushSubscribe hideTrigger />
 
       {/* Hero */}
-      <section id="top" className="relative overflow-hidden bg-primary text-white">
+      <section id="top" className="relative overflow-hidden bg-amber-50">
         <div className="absolute inset-0 chess-grid opacity-60" />
-        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-orange-500/20 blur-3xl animate-float" />
-        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
+        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-emerald-400/25 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
               <Icon name="Sparkles" size={16} /> Центр поддержки детского шахматного спорта
             </span>
-            <h1 className="font-heading font-bold text-4xl md:text-6xl leading-tight uppercase">
+            <h1 className="font-heading font-bold text-4xl md:text-6xl leading-tight uppercase text-primary">
               Мир <span className="text-secondary">шахмат</span>
             </h1>
-            <p className="mt-5 text-lg text-white/80 max-w-xl">
+            <p className="mt-5 text-lg text-foreground/70 max-w-xl">
               Турниры, фестивали и праздники шахмат для детей. Мы растим чемпионов, развиваем мышление и дарим радость победы каждому юному игроку.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Button asChild size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base h-12 px-7">
                 <a href="/turnir"><Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться на турнир</a>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 h-12 px-7 bg-transparent">
+              <Button asChild size="lg" variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-12 px-7 bg-transparent">
                 <a href="#olimpiady">Олимпиады</a>
               </Button>
             </div>

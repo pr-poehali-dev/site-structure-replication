@@ -100,7 +100,7 @@ const OlimpiadPage = () => {
       )}
 
       {/* Hero */}
-      <section className="bg-primary text-white relative overflow-hidden">
+      <section className="bg-amber-50 relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
         <div className="container relative px-4 py-5 max-w-4xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
@@ -111,18 +111,18 @@ const OlimpiadPage = () => {
               <Icon name={o.icon} size={40} />
             </span>
           </div>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight">
+          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
             Олимпиада <span className="text-secondary">«{o.name}»</span>
           </h1>
-          <p className="mt-4 text-white/70 text-lg">{o.tagline}</p>
+          <p className="mt-4 text-foreground/70 text-lg">{o.tagline}</p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">
-            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 text-sm">
+            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
               <Icon name="Monitor" size={15} className="text-secondary" /> Интерактивный онлайн-формат
             </div>
-            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 text-sm">
+            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
               <Icon name="Clock" size={15} className="text-secondary" /> Результаты за 2 рабочих дня
             </div>
-            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 text-sm">
+            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
               <Icon name="Globe" size={15} className="text-secondary" /> Из любой точки мира
             </div>
           </div>

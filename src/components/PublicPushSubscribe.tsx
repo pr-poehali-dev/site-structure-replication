@@ -123,7 +123,7 @@ export default function PublicPushSubscribe({ hideTrigger = false }: PublicPushS
     if (hideTrigger) return null;
     return (
       <Button variant="outline" size="sm" onClick={handleUnsubscribe} disabled={loading}
-        className="border-white/30 text-white hover:bg-white/10 bg-transparent">
+        className="border-primary/20 text-primary hover:bg-primary/5 bg-transparent">
         <Icon name="BellOff" size={16} className="mr-1.5" /> Отключить уведомления
       </Button>
     );
@@ -133,7 +133,7 @@ export default function PublicPushSubscribe({ hideTrigger = false }: PublicPushS
     <>
       {!hideTrigger && (
         <Button variant="outline" size="sm" onClick={() => setShowExplain(true)} disabled={loading}
-          className="border-white/30 text-white hover:bg-white/10 bg-transparent">
+          className="border-primary/20 text-primary hover:bg-primary/5 bg-transparent">
           <Icon name="Bell" size={16} className="mr-1.5" /> Уведомлять о новых турнирах
         </Button>
       )}

@@ -80,17 +80,17 @@ export default function Result() {
       <Header />
 
       {/* Hero */}
-      <section className="bg-primary text-white relative overflow-hidden">
+      <section className="bg-amber-50 relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl animate-float" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-emerald-400/25 blur-3xl animate-float" />
         <div className="container relative px-4 py-10 md:py-14 max-w-4xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
             <Icon name="ListChecks" size={15} /> Протоколы и итоги
           </span>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight">
+          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
             Результаты <span className="text-secondary">соревнований</span>
           </h1>
-          <p className="mt-5 text-white/75 text-lg max-w-2xl mx-auto">
+          <p className="mt-5 text-foreground/70 text-lg max-w-2xl mx-auto">
             Итоговые таблицы, протоколы и положения прошедших соревнований
           </p>
         </div>
