@@ -116,8 +116,9 @@ export function Header() {
         <a href="/" />
         <nav className="hidden lg:flex items-center gap-1">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="px-3 py-2 rounded-lg text-sm font-semibold text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors">
+            <a key={n.href} href={n.href} className="relative px-3 py-2 rounded-lg text-sm font-semibold text-primary/70 hover:text-primary hover:bg-primary/10 hover:-translate-y-0.5 transition-all duration-200 group">
               {n.label}
+              <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center" />
             </a>
           ))}
         </nav>
