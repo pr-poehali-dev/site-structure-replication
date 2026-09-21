@@ -96,8 +96,8 @@ export default {
 					'50%': { transform: 'translateY(-14px)' }
 				},
 				'shimmer': {
-					'0%': { backgroundPosition: '-200% 0' },
-					'100%': { backgroundPosition: '200% 0' }
+					'0%, 100%': { backgroundPosition: '0% 0' },
+					'50%': { backgroundPosition: '100% 0' }
 				}
 			},
 			animation: {
@@ -106,7 +106,7 @@ export default {
 				'fade-in': 'fade-in 0.7s ease-out forwards',
 				'scale-in': 'scale-in 0.5s ease-out forwards',
 				'float': 'float 6s ease-in-out infinite',
-				'shimmer': 'shimmer 8s ease-in-out infinite'
+				'shimmer': 'shimmer 6s ease-in-out infinite'
 			}
 		}
 	},
