@@ -148,6 +148,7 @@ export default function Kubki() {
       {/* Hero */}
       <section className="bg-primary text-white relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
+        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-orange-500/20 blur-3xl animate-float" />
         <div className="container relative px-4 py-10 md:py-14 max-w-5xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
             <Icon name="Award" size={15} /> Награды для победителей

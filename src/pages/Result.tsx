@@ -82,6 +82,7 @@ export default function Result() {
       {/* Hero */}
       <section className="bg-primary text-white relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl animate-float" />
         <div className="container relative px-4 py-10 md:py-14 max-w-4xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
             <Icon name="ListChecks" size={15} /> Протоколы и итоги

@@ -5,6 +5,12 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import Seo from '@/components/Seo';
 
+const OLIMPIAD_COLORS: Record<string, string> = {
+  debyut: 'bg-orange-500 text-white',
+  evrika: 'bg-secondary text-secondary-foreground',
+  erudit: 'bg-emerald-500 text-white',
+};
+
 const OLIMPIADS: Record<string, {
   name: string;
   icon: string;
@@ -101,7 +107,7 @@ const OlimpiadPage = () => {
             <Icon name="Medal" size={15} /> Регулярные олимпиады
           </span>
           <div className="flex justify-center mb-6">
-            <span className="grid place-items-center w-20 h-20 rounded-2xl bg-secondary text-secondary-foreground">
+            <span className={`grid place-items-center w-20 h-20 rounded-2xl ${OLIMPIAD_COLORS[slug!]}`}>
               <Icon name={o.icon} size={40} />
             </span>
           </div>
@@ -239,7 +245,7 @@ const OlimpiadPage = () => {
                   href={`/olimpiad/${s}`}
                   className="group rounded-2xl border border-border bg-card p-5 flex items-center gap-4 hover:border-secondary hover:shadow-md transition-all"
                 >
-                  <span className="grid place-items-center w-11 h-11 rounded-xl bg-primary text-secondary shrink-0 group-hover:bg-secondary group-hover:text-secondary-foreground transition-colors">
+                  <span className={`grid place-items-center w-11 h-11 rounded-xl shrink-0 transition-colors ${OLIMPIAD_COLORS[s]}`}>
                     <Icon name={item.icon} size={22} />
                   </span>
                   <div>

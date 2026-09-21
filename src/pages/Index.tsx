@@ -24,7 +24,7 @@ const OLIMPIADS = [
     slug: 'debyut',
     icon: 'Swords',
     desc: 'Задания на знание дебютной базы, а также проверка знания основных правил игры в дебюте.',
-    color: 'bg-primary text-secondary',
+    color: 'bg-orange-500 text-white',
   },
   {
     name: 'Эврика',
@@ -38,7 +38,7 @@ const OLIMPIADS = [
     slug: 'erudit',
     icon: 'BookOpen',
     desc: 'Задания на знание правил и истории развития шахмат. Для тех, кто любит думать глубоко.',
-    color: 'bg-primary text-secondary',
+    color: 'bg-emerald-500 text-white',
   },
 ];
 
@@ -50,10 +50,10 @@ const STATS = [
 ];
 
 const SERVICES = [
-  { id: 'turnir', icon: 'Swords', title: 'Турниры', desc: 'Регулярные шахматные турниры для детей всех уровней подготовки — от новичков до разрядников.' },
-  { id: 'result', icon: 'ListChecks', title: 'Результаты', desc: 'Итоговые таблицы и протоколы прошедших соревнований доступны участникам и родителям.' },
-  { id: 'kubki', icon: 'Award', title: 'Заказать награды', desc: 'Кубки, медали и памятные подарки для победителей и призёров турниров.' },
-  { id: 'pay', icon: 'CreditCard', title: 'Оплата', desc: 'Удобная онлайн-оплата участия в турнирах и олимпиадах центра «Мир шахмат».' },
+  { id: 'turnir', icon: 'Swords', title: 'Турниры', desc: 'Регулярные шахматные турниры для детей всех уровней подготовки — от новичков до разрядников.', color: 'bg-secondary/20 text-primary' },
+  { id: 'result', icon: 'ListChecks', title: 'Результаты', desc: 'Итоговые таблицы и протоколы прошедших соревнований доступны участникам и родителям.', color: 'bg-emerald-100 text-emerald-600' },
+  { id: 'kubki', icon: 'Award', title: 'Заказать награды', desc: 'Кубки, медали и памятные подарки для победителей и призёров турниров.', color: 'bg-orange-100 text-orange-600' },
+  { id: 'pay', icon: 'CreditCard', title: 'Оплата', desc: 'Удобная онлайн-оплата участия в турнирах и олимпиадах центра «Мир шахмат».', color: 'bg-secondary/20 text-primary' },
 ];
 
 const Index = () => {
@@ -70,6 +70,8 @@ const Index = () => {
       {/* Hero */}
       <section id="top" className="relative overflow-hidden bg-primary text-white">
         <div className="absolute inset-0 chess-grid opacity-60" />
+        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-orange-500/20 blur-3xl animate-float" />
+        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
@@ -140,7 +142,7 @@ const Index = () => {
 
           <div className="grid md:grid-cols-3 gap-6 mb-10">
             <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-primary text-secondary">
+              <span className="grid place-items-center w-14 h-14 rounded-xl bg-orange-100 text-orange-600">
                 <Icon name="ScrollText" size={28} />
               </span>
               <h4 className="font-heading font-semibold text-lg text-primary uppercase">Официальные награды</h4>
@@ -170,7 +172,7 @@ const Index = () => {
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-primary text-secondary">
+              <span className="grid place-items-center w-14 h-14 rounded-xl bg-emerald-100 text-emerald-600">
                 <Icon name="Globe" size={28} />
               </span>
               <h4 className="font-heading font-semibold text-lg text-primary uppercase">Из любой точки мира</h4>
@@ -248,7 +250,7 @@ const Index = () => {
             {SERVICES.map((s) => (
               <div id={s.id} key={s.id} className="scroll-mt-24 rounded-2xl bg-card border border-border p-7 hover:shadow-xl transition-shadow">
                 <div className="flex items-center gap-4 mb-4">
-                  <span className="grid place-items-center w-12 h-12 rounded-xl bg-secondary/20 text-primary">
+                  <span className={`grid place-items-center w-12 h-12 rounded-xl ${s.color}`}>
                     <Icon name={s.icon} size={24} />
                   </span>
                   <h3 className="font-heading font-semibold text-xl uppercase text-primary">{s.title}</h3>
