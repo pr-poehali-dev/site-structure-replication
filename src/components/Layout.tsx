@@ -116,10 +116,20 @@ export function Header() {
         <a href="/" />
         <nav className="hidden lg:flex items-center gap-1">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} className="relative px-3 py-2 rounded-lg text-sm font-semibold text-primary/70 hover:text-primary hover:bg-primary/10 hover:-translate-y-0.5 transition-all duration-200 group">
-              {n.label}
-              <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center" />
-            </a>
+            n.href === '/turnir' ? (
+              <a
+                key={n.href}
+                href={n.href}
+                className="relative px-4 py-2 rounded-lg text-sm font-bold text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 bg-[length:200%_100%] bg-gradient-to-r from-orange-500 via-amber-300 to-orange-500 animate-shimmer"
+              >
+                {n.label}
+              </a>
+            ) : (
+              <a key={n.href} href={n.href} className="relative px-3 py-2 rounded-lg text-sm font-semibold text-primary/70 hover:text-primary hover:bg-primary/10 hover:-translate-y-0.5 transition-all duration-200 group">
+                {n.label}
+                <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center" />
+              </a>
+            )
           ))}
         </nav>
         <div className="hidden lg:flex items-center gap-2">
@@ -178,9 +188,20 @@ export function Header() {
       {menuOpen && (
         <nav className="lg:hidden bg-secondary px-4 pb-4 flex flex-col gap-1 animate-fade-in">
           {NAV.map((n) => (
-            <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)} className="py-2 text-primary/80 font-medium hover:text-primary border-b border-primary/10">
-              {n.label}
-            </a>
+            n.href === '/turnir' ? (
+              <a
+                key={n.href}
+                href={n.href}
+                onClick={() => setMenuOpen(false)}
+                className="my-1 px-3 py-2 rounded-lg text-sm font-bold text-white shadow-md bg-[length:200%_100%] bg-gradient-to-r from-orange-500 via-amber-300 to-orange-500 animate-shimmer w-fit"
+              >
+                {n.label}
+              </a>
+            ) : (
+              <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)} className="py-2 text-primary/80 font-medium hover:text-primary border-b border-primary/10">
+                {n.label}
+              </a>
+            )
           ))}
           {!loading && (
             user ? (
