@@ -352,8 +352,8 @@ export default function Hall() {
         </div>
       )}
 
-      <main className="flex-1 py-6 px-4">
-        <div className="container max-w-7xl mx-auto">
+      <main className="flex-1 py-6">
+        <div className="container max-w-7xl mx-auto px-2 sm:px-8">
           {my_game_id && isActive && (
             <div className="mb-4 bg-primary text-primary-foreground rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2 font-semibold">
