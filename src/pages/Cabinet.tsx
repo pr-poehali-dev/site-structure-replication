@@ -64,10 +64,15 @@ export default function Cabinet() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
-      .then(r => r.json())
-      .then(d => setApps(d.applications || []))
-      .finally(() => setAppsLoading(false));
+    const loadApps = () => {
+      fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
+        .then(r => r.json())
+        .then(d => setApps(d.applications || []))
+        .finally(() => setAppsLoading(false));
+    };
+    loadApps();
+    const interval = setInterval(loadApps, 20000);
+    return () => clearInterval(interval);
   }, [token]);
 
   if (loading) {
