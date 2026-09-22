@@ -440,7 +440,7 @@ export default function Hall() {
                     <div
                       key={g.id}
                       onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}${isObserver ? '?observer=1' : ''}`)}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
                     >
                       {g.is_bye ? (
                         <span className="text-sm text-gray-600 flex items-center gap-2">
@@ -449,20 +449,20 @@ export default function Hall() {
                         </span>
                       ) : (
                         <>
-                          <div className="flex-1 flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 sm:flex-1">
                             <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
-                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800" />
+                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate" />
                           </div>
-                          <div className="px-3 shrink-0">
+                          <div className="px-3 shrink-0 self-center">
                             {g.status === 'finished' ? (
                               <span className="text-sm font-bold text-primary">{RESULT_LABELS[g.result || ''] || g.result}</span>
                             ) : (
                               <span className="text-xs text-secondary hover:underline font-medium">Смотреть</span>
                             )}
                           </div>
-                          <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} avatarUrl={g.black_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 text-right flex-row-reverse" />
-                            <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0" />
+                          <div className="flex items-center gap-2 min-w-0 sm:flex-1 sm:justify-end">
+                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} avatarUrl={g.black_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate order-2 sm:order-1 sm:text-right sm:flex-row-reverse" />
+                            <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0 order-1 sm:order-2" />
                           </div>
                         </>
                       )}
