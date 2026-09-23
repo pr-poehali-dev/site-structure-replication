@@ -198,34 +198,38 @@ export default function Game() {
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
   const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useState(true);
-  const [boardHeight, setBoardHeight] = useState<number | null>(null);
+  const [boardFitSize, setBoardFitSize] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const boardResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const boardSlotResizeObserverRef = useRef<ResizeObserver | null>(null);
   const knownGameIdRef = useRef<number | null>(null);
   const lastMoveCountRef = useRef<number | null>(null);
   const soundedFinishRef = useRef(false);
 
-  // Боковые колонки (слева — инфо о партии и чат, справа — часы/ходы/кнопки) должны
-  // по высоте точно совпадать с доской, а не быть зафиксированы на глаз — иначе при
-  // сжатии доски на узких экранах они вылезают за её нижнюю границу. Измеряем реальную
-  // высоту доски и синхронизируем с ней высоту колонок через inline style. Применяется
-  // только на десктопе (lg: 3 колонки рядом) — на мобильных колонки идут друг под другом
-  // и должны расти свободно.
+  // На десктопе (lg) страница занимает ровно 100vh без общей прокрутки (см. класс на
+  // корневом div) — доска должна вписываться и по ширине, И по высоте экрана одновременно,
+  // а не только по ширине, как раньше (тогда при невысоком окне доска вылезала за нижний
+  // край экрана, и появлялась общая прокрутка). Боковые колонки растягиваются на всю высоту
+  // ряда через CSS Grid (items/content-stretch на гриде ниже) — без ручной подгонки их
+  // высоты под высоту доски через JS, как было раньше.
   //
-  // Доска рендерится только когда game уже загружен (после ранних return'ов на loading/
+  // "Слот" — гибкий контейнер вокруг доски (flex-1 внутри центральной колонки), который
+  // растягивается на всё оставшееся вертикальное место. Измеряем его реальные ширину и
+  // высоту и вычисляем максимальный размер квадратной доски, вписывающийся в обе стороны.
+  //
+  // Слот рендерится только когда game уже загружен (после ранних return'ов на loading/
   // !user/!game выше), поэтому обычный useEffect(..., []) с обычным ref не сработает —
-  // он выполняется один раз при монтировании компонента, когда ref ещё указывает на null
-  // (доски в DOM ещё нет). Callback-ref решает это: вызывается именно в момент, когда узел
-  // доски появляется в DOM (после того как game подгрузился), а также при размонтировании.
-  const boardWrapCallbackRef = useCallback((el: HTMLDivElement | null) => {
-    boardResizeObserverRef.current?.disconnect();
-    boardResizeObserverRef.current = null;
-    if (!el) return;
-    setBoardHeight(el.offsetHeight);
-    const observer = new ResizeObserver(() => setBoardHeight(el.offsetHeight));
+  // он выполняется один раз при монтировании компонента, когда ref ещё указывает на null.
+  // Callback-ref решает это: вызывается именно в момент, когда узел слота появляется в DOM.
+  const boardSlotCallbackRef = useCallback((el: HTMLDivElement | null) => {
+    boardSlotResizeObserverRef.current?.disconnect();
+    boardSlotResizeObserverRef.current = null;
+    if (!el) { setBoardFitSize(null); return; }
+    const update = () => setBoardFitSize(Math.max(0, Math.floor(Math.min(el.clientWidth, el.clientHeight, 560))));
+    update();
+    const observer = new ResizeObserver(update);
     observer.observe(el);
-    boardResizeObserverRef.current = observer;
+    boardSlotResizeObserverRef.current = observer;
   }, []);
 
   useEffect(() => {
@@ -737,7 +741,11 @@ export default function Game() {
   const viewingPast = viewMoveIndex !== null;
 
   return (
-    <div className="min-h-screen bg-muted text-foreground flex flex-col">
+    // На десктопе (lg и выше) страница ровно 100vh и без общей прокрутки — доска и боковые
+    // колонки подстраиваются под высоту экрана, скролл остаётся только внутри чата и списка
+    // ходов. На мобильных экранах высота свободная, как и раньше (там боковые колонки идут
+    // друг под другом, ограничивать их высотой экрана не нужно и было бы неудобно).
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-muted text-foreground flex flex-col">
       <Seo title={`Партия — ${game.tournament_title}`} description="Шахматная партия" noindex />
       <Header />
 
@@ -751,9 +759,9 @@ export default function Game() {
         </div>
       )}
 
-      <main className="flex-1 py-6 px-2 sm:px-4">
-        <div className="w-full max-w-6xl mx-auto lg:px-4">
-          <div className="flex items-center justify-between gap-2 mb-4">
+      <main className="flex-1 py-6 px-2 sm:px-4 lg:py-4 lg:flex lg:flex-col lg:min-h-0 lg:overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto lg:px-4 lg:flex lg:flex-col lg:h-full lg:min-h-0">
+          <div className="flex items-center justify-between gap-2 mb-4 lg:shrink-0">
             {fromCabinet ? (
               <Link to="/cabinet?tab=games" className="flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary transition-colors">
                 <Icon name="ArrowLeft" size={16} /> В кабинет
@@ -788,20 +796,18 @@ export default function Game() {
           </div>
 
           {finished && nextRoundMs !== null && redirectingGameId === null && (
-            <div className="bg-primary text-primary-foreground rounded-2xl shadow-sm p-4 text-center mb-4 flex items-center justify-center gap-3">
+            <div className="bg-primary text-primary-foreground rounded-2xl shadow-sm p-4 text-center mb-4 flex items-center justify-center gap-3 lg:shrink-0">
               <Icon name="Clock" size={18} className="text-secondary" />
               <span className="text-sm text-white/70">Следующий тур через</span>
               <span className="font-heading font-bold text-2xl text-secondary tabular-nums">{formatCountdown(nextRoundMs)}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center items-start">
-            {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат — фиксированная высота, равная доске,
-                не должна вылезать за её нижнюю границу. Скролл — только внутри чата. */}
-            <div
-              className="order-3 lg:order-1 flex flex-col gap-3 min-h-0 overflow-hidden"
-              style={isDesktop && boardHeight ? { height: boardHeight } : undefined}
-            >
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,560px)_300px] gap-6 justify-center lg:items-stretch lg:flex-1 lg:min-h-0">
+            {/* ЛЕВАЯ КОЛОНКА: информация о партии + чат — растягивается на всю высоту ряда
+                (items-stretch на гриде выше), совпадая с высотой доски в средней колонке.
+                Скролл — только внутри чата. */}
+            <div className="order-3 lg:order-1 flex flex-col gap-3 min-h-0 overflow-hidden">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 shrink-0">
                 <Link to={`/hall/${game.tournament_id}`} className="flex items-start gap-2 text-sm font-semibold text-primary hover:text-secondary transition-colors mb-2">
                   <Icon name="Swords" size={16} className="text-secondary shrink-0 mt-0.5" />
@@ -870,7 +876,7 @@ export default function Game() {
             </div>
 
             {/* ЦЕНТР: ДОСКА */}
-            <div className="order-1 lg:order-2 flex flex-col items-center gap-3">
+            <div className="order-1 lg:order-2 flex flex-col items-center gap-3 lg:h-full lg:min-h-0">
               {/* Часы соперника — на мобильных показываются над доской */}
               <div className={`lg:hidden w-full max-w-[560px] rounded-2xl border px-4 py-3 flex items-center justify-between transition-colors ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-secondary border-secondary text-secondary-foreground shadow-lg shadow-secondary/30' : 'bg-white border-gray-100 text-gray-800 shadow-sm'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
@@ -913,7 +919,15 @@ export default function Game() {
                 </div>
               )}
 
-              <div ref={boardWrapCallbackRef} className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square">
+              {/* Слот растягивается на всё оставшееся место в колонке (flex-1) — по нему
+                  измеряется, сколько места есть под доску и по ширине, и по высоте (см.
+                  boardSlotCallbackRef). На мобильных слот не участвует в раскладке высоты
+                  экрана, поэтому просто центрирует доску обычным образом. */}
+              <div ref={boardSlotCallbackRef} className="w-full lg:flex-1 lg:min-h-0 flex items-center justify-center">
+                <div
+                  className="grid grid-cols-8 grid-rows-8 rounded-md overflow-hidden shadow-lg w-full max-w-[560px] aspect-square"
+                  style={isDesktop && boardFitSize ? { width: boardFitSize, height: boardFitSize, maxWidth: boardFitSize } : undefined}
+                >
                 {ranks.map((rIdx, rowPos) => (
                   filesOrdered.map((f, colPos) => {
                     const fIdx = FILES.indexOf(f);
@@ -980,6 +994,7 @@ export default function Game() {
                     );
                   })
                 ))}
+                </div>
               </div>
 
               {promoChoice && (
@@ -1019,11 +1034,9 @@ export default function Game() {
               </div>
             </div>
 
-            {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы */}
-            <div
-              className="order-2 lg:order-3 flex flex-col gap-3 min-h-0 overflow-hidden"
-              style={isDesktop && boardHeight ? { height: boardHeight } : undefined}
-            >
+            {/* ПРАВАЯ КОЛОНКА: часы соперника, ходы, кнопки, свои часы — растягивается на
+                всю высоту ряда (items-stretch на гриде выше), совпадая с высотой доски. */}
+            <div className="order-2 lg:order-3 flex flex-col gap-3 min-h-0 overflow-hidden">
               {/* Часы соперника — верхняя граница правой колонки (на мобильных дублируются над доской, здесь скрыты) */}
               <div className={`hidden lg:flex rounded-2xl border px-4 py-3 items-center justify-between shrink-0 transition-colors ${game.turn === (myRole === 'black' ? 'white' : 'black') && !finished ? 'bg-secondary border-secondary text-secondary-foreground shadow-lg shadow-secondary/30' : 'bg-white border-gray-100 text-gray-800 shadow-sm'}`}>
                 <span className="font-medium flex items-center gap-2 min-w-0">
@@ -1180,7 +1193,12 @@ export default function Game() {
         </div>
       </main>
 
-      <Footer />
+      {/* На десктопе страница занимает ровно 100vh без общей прокрутки (см. класс на корневом
+          div) — футер туда не помещается и не нужен во время игры, поэтому скрыт на lg+.
+          На мобильных высота свободная, футер остаётся как на всех остальных страницах. */}
+      <div className="lg:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }
