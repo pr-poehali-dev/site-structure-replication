@@ -16,6 +16,14 @@ TIMEOUT = 'timeout'
 FIRST_MOVE_TIMEOUT = 'first_move_timeout'
 FIRST_MOVE_GRACE_MS = 60000
 
+PRESENCE_ONLINE_SECONDS = 25
+
+
+def is_present(last_seen_at):
+    if not last_seen_at:
+        return False
+    return (datetime.utcnow() - last_seen_at).total_seconds() < PRESENCE_ONLINE_SECONDS
+
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
@@ -390,6 +398,12 @@ def handler(event: dict, context) -> dict:
                    ON CONFLICT (user_id) DO UPDATE SET last_seen = now()""",
                 (user_id,)
             )
+            # Присутствие участника в турнирном зале — для индикатора "онлайн" в турнирной
+            # таблице (players[].online). Обновляется на каждом опросе зала этим участником.
+            cur.execute(
+                "UPDATE tournament_players SET last_seen_at = now() WHERE tournament_id = %s AND user_id = %s",
+                (tournament_id, user_id)
+            )
             conn.commit()
 
             cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND user_id = %s", (tournament_id, user_id))
@@ -437,7 +451,7 @@ def handler(event: dict, context) -> dict:
         # порядок, чем чистая сортировка по рейтингу (как раньше), поэтому сортируем по
         # уже готовому place, чтобы 6-е и 7-е места не менялись местами в таблице.
         cur.execute(
-            """SELECT tp.id, tp.fio, tp.rating, tp.points, tp.buchholz, tp.wins, tp.place, tp.joined_late, tp.user_id, u.avatar_url
+            """SELECT tp.id, tp.fio, tp.rating, tp.points, tp.buchholz, tp.wins, tp.place, tp.joined_late, tp.user_id, u.avatar_url, tp.last_seen_at
                FROM tournament_players tp
                LEFT JOIN users u ON u.id = tp.user_id
                WHERE tp.tournament_id = %s
@@ -445,7 +459,7 @@ def handler(event: dict, context) -> dict:
             (tournament_id,)
         )
         players = [
-            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7], 'user_id': r[8], 'avatar_url': r[9], 'rating_delta': None}
+            {'id': r[0], 'fio': r[1], 'rating': r[2], 'points': float(r[3]), 'buchholz': float(r[4]), 'wins': r[5], 'place': r[6], 'joined_late': r[7], 'user_id': r[8], 'avatar_url': r[9], 'rating_delta': None, 'online': is_present(r[10])}
             for r in cur.fetchall()
         ]
 

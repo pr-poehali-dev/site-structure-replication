@@ -50,6 +50,7 @@ interface Player {
   place: number | null;
   joined_late: boolean;
   rating_delta: number | null;
+  online?: boolean;
 }
 
 interface TournamentInfo {
@@ -214,8 +215,11 @@ export default function Hall() {
 
   useEffect(() => {
     fetchHall();
-    // Резервный опрос на случай, если real-time соединение прервалось
-    const interval = setInterval(fetchHall, 20000);
+    // Резервный опрос на случай, если real-time соединение прервалось — раз в 4 секунды
+    // (раньше было 20с): интервал заодно обновляет отметку присутствия участника в зале
+    // (players[].online, см. индикатор "онлайн" в турнирной таблице), поэтому короче
+    // интервал — точнее статус присутствия, а не только резервная доставка событий.
+    const interval = setInterval(fetchHall, 4000);
     return () => clearInterval(interval);
   }, [fetchHall]);
 
@@ -502,7 +506,15 @@ export default function Hall() {
                           )}
                         </td>
                         <td className="py-2 pr-2 font-medium text-gray-800">
-                          <PlayerLink userId={p.user_id} fio={p.fio} avatarUrl={p.avatar_url} avatarSize={22} />
+                          <span className="inline-flex items-center gap-1.5">
+                            <PlayerLink userId={p.user_id} fio={p.fio} avatarUrl={p.avatar_url} avatarSize={22} />
+                            {isActive && (
+                              <span
+                                title={p.online ? 'Онлайн' : 'Не в сети'}
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.online ? 'bg-green-500' : 'bg-gray-300'}`}
+                              />
+                            )}
+                          </span>
                           {p.joined_late && (
                             <HoverCard>
                               <HoverCardTrigger asChild>
