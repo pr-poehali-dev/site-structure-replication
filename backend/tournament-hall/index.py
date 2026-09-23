@@ -131,6 +131,20 @@ def start_next_round(cur, tournament, round_number):
         events = finish_tournament_early(cur, tournament, round_number - 1)
         return None, events
 
+    # Защита от сбоя жеребьёвки: пары обязаны покрывать ВСЕХ активных игроков без
+    # исключения. Если из-за непредвиденной ошибки в пары попала только часть
+    # участников, не создаём тур с неполным составом партий — это оставило бы
+    # часть игроков без партии молча. Возвращаем round_id без единой партии:
+    # maybe_advance() увидит тур с 0 партий и самостоятельно переиграет жеребьёвку
+    # заново (см. self-healing в maybe_advance).
+    paired_ids = set()
+    for p in pairs:
+        paired_ids.add(p['white_id'])
+        if p['black_id'] is not None:
+            paired_ids.add(p['black_id'])
+    if len(paired_ids) != len(players):
+        return round_id, []
+
     base_ms, inc_ms = parse_time_control(tournament['time_control'])
     create_round_games(cur, tournament['id'], round_id, pairs, base_ms, inc_ms)
     return round_id, []
@@ -150,13 +164,13 @@ def maybe_advance(cur, tournament):
     в start_next_round), поэтому при гонке реальное действие выполнится только у одного
     запроса, а остальные увидят, что оно уже сделано, и просто прочитают актуальное состояние."""
     cur.execute(
-        "SELECT id, round_number, status, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
+        "SELECT id, round_number, status, completed_at, started_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
         (tournament['id'],)
     )
     row = cur.fetchone()
     if not row:
         return None, []
-    round_id, round_number, status, completed_at = row
+    round_id, round_number, status, completed_at, started_at = row
 
     if status == 'active':
         # Считаем отдельно общее число партий и незавершённых: между вставкой строки тура
@@ -169,6 +183,22 @@ def maybe_advance(cur, tournament):
         )
         total, unfinished = cur.fetchone()
         events = []
+
+        # Самовосстановление: если тур создан больше 10 секунд назад, а партий в нём
+        # так и не появилось — это не обычная гонка (та разрешается за доли секунды),
+        # а реальный сбой жеребьёвки (например, часть игроков выпала из пар — см.
+        # проверку в start_next_round). Без этой защиты тур замирал бы в статусе
+        # 'active' навсегда, и турнир невозможно было бы продолжить. Пересоздаём
+        # тур с нуля и пробуем жеребьёвку заново.
+        if total == 0 and started_at and datetime.utcnow() - started_at > timedelta(seconds=10):
+            cur.execute("DELETE FROM tournament_rounds WHERE id = %s AND status = 'active' RETURNING id", (round_id,))
+            if cur.fetchone():
+                new_round_id, retry_events = start_next_round(cur, tournament, round_number)
+                events = retry_events
+                if new_round_id:
+                    events = events + [(f"tournament-{tournament['id']}", 'round-started', {'round_number': round_number})]
+            return None, events
+
         if total > 0 and unfinished == 0:
             cur.execute(
                 "UPDATE tournament_rounds SET status = 'completed', completed_at = now() WHERE id = %s AND status = 'active' RETURNING id",
