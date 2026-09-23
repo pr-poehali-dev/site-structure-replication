@@ -19,12 +19,10 @@ const BALANCE_URL = func2url['balance'];
 const NAV = [
   { label: 'Главная', href: '/' },
   { label: 'Турниры', href: '/turnir' },
-  { label: 'Абонементы', href: '/subscriptions' },
   { label: 'Олимпиады', href: '/#olimpiady' },
   { label: 'Результаты', href: '/result' },
   { label: 'Заказать награды', href: '/kubki' },
-  { label: 'Оплата', href: '/#pay' },
-  { label: 'Контакты', href: '/#contacts' },
+  { label: 'Контакты', href: '/contacts' },
 ];
 
 function LoginPopover({ trigger }: { trigger: React.ReactNode }) {
