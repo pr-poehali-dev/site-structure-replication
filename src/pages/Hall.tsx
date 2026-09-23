@@ -184,6 +184,7 @@ export default function Hall() {
   const [pusherCluster, setPusherCluster] = useState<string | null>(null);
   const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
+  const [redirectStuck, setRedirectStuck] = useState(false);
   const knownGameIdRef = useRef<number | null>(null);
   const hasLoadedOnceRef = useRef(false);
 
@@ -282,6 +283,20 @@ export default function Hall() {
     return () => clearTimeout(timer);
   }, [redirectingGameId, navigate]);
 
+  // Иногда переход в начинающуюся партию (navigate) по неизвестной причине подвисает, и
+  // оверлей "У Вас начинается партия" остаётся на экране навсегда — раньше спасало только
+  // ручное обновление страницы пользователем. Подстраховка: если через 5 секунд переход
+  // так и не случился, показываем это в сообщении и через секунду делаем принудительную
+  // полную перезагрузку страницы (то самое обновление, которое до этого помогало вручную).
+  useEffect(() => {
+    if (redirectingGameId === null) { setRedirectStuck(false); return; }
+    const stuckTimer = setTimeout(() => setRedirectStuck(true), 5000);
+    const reloadTimer = setTimeout(() => {
+      window.location.href = `/game/${redirectingGameId}`;
+    }, 6000);
+    return () => { clearTimeout(stuckTimer); clearTimeout(reloadTimer); };
+  }, [redirectingGameId]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -353,6 +368,11 @@ export default function Hall() {
             У Вас начинается партия. Переход в игру
           </p>
           <Icon name="Loader2" size={24} className="text-white/70 animate-spin" />
+          {redirectStuck && (
+            <p className="text-sm text-white/70 max-w-sm">
+              Переход задерживается — выполняется обновление страницы
+            </p>
+          )}
         </div>
       )}
 

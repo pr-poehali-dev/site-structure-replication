@@ -196,6 +196,7 @@ export default function Game() {
   const [viewMoveIndex, setViewMoveIndex] = useState<number | null>(null);
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null);
   const [redirectingGameId, setRedirectingGameId] = useState<number | null>(null);
+  const [redirectStuck, setRedirectStuck] = useState(false);
   const [nextRoundMs, setNextRoundMs] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useState(true);
   const [boardFitSize, setBoardFitSize] = useState<number | null>(null);
@@ -406,12 +407,28 @@ export default function Game() {
     return () => clearTimeout(timer);
   }, [redirectingGameId, navigate]);
 
+  // Иногда переход на новую партию (navigate) по неизвестной причине подвисает, и
+  // оверлей "У Вас начинается партия" остаётся на экране навсегда — раньше спасало
+  // только ручное обновление страницы пользователем. Подстраховка: если через 5 секунд
+  // после появления оверлея мы всё ещё на старом :gameId (переход не случился), считаем
+  // переход зависшим — показываем это в сообщении и через секунду делаем принудительную
+  // полную перезагрузку страницы (то самое обновление, которое до этого помогало вручную).
+  useEffect(() => {
+    if (redirectingGameId === null) { setRedirectStuck(false); return; }
+    const stuckTimer = setTimeout(() => setRedirectStuck(true), 5000);
+    const reloadTimer = setTimeout(() => {
+      window.location.href = `/game/${redirectingGameId}`;
+    }, 6000);
+    return () => { clearTimeout(stuckTimer); clearTimeout(reloadTimer); };
+  }, [redirectingGameId]);
+
   // Страница не перемонтируется при переходе со старой партии на новую (роут тот же
   // компонент, меняется только :gameId в адресе) — без явного сброса здесь оверлей
   // "У Вас начинается партия" остался бы висеть на экране навсегда поверх уже открытой
   // новой партии.
   useEffect(() => {
     setRedirectingGameId(null);
+    setRedirectStuck(false);
     setNextRoundMs(null);
     knownGameIdRef.current = null;
   }, [gameId]);
@@ -756,6 +773,11 @@ export default function Game() {
             У Вас начинается партия. Переход в игру
           </p>
           <Icon name="Loader2" size={24} className="text-white/70 animate-spin" />
+          {redirectStuck && (
+            <p className="text-sm text-white/70 max-w-sm">
+              Переход задерживается — выполняется обновление страницы
+            </p>
+          )}
         </div>
       )}
 
