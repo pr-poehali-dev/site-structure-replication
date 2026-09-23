@@ -45,6 +45,8 @@ interface GameData {
   draw_offered_by_role: 'white' | 'black' | null;
   tournament_title: string;
   tournament_id: number;
+  white_present?: boolean;
+  black_present?: boolean;
 }
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -269,8 +271,11 @@ export default function Game() {
 
   useEffect(() => {
     fetchGame();
-    // Резервный опрос на случай, если real-time соединение прервалось
-    const interval = setInterval(fetchGame, 15000);
+    // Резервный опрос на случай, если real-time соединение прервалось — раз в 4 секунды
+    // (раньше было 15с): интервал заодно обновляет отметку присутствия игрока в партии
+    // (white_present/black_present, см. индикатор "на связи" у соперника), поэтому короче
+    // интервал — точнее статус присутствия, а не только резервная доставка хода.
+    const interval = setInterval(fetchGame, 4000);
     return () => clearInterval(interval);
   }, [fetchGame]);
 
@@ -807,11 +812,23 @@ export default function Game() {
                     <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 inline-block shrink-0" />
                     <PlayerAvatar fio={game.white_fio} avatarUrl={game.white_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.white_fio) || '—'}</span>
+                    {!finished && (
+                      <span
+                        title={game.white_present ? 'Соперник на связи' : 'Нет на связи'}
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${game.white_present ? 'bg-green-500' : 'bg-gray-300'}`}
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="w-3 h-3 rounded-sm bg-gray-800 inline-block shrink-0" />
                     <PlayerAvatar fio={game.black_fio} avatarUrl={game.black_avatar_url} size={20} />
                     <span className="font-medium text-gray-800 truncate">{shortFio(game.black_fio) || '—'}</span>
+                    {!finished && (
+                      <span
+                        title={game.black_present ? 'Соперник на связи' : 'Нет на связи'}
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${game.black_present ? 'bg-green-500' : 'bg-gray-300'}`}
+                      />
+                    )}
                   </div>
                 </div>
                 {finished ? (

@@ -97,12 +97,16 @@ def get_user_id_by_token(cur, token: str):
     return row[0] if row else None
 
 
+PRESENCE_ONLINE_SECONDS = 25
+
+
 def load_game(cur, game_id):
     cur.execute(
         """SELECT g.id, g.round_id, g.tournament_id, g.white_player_id, wp.fio, wp.user_id,
                   g.black_player_id, bp.fio, bp.user_id, g.status, g.result, g.result_reason,
                   g.fen, g.pgn, g.turn, g.white_time_ms, g.black_time_ms, g.increment_ms,
-                  g.last_move_at, g.draw_offered_by, t.title, g.moves, wu.avatar_url, bu.avatar_url
+                  g.last_move_at, g.draw_offered_by, t.title, g.moves, wu.avatar_url, bu.avatar_url,
+                  g.white_present_at, g.black_present_at
            FROM tournament_games g
            LEFT JOIN tournament_players wp ON wp.id = g.white_player_id
            LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
@@ -128,7 +132,14 @@ def load_game(cur, game_id):
         'white_time_ms': row[15], 'black_time_ms': row[16], 'increment_ms': row[17],
         'last_move_at': row[18], 'draw_offered_by': row[19], 'tournament_title': row[20],
         'moves': moves, 'white_avatar_url': row[22], 'black_avatar_url': row[23],
+        'white_present_at': row[24], 'black_present_at': row[25],
     }
+
+
+def is_present(present_at):
+    if not present_at:
+        return False
+    return (datetime.utcnow() - present_at).total_seconds() < PRESENCE_ONLINE_SECONDS
 
 
 def is_first_white_move(game):
@@ -336,6 +347,20 @@ def handler(event: dict, context) -> dict:
         white_ms, black_ms = compute_live_times(game)
         first_move_grace_ms = compute_first_move_grace_ms(game)
 
+        # Отмечаем присутствие игрока в партии — используется фронтендом для индикатора
+        # "соперник на связи" рядом с его именем. Обновляется на каждом опросе партии
+        # (push-событие 'update' его не даёт, но резервный опрос теперь достаточно частый —
+        # см. интервал в Game.tsx), поэтому статус отстаёт максимум на пару секунд.
+        role_for_presence = player_role(game, user_id)
+        if role_for_presence == 'white':
+            cur.execute("UPDATE tournament_games SET white_present_at = now() WHERE id = %s", (game_id,))
+            game['white_present_at'] = datetime.utcnow()
+        elif role_for_presence == 'black':
+            cur.execute("UPDATE tournament_games SET black_present_at = now() WHERE id = %s", (game_id,))
+            game['black_present_at'] = datetime.utcnow()
+        if role_for_presence:
+            conn.commit()
+
         if game['status'] == 'active' and first_move_grace_ms == 0:
             finish_game(cur, game['id'], '0-1', FIRST_MOVE_TIMEOUT, game['black_player_id'], game['white_player_id'])
             round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
@@ -390,6 +415,8 @@ def handler(event: dict, context) -> dict:
                 'draw_offered_by': game['draw_offered_by'], 'draw_offered_by_role': draw_offered_by_role,
                 'tournament_title': game['tournament_title'],
                 'tournament_id': game['tournament_id'],
+                'white_present': is_present(game['white_present_at']),
+                'black_present': is_present(game['black_present_at']),
             },
             'chat': chat, 'my_role': role,
             'pusher_key': os.environ.get('PUSHER_KEY', ''),
