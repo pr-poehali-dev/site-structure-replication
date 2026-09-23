@@ -88,7 +88,7 @@ const Index = () => {
                 <a href="/turnir"><Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться на турнир</a>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-12 px-7 bg-transparent">
-                <a href="#olimpiady">Олимпиады</a>
+                <a href="/olimpiady">Олимпиады</a>
               </Button>
             </div>
           </div>
@@ -228,7 +228,7 @@ const Index = () => {
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed flex-1">{o.desc}</p>
                 <a
-                  href={`/olimpiad/${o.slug}`}
+                  href="/olimpiady"
                   className="mt-6 inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-2.5 text-sm hover:bg-secondary/90 transition-colors"
                 >
                   <Icon name="ArrowRight" size={16} /> Принять участие

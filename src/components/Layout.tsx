@@ -19,7 +19,7 @@ const BALANCE_URL = func2url['balance'];
 const NAV = [
   { label: 'Главная', href: '/' },
   { label: 'Турниры', href: '/turnir' },
-  { label: 'Олимпиады', href: '/#olimpiady' },
+  { label: 'Олимпиады', href: '/olimpiady' },
   { label: 'Результаты', href: '/result' },
   { label: 'Заказать награды', href: '/kubki' },
   { label: 'Контакты', href: '/contacts' },
