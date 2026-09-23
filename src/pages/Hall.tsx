@@ -187,6 +187,7 @@ export default function Hall() {
   const [redirectStuck, setRedirectStuck] = useState(false);
   const knownGameIdRef = useRef<number | null>(null);
   const hasLoadedOnceRef = useRef(false);
+  const liveRoundNumberRef = useRef<number | null>(null);
 
   const fetchHall = useCallback(async () => {
     if (!tournamentId) return;
@@ -201,7 +202,18 @@ export default function Hall() {
       setPusherKey(json.pusher_key || null);
       setPusherCluster(json.pusher_cluster || null);
       setNextRoundMs(json.next_round_at ? new Date(json.next_round_at).getTime() - Date.now() : null);
-      setActiveRound(prev => prev ?? (json.rounds?.length ? json.rounds[json.rounds.length - 1].round_number : null));
+
+      // Блок пар должен всегда показывать тур, который идёт прямо сейчас — как только
+      // начинается новый тур (round_number с status 'active' меняется), автоматически
+      // переключаемся на него. Пока текущий активный тур не менялся, пользователь может
+      // спокойно полистать прошлые туры через список слева (ручной выбор не сбрасывается
+      // на каждый опрос) — принудительный переброс происходит только при смене живого тура.
+      const rounds: Round[] = json.rounds || [];
+      const liveRound = rounds.find(r => r.status === 'active') || rounds[rounds.length - 1] || null;
+      if (liveRound && liveRound.round_number !== liveRoundNumberRef.current) {
+        liveRoundNumberRef.current = liveRound.round_number;
+        setActiveRound(liveRound.round_number);
+      }
 
       const newGameId: number | null = json.my_game_id || null;
       if (hasLoadedOnceRef.current && newGameId && newGameId !== knownGameIdRef.current) {
@@ -450,52 +462,6 @@ export default function Hall() {
                 </div>
               )}
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-heading font-bold text-lg text-primary">Тур {currentRound?.round_number ?? '—'}</h2>
-                  {currentRound && (
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${currentRound.status === 'active' ? 'bg-emerald-100 text-emerald-700' : currentRound.status === 'completed' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'}`}>
-                      {currentRound.status === 'active' ? 'Идёт' : currentRound.status === 'completed' ? 'Завершён' : 'Ожидание'}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {currentRound?.games.map(g => (
-                    <div
-                      key={g.id}
-                      onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}${isObserver ? '?observer=1' : ''}`)}
-                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 px-4 py-3 rounded-xl border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
-                    >
-                      {g.is_bye ? (
-                        <span className="text-sm text-gray-600 flex items-center gap-2">
-                          <Icon name="Moon" size={14} className="text-gray-400" />
-                          <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={20} /> — технический бай (+1)
-                        </span>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2 min-w-0 sm:flex-1">
-                            <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
-                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate" />
-                          </div>
-                          <div className="px-3 shrink-0 self-center">
-                            {g.status === 'finished' ? (
-                              <span className="text-sm font-bold text-primary">{RESULT_LABELS[g.result || ''] || g.result}</span>
-                            ) : (
-                              <span className="text-xs text-secondary hover:underline font-medium">Смотреть</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 min-w-0 sm:flex-1 sm:justify-end">
-                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} avatarUrl={g.black_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate order-2 sm:order-1 sm:text-right sm:flex-row-reverse" />
-                            <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0 order-1 sm:order-2" />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  {!currentRound && <p className="text-sm text-gray-400 py-4 text-center">Пары появятся, когда организатор начнёт турнир</p>}
-                </div>
-              </div>
-
               {/* Таблица участников */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 overflow-x-auto">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Турнирная таблица</p>
@@ -584,6 +550,57 @@ export default function Hall() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Пары текущего тура — всегда показывает тур, который идёт прямо сейчас
+                  (activeRound автоматически переключается на него, см. fetchHall), но
+                  через список туров слева можно вручную посмотреть и прошедшие туры.
+                  Карточки партий компактные (py-2, gap-1.5), чтобы блок помещался
+                  без лишней прокрутки даже при большом числе участников. */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-heading font-bold text-lg text-primary">Тур {currentRound?.round_number ?? '—'}</h2>
+                  {currentRound && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${currentRound.status === 'active' ? 'bg-emerald-100 text-emerald-700' : currentRound.status === 'completed' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'}`}>
+                      {currentRound.status === 'active' ? 'Идёт' : currentRound.status === 'completed' ? 'Завершён' : 'Ожидание'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {currentRound?.games.map(g => (
+                    <div
+                      key={g.id}
+                      onClick={g.is_bye ? undefined : () => navigate(`/game/${g.id}${isObserver ? '?observer=1' : ''}`)}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-0 px-3 py-2 rounded-lg border border-gray-100 hover:bg-muted/50 transition-colors ${g.is_bye ? '' : 'cursor-pointer'}`}
+                    >
+                      {g.is_bye ? (
+                        <span className="text-sm text-gray-600 flex items-center gap-2">
+                          <Icon name="Moon" size={14} className="text-gray-400" />
+                          <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={20} /> — технический бай (+1)
+                        </span>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 min-w-0 sm:flex-1">
+                            <span className="w-3 h-3 rounded-sm bg-white border border-gray-300 shrink-0" />
+                            <PlayerLink userId={g.white_user_id} fio={g.white_fio} avatarUrl={g.white_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate" />
+                          </div>
+                          <div className="px-3 shrink-0 self-center">
+                            {g.status === 'finished' ? (
+                              <span className="text-sm font-bold text-primary">{RESULT_LABELS[g.result || ''] || g.result}</span>
+                            ) : (
+                              <span className="text-xs text-secondary hover:underline font-medium">Смотреть</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 min-w-0 sm:flex-1 sm:justify-end">
+                            <PlayerLink userId={g.black_user_id} fio={g.black_fio} avatarUrl={g.black_avatar_url} avatarSize={22} className="text-sm font-medium text-gray-800 truncate order-2 sm:order-1 sm:text-right sm:flex-row-reverse" />
+                            <span className="w-3 h-3 rounded-sm bg-gray-800 shrink-0 order-1 sm:order-2" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {!currentRound && <p className="text-sm text-gray-400 py-4 text-center">Пары появятся, когда организатор начнёт турнир</p>}
+                </div>
               </div>
             </div>
 
