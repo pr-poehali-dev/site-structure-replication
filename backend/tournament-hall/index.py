@@ -12,6 +12,10 @@ from pusher_client import trigger
 DEFAULT_BASE_MS = 600000
 DEFAULT_INC_MS = 0
 
+TIMEOUT = 'timeout'
+FIRST_MOVE_TIMEOUT = 'first_move_timeout'
+FIRST_MOVE_GRACE_MS = 60000
+
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
@@ -63,6 +67,65 @@ def create_round_games(cur, tournament_id, round_id, pairs, base_ms, inc_ms):
             )
             cur.execute("UPDATE tournament_players SET color_balance = color_balance + 1 WHERE id = %s", (p['white_id'],))
             cur.execute("UPDATE tournament_players SET color_balance = color_balance - 1 WHERE id = %s", (p['black_id'],))
+
+
+def finish_expired_games(cur, tournament_id, round_id):
+    """Автоматически засчитывает поражение по таймауту в партиях тура, где никто
+    не зашёл и не сделал ни одного хода/запроса вовремя. Раньше это проверялось
+    только реактивно внутри chess-game — при открытии САМОЙ партии игроком или
+    наблюдателем. Если в партию никто ни разу не заходил (оба игрока не открыли
+    страницу), эта проверка никогда не срабатывала, и партия висела 'active'
+    бесконечно, блокируя завершение тура и всего турнира.
+
+    Турнирный зал опрашивается автоматически каждым участником каждые ~20 секунд
+    (см. fetchHall на фронтенде), поэтому этой проверки здесь достаточно, чтобы
+    просроченные партии закрывались сами — без необходимости кому-либо открывать
+    саму партию.
+
+    Возвращает список отложенных push-событий (не отправляет их сама) — вызывающий
+    код должен отправить их ПОСЛЕ conn.commit(), как и остальные события здесь."""
+    cur.execute(
+        """SELECT id, white_player_id, black_player_id, pgn, turn, white_time_ms, black_time_ms, last_move_at
+           FROM tournament_games WHERE round_id = %s AND status = 'active'""",
+        (round_id,)
+    )
+    events = []
+    for game_id, white_id, black_id, pgn, turn, white_ms, black_ms, last_move_at in cur.fetchall():
+        if not last_move_at:
+            continue
+        is_first_white_move = not pgn and turn == 'white'
+        elapsed_ms = (datetime.utcnow() - last_move_at).total_seconds() * 1000
+
+        if is_first_white_move:
+            if elapsed_ms < FIRST_MOVE_GRACE_MS:
+                continue
+            result, reason, winner_id = '0-1', FIRST_MOVE_TIMEOUT, black_id
+            live_white_ms, live_black_ms = white_ms, black_ms
+        else:
+            live_white_ms, live_black_ms = white_ms, black_ms
+            if turn == 'white':
+                live_white_ms = max(0, white_ms - int(elapsed_ms))
+            else:
+                live_black_ms = max(0, black_ms - int(elapsed_ms))
+            if live_white_ms > 0 and live_black_ms > 0:
+                continue
+            if live_white_ms <= 0:
+                result, reason, winner_id = '0-1', TIMEOUT, black_id
+            else:
+                result, reason, winner_id = '1-0', TIMEOUT, white_id
+
+        cur.execute(
+            """UPDATE tournament_games SET status = 'finished', result = %s, result_reason = %s, finished_at = now(),
+               white_time_ms = %s, black_time_ms = %s WHERE id = %s AND status = 'active'""",
+            (result, reason, live_white_ms, live_black_ms, game_id)
+        )
+        if cur.rowcount == 0:
+            continue
+        if winner_id:
+            cur.execute("UPDATE tournament_players SET points = points + 1, wins = wins + 1 WHERE id = %s", (winner_id,))
+        events.append((f'game-{game_id}', 'update', {}))
+        events.append((f'tournament-{tournament_id}', 'game-finished', {}))
+    return events
 
 
 def get_previous_pairs(cur, tournament_id):
@@ -173,6 +236,13 @@ def maybe_advance(cur, tournament):
     round_id, round_number, status, completed_at, started_at = row
 
     if status == 'active':
+        # Досрочно засчитываем поражение в партиях, где истёк льготный период на первый
+        # ход или основное время, — до подсчёта total/unfinished. Без этого партия,
+        # которую никто не открыл (оба игрока не зашли), никогда не завершилась бы сама:
+        # проверка таймаута раньше жила только внутри chess-game и срабатывала лишь при
+        # открытии самой партии.
+        events = finish_expired_games(cur, tournament['id'], round_id)
+
         # Считаем отдельно общее число партий и незавершённых: между вставкой строки тура
         # и вставкой его партий (в start_next_round) есть краткий промежуток, в течение
         # которого у тура ещё 0 партий — без проверки total > 0 это выглядело бы как "все
@@ -182,7 +252,6 @@ def maybe_advance(cur, tournament):
             (round_id,)
         )
         total, unfinished = cur.fetchone()
-        events = []
 
         # Самовосстановление: если тур создан больше 10 секунд назад, а партий в нём
         # так и не появилось — это не обычная гонка (та разрешается за доли секунды),
