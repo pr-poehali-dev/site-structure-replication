@@ -919,8 +919,12 @@ export default function Game() {
                 </span>
               </div>
 
+              {/* На десктопе эти два баннера переехали в правую колонку (между часами
+                  соперника и карточкой ходов, см. ниже) — там они не отнимают место у
+                  доски и не сдвигают её вниз. На мобильных, где центральный блок и есть
+                  единственная колонка, оставляем их здесь, над доской, как раньше. */}
               {firstMoveGraceMs !== null && !finished && (
-                <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
+                <div className="lg:hidden w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <Icon name="Clock" size={14} />
                     {myRole === 'white' ? 'Сделайте первый ход до окончания времени' : 'Ожидание первого хода соперника'}
@@ -930,7 +934,7 @@ export default function Game() {
               )}
 
               {premove && !finished && (
-                <div className="w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
+                <div className="lg:hidden w-full max-w-[560px] bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-4 py-2 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <Icon name="CornerDownRight" size={14} />
                     Предход: {premove.from} → {premove.to}
@@ -1168,6 +1172,34 @@ export default function Game() {
                         </Button>
                       </>
                     )}
+                  </div>
+                )}
+
+                {/* Отсчёт на первый ход и предход — на десктопе показываются здесь, внутри
+                    карточки ходов, а не над доской/в центральной колонке (см. скриншот
+                    задачи). Как и ошибка хода с итогом партии ниже, размещены внутри этой
+                    карточки, а не отдельными блоками снизу — так высота правой колонки не
+                    "плывёт" и остаётся равна высоте доски: список ходов выше просто ужимается
+                    (у него своя внутренняя прокрутка), а сама колонка не растёт. */}
+                {firstMoveGraceMs !== null && !finished && (
+                  <div className="hidden lg:flex bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-3 py-2 items-center justify-between gap-2 shrink-0 mt-2">
+                    <span className="flex items-center gap-2">
+                      <Icon name="Clock" size={14} />
+                      {myRole === 'white' ? 'Сделайте первый ход до окончания времени' : 'Ожидание первого хода соперника'}
+                    </span>
+                    <span className="font-mono font-semibold tabular-nums">{formatClock(firstMoveGraceMs)}</span>
+                  </div>
+                )}
+
+                {premove && !finished && (
+                  <div className="hidden lg:flex bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl px-3 py-2 items-center justify-between gap-2 shrink-0 mt-2">
+                    <span className="flex items-center gap-2">
+                      <Icon name="CornerDownRight" size={14} />
+                      Предход: {premove.from} → {premove.to}
+                    </span>
+                    <button onClick={() => setPremove(null)} className="text-xs font-semibold underline hover:no-underline">
+                      Отменить
+                    </button>
                   </div>
                 )}
 
