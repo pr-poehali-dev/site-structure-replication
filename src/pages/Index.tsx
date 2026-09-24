@@ -5,7 +5,7 @@ import { Header, Footer } from '@/components/Layout';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import Seo from '@/components/Seo';
 
-const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/76b32a6f-e433-447e-98e3-d7bfa6e19bb3.png';
+const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/a45605f3-8e77-46d0-9edd-9e28028083cf.png';
 
 const NAV = [
   { label: 'Турниры', href: '/turnir' },
