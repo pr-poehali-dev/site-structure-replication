@@ -27,6 +27,7 @@ export interface AwardOrder {
   id: number; customer_name: string; customer_phone: string; customer_email: string | null;
   items: { kit_id: string; kit_title: string; tournament_id: number | null; tournament_title: string; price: number | null }[];
   total_price: number | null; status: string; notes: string | null; created_at: string;
+  paid_from_balance?: boolean;
 }
 
 export interface TournamentResult {

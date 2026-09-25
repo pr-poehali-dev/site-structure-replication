@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import Seo from '@/components/Seo';
 import func2url from '../../backend/func2url.json';
 import { useYookassa, openPaymentPage } from '@/components/extensions/yookassa/useYookassa';
+import { useAuth } from '@/contexts/AuthContext';
+
+const BALANCE_URL = func2url['balance'];
+const AWARD_ORDER_URL = func2url['award-order'];
 
 interface Kit {
   id: string;
@@ -36,6 +40,7 @@ const ICON_MAP: Record<string, string> = {
 };
 
 export default function Kubki() {
+  const { user, token } = useAuth();
   const [catalog, setCatalog] = useState<Kit[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -46,11 +51,21 @@ export default function Kubki() {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [balance, setBalance] = useState(0);
+  const [payMethod, setPayMethod] = useState<'balance' | 'yookassa'>('yookassa');
 
   const { createPayment } = useYookassa({
     apiUrl: func2url['yookassa-yookassa'],
     onError: (err) => setError(err.message),
   });
+
+  const fetchBalance = useCallback(() => {
+    if (!token) { setBalance(0); return; }
+    fetch(BALANCE_URL, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.json())
+      .then(data => setBalance(data.balance || 0))
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     fetch(func2url['award-catalog'])
@@ -61,6 +76,12 @@ export default function Kubki() {
       .then(r => r.json())
       .then(d => setTournaments(d.tournaments || []));
   }, []);
+
+  useEffect(() => { fetchBalance(); }, [fetchBalance]);
+
+  useEffect(() => {
+    setPayMethod(user ? 'balance' : 'yookassa');
+  }, [user]);
 
   const openAddKit = (kit: Kit) => {
     setAddingKit(kit);
@@ -85,6 +106,8 @@ export default function Kubki() {
   const itemsTotal = cart.reduce((sum, i) => sum + (i.kit.price || 0), 0);
   const total = itemsTotal > 0 ? itemsTotal + DELIVERY : 0;
 
+  const insufficientBalance = payMethod === 'balance' && balance < total;
+
   const handleSubmit = async () => {
     if (!form.participant_name.trim() || !form.phone.trim()) {
       setError('Заполните ФИО участника и телефон');
@@ -96,6 +119,10 @@ export default function Kubki() {
     }
     if (total <= 0) {
       setError('Стоимость заказа не определена, свяжитесь с нами для оформления');
+      return;
+    }
+    if (payMethod === 'balance' && insufficientBalance) {
+      setError('Недостаточно средств на балансе. Пополните баланс в личном кабинете.');
       return;
     }
     setSending(true);
@@ -113,6 +140,37 @@ export default function Kubki() {
       form.address ? `Адрес: ${form.address}` : '',
       form.notes ? `Доп. информация: ${form.notes}` : '',
     ].filter(Boolean).join('\n');
+
+    if (payMethod === 'balance' && token) {
+      try {
+        const res = await fetch(AWARD_ORDER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+          body: JSON.stringify({
+            _action: 'pay_from_balance',
+            customer_name: form.recipient_name || form.participant_name,
+            customer_phone: form.phone,
+            customer_email: form.email,
+            items: [...items, { kit_id: 'delivery', kit_title: 'Доставка', tournament_id: null, tournament_title: '—', price: DELIVERY }],
+            notes,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        setSending(false);
+        if (!res.ok) {
+          setError(data.error || 'Не удалось оплатить заказ с баланса');
+          return;
+        }
+        fetchBalance();
+        setCart([]);
+        setShowForm(false);
+        setSuccess(true);
+      } catch {
+        setSending(false);
+        setError('Ошибка сети. Попробуйте ещё раз.');
+      }
+      return;
+    }
 
     const payment = await createPayment({
       amount: total,
@@ -267,7 +325,20 @@ export default function Kubki() {
                       <span>Итого:</span>
                       <span>{total > 0 ? `${total.toLocaleString('ru')} ₽` : 'По запросу'}</span>
                     </div>
-                    <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90" onClick={() => setShowForm(true)}>
+                    <Button
+                      className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                      onClick={() => {
+                        if (user) {
+                          setForm(f => ({
+                            ...f,
+                            participant_name: f.participant_name || [user.last_name, user.first_name, user.middle_name].filter(Boolean).join(' '),
+                            phone: f.phone || user.phone || '',
+                            email: f.email || user.email || '',
+                          }));
+                        }
+                        setShowForm(true);
+                      }}
+                    >
                       Оформить заявку
                     </Button>
                   </div>
@@ -382,14 +453,53 @@ export default function Kubki() {
                 />
               </div>
             </div>
+
+            {user && (
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">Способ оплаты</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPayMethod('balance')}
+                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${payMethod === 'balance' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-background text-muted-foreground border-border hover:border-secondary/50'}`}
+                  >
+                    <Icon name="Wallet" size={15} /> С баланса
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayMethod('yookassa')}
+                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${payMethod === 'yookassa' ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-background text-muted-foreground border-border hover:border-secondary/50'}`}
+                  >
+                    <Icon name="CreditCard" size={15} /> ЮKassa
+                  </button>
+                </div>
+                {payMethod === 'balance' && (
+                  <div className={`mt-2 rounded-lg border px-3 py-2.5 flex items-center justify-between gap-2 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
+                    <span className="text-sm text-foreground/80 flex items-center gap-1.5">
+                      <Icon name="Wallet" size={15} className={insufficientBalance ? 'text-red-500' : 'text-secondary'} />
+                      {total.toLocaleString('ru')} ₽ спишется с баланса
+                    </span>
+                    <span className={`text-sm font-bold shrink-0 ${insufficientBalance ? 'text-red-500' : 'text-primary'}`}>{balance.toLocaleString('ru')} ₽</span>
+                  </div>
+                )}
+                {payMethod === 'balance' && insufficientBalance && (
+                  <p className="text-sm text-red-500 flex items-center gap-1.5 mt-1.5">
+                    <Icon name="AlertCircle" size={14} />
+                    Недостаточно средств.{' '}
+                    <a href="/cabinet?tab=balance" className="underline hover:no-underline font-medium">Пополнить →</a>
+                  </p>
+                )}
+              </div>
+            )}
+
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
             <Button
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
               onClick={handleSubmit}
-              disabled={sending}
+              disabled={sending || insufficientBalance}
             >
               {sending ? <Icon name="Loader2" size={16} className="animate-spin mr-2" /> : null}
-              Оплатить и заказать
+              {payMethod === 'balance' ? 'Оплатить с баланса' : 'Оплатить и заказать'}
             </Button>
           </div>
         </div>

@@ -29,6 +29,15 @@
       "expectedStatus": 401,
       "expectedBody": {"error": "Unauthorized"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Pay from balance without auth token is unauthorized",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "pay_from_balance", "customer_name": "Тест Тестов", "customer_phone": "+7 900 000-00-00", "items": [{"kit_id": "standard", "kit_title": "Стандарт", "tournament_id": 1, "tournament_title": "Тестовый турнир", "price": 1500}]},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Необходимо авторизоваться"},
+      "bodyMatcher": "partial"
     }
   ]
 }

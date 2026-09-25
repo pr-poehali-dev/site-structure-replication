@@ -1,0 +1,1 @@
+ALTER TABLE balance_transactions ADD COLUMN award_order_id integer NULL REFERENCES award_orders(id);

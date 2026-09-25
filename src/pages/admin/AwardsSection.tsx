@@ -437,6 +437,11 @@ export function AwardOrdersSection({ password, awardOrders, ordersLoading, fetch
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ORDER_STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
                       {ORDER_STATUS_LABELS[order.status] || order.status}
                     </span>
+                    {order.paid_from_balance && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
+                        <Icon name="Wallet" size={11} /> С баланса
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-500 mt-1 flex gap-3 flex-wrap">
                     <span>{order.customer_phone}</span>
