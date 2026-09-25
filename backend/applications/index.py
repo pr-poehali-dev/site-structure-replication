@@ -132,6 +132,26 @@ def handler(event: dict, context) -> dict:
                 conn.close()
                 return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы уже подали заявку на этот турнир'})}
 
+        cur.execute("SELECT status, max_participants FROM tournaments WHERE id = %s", (tournament_id,))
+        t_row = cur.fetchone()
+        if not t_row:
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
+        t_status, max_participants = t_row
+        if t_status != 'open':
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Приём заявок на этот турнир закрыт'})}
+        if max_participants:
+            cur.execute(
+                "SELECT COUNT(*) FROM applications WHERE tournament_id = %s AND status NOT IN ('cancelled')",
+                (tournament_id,)
+            )
+            if cur.fetchone()[0] >= max_participants:
+                cur.execute("UPDATE tournaments SET status = 'closed' WHERE id = %s AND status = 'open'", (tournament_id,))
+                conn.commit()
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Достигнуто максимальное количество участников, приём заявок закрыт'})}
+
         price = body.get('price') or 0
         try:
             price = float(price)
@@ -159,6 +179,14 @@ def handler(event: dict, context) -> dict:
              initial_status, user_id, price if price > 0 else None, price > 0)
         )
         new_id = cur.fetchone()[0]
+
+        if max_participants:
+            cur.execute(
+                "SELECT COUNT(*) FROM applications WHERE tournament_id = %s AND status NOT IN ('cancelled')",
+                (tournament_id,)
+            )
+            if cur.fetchone()[0] >= max_participants:
+                cur.execute("UPDATE tournaments SET status = 'closed' WHERE id = %s AND status = 'open'", (tournament_id,))
 
         if price > 0:
             cur.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (price, user_id))

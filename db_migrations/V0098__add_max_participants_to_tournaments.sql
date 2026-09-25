@@ -1,0 +1,1 @@
+ALTER TABLE tournaments ADD COLUMN max_participants integer NULL;

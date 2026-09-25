@@ -1,0 +1,2 @@
+INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, time_msk, hall_open, rounds_count, rating_type, status, max_participants)
+VALUES ('QA лимит участников', 'temp test', NULL, NULL, NULL, 0, '10+0', '19:00', false, 5, 'rapid', 'open', 1);

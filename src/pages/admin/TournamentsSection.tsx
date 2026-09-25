@@ -163,6 +163,7 @@ export default function TournamentsSection({
         ...tForm,
         price: tForm.price ? parseFloat(tForm.price) : null,
         rounds_count: tForm.rounds_count ? parseInt(tForm.rounds_count, 10) : 5,
+        max_participants: tForm.max_participants ? parseInt(tForm.max_participants, 10) : null,
         ...(isEdit ? { _action: 'update', id: tEditId } : {}),
       }),
     });
@@ -193,6 +194,7 @@ export default function TournamentsSection({
       hall_open: !!t.hall_open,
       rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
       rating_type: t.rating_type || 'rapid',
+      max_participants: t.max_participants != null ? String(t.max_participants) : '',
     });
     setTError('');
     setTShowForm(true);
@@ -307,6 +309,7 @@ export default function TournamentsSection({
           <div><Label>Контроль времени</Label><Input className="mt-1" placeholder="10+0" value={tForm.time_control} onChange={e => setTForm({ ...tForm, time_control: e.target.value })} /></div>
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
           <div><Label>Число туров (швейцарская система)</Label><Input type="number" min={1} max={15} className="mt-1" value={tForm.rounds_count} onChange={e => setTForm({ ...tForm, rounds_count: e.target.value })} /></div>
+          <div><Label>Максимальное число участников</Label><Input type="number" min={1} className="mt-1" placeholder="Без ограничения" value={tForm.max_participants} onChange={e => setTForm({ ...tForm, max_participants: e.target.value })} /></div>
           <div>
             <Label>Тип рейтинга</Label>
             <select
@@ -387,7 +390,7 @@ export default function TournamentsSection({
                         </span>
                         {tApps.length > 0 && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                            {tApps.length} заявок
+                            {tApps.length}{t.max_participants ? `/${t.max_participants}` : ''} заявок
                           </span>
                         )}
                         {t.hall_open && (
