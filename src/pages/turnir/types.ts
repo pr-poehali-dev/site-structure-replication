@@ -12,6 +12,8 @@ export interface Tournament {
   diploma_sample_url: string | null;
   regulation_url: string | null;
   announcement_url: string | null;
+  max_participants?: number | null;
+  spots_left?: number | null;
 }
 
 export function formatDate(dateStr: string) {

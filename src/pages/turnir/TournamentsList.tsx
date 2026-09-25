@@ -58,9 +58,17 @@ export default function TournamentsList({
                 <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
-                    <span className={`shrink-0 text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                      {isOpen ? 'Приём открыт' : 'Приём закрыт'}
-                    </span>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {isOpen ? 'Приём открыт' : 'Приём закрыт'}
+                      </span>
+                      {isOpen && t.spots_left != null && (
+                        <span className={`text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1 ${t.spots_left <= 3 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                          <Icon name="Users" size={12} />
+                          {t.spots_left > 0 ? `Осталось мест: ${t.spots_left}` : 'Мест нет'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {t.date && (
                     <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
