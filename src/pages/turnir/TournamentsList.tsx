@@ -131,20 +131,20 @@ export default function TournamentsList({
               </div>
 
               {hasPreviews && (
-                <div className="flex flex-row md:flex-col gap-4 p-4 md:w-64 shrink-0 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100">
+                <div className="flex flex-row md:flex-col gap-4 p-4 md:w-64 shrink-0 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100 md:self-start">
                   {t.announcement_url && (
-                    <button type="button" onClick={() => onOpenImagePreview({ url: t.announcement_url as string, title: `Анонс — ${t.title}` })} className="flex-1 flex flex-col gap-1.5 group text-left">
+                    <button type="button" onClick={() => onOpenImagePreview({ url: t.announcement_url as string, title: `Анонс — ${t.title}` })} className="flex-1 md:flex-none flex flex-col gap-1.5 group text-left">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Анонс</span>
-                      <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
-                        <img src={t.announcement_url} alt={`Анонс турнира: ${t.title}`} className="max-w-full max-h-40 object-contain" />
+                      <div className="bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
+                        <img src={t.announcement_url} alt={`Анонс турнира: ${t.title}`} className="w-full h-auto max-h-40 object-contain" />
                       </div>
                     </button>
                   )}
                   {t.diploma_sample_url && (
-                    <button type="button" onClick={() => onOpenImagePreview({ url: t.diploma_sample_url as string, title: `Образец диплома — ${t.title}` })} className="flex-1 flex flex-col gap-1.5 group text-left">
+                    <button type="button" onClick={() => onOpenImagePreview({ url: t.diploma_sample_url as string, title: `Образец диплома — ${t.title}` })} className="flex-1 md:flex-none flex flex-col gap-1.5 group text-left">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Образец диплома</span>
-                      <div className="flex-1 min-h-32 bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
-                        <img src={t.diploma_sample_url} alt={`Образец диплома турнира: ${t.title}`} className="max-w-full max-h-40 object-contain" />
+                      <div className="bg-white rounded-lg border border-gray-200 flex items-center justify-center p-1.5 group-hover:border-secondary/50 transition-colors cursor-zoom-in">
+                        <img src={t.diploma_sample_url} alt={`Образец диплома турнира: ${t.title}`} className="w-full h-auto max-h-40 object-contain" />
                       </div>
                     </button>
                   )}
