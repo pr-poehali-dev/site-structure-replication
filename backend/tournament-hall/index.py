@@ -257,6 +257,27 @@ def start_next_round(cur, tournament, round_number):
     return round_id, []
 
 
+def peek_next_round_at(cur, tournament):
+    """Дешёвая версия maybe_advance() для запросов, попавших в троттлинг (см. вызов в
+    handler) — только читает время старта следующего тура по уже сохранённому completed_at
+    последнего тура, ничего не пишет и не запускает жеребьёвку/закрытие тура. Нужна, чтобы
+    троттлинг тяжёлой логики не ломал обратный отсчёт на экране у тех запросов, которым
+    "не повезло" пройти мимо основной проверки в этом 3-секундном окне."""
+    cur.execute(
+        "SELECT status, completed_at FROM tournament_rounds WHERE tournament_id = %s ORDER BY round_number DESC LIMIT 1",
+        (tournament['id'],)
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    status, completed_at = row
+    if status == 'completed' and completed_at:
+        break_seconds = tournament.get('round_break_seconds', 60)
+        next_round_at = completed_at + timedelta(seconds=break_seconds)
+        return next_round_at.isoformat() + 'Z'
+    return None
+
+
 def maybe_advance(cur, tournament):
     """Возвращает (next_round_at, events): ISO-время старта следующего тура (если сейчас
     идёт перерыв между турами) и список отложенных push-событий (channel, event, data),
@@ -406,11 +427,30 @@ def handler(event: dict, context) -> dict:
 
         next_round_at = None
         if tournament['hall_status'] == 'active':
-            next_round_at, advance_events = maybe_advance(cur, tournament)
-            conn.commit()
-            for channel, ev, data in advance_events:
-                trigger(channel, ev, data)
-            tournament = get_tournament(cur, tournament_id)
+            # Троттлинг: maybe_advance() делает несколько SELECT/UPDATE для проверки, не пора
+            # ли закрыть тур/начать следующий — раньше это выполнялось на КАЖДЫЙ опрос зала от
+            # КАЖДОГО участника. В момент смены тура, когда все опрашивают зал почти одновременно,
+            # это давало залповую нагрузку на БД. UPDATE ... WHERE last_advance_check_at IS NULL
+            # OR < now() - 3s — атомарная условная операция: из всех одновременных запросов
+            # реально пройдёт (и вызовет тяжёлую проверку) только тот, что успеет первым сдвинуть
+            # отметку времени, остальные в это трёхсекундное окно получат rowcount = 0 и просто
+            # прочитают уже актуальное состояние турнира, не трогая тур/партии повторно.
+            cur.execute(
+                """UPDATE tournaments SET last_advance_check_at = now() WHERE id = %s
+                   AND (last_advance_check_at IS NULL OR last_advance_check_at < now() - interval '3 seconds')
+                   RETURNING id""",
+                (tournament_id,)
+            )
+            should_advance = cur.fetchone() is not None
+            if should_advance:
+                next_round_at, advance_events = maybe_advance(cur, tournament)
+                conn.commit()
+                for channel, ev, data in advance_events:
+                    trigger(channel, ev, data)
+                tournament = get_tournament(cur, tournament_id)
+            else:
+                next_round_at = peek_next_round_at(cur, tournament)
+                conn.commit()
 
         user_id = get_user_id_by_token(cur, auth_token) if not is_admin else None
         my_player_id = None

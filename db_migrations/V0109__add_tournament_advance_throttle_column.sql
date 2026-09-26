@@ -1,0 +1,1 @@
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS last_advance_check_at timestamp without time zone NULL;
