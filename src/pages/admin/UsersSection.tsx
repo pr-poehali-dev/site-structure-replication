@@ -11,6 +11,12 @@ interface UsersSectionProps {
   password: string;
 }
 
+const EMPTY_FORM = {
+  last_name: '', first_name: '', middle_name: '', birth_date: '', fsr_id: '',
+  coach_fio: '', institution: '', country_city: '', email: '', phone: '',
+  rating_blitz: '', rating_rapid: '', fsr_rating_blitz: '', fsr_rating_rapid: '',
+};
+
 function initials(lastName: string, firstName: string) {
   return [lastName?.[0], firstName?.[0]].filter(Boolean).join('').toUpperCase();
 }
@@ -20,11 +26,9 @@ export default function UsersSection({ password }: UsersSectionProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [editUser, setEditUser] = useState<UserAccount | null>(null);
-  const [ratingBlitz, setRatingBlitz] = useState('');
-  const [ratingRapid, setRatingRapid] = useState('');
-  const [fsrRatingBlitz, setFsrRatingBlitz] = useState('');
-  const [fsrRatingRapid, setFsrRatingRapid] = useState('');
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const fetchUsers = useCallback(async (q = '') => {
     setLoading(true);
@@ -39,35 +43,60 @@ export default function UsersSection({ password }: UsersSectionProps) {
 
   function openEdit(u: UserAccount) {
     setEditUser(u);
-    setRatingBlitz(u.rating_blitz != null ? String(u.rating_blitz) : '');
-    setRatingRapid(u.rating_rapid != null ? String(u.rating_rapid) : '');
-    setFsrRatingBlitz(u.fsr_rating_blitz != null ? String(u.fsr_rating_blitz) : '');
-    setFsrRatingRapid(u.fsr_rating_rapid != null ? String(u.fsr_rating_rapid) : '');
+    setFormError('');
+    setForm({
+      last_name: u.last_name || '',
+      first_name: u.first_name || '',
+      middle_name: u.middle_name || '',
+      birth_date: u.birth_date ? u.birth_date.slice(0, 10) : '',
+      fsr_id: u.fsr_id || '',
+      coach_fio: u.coach_fio || '',
+      institution: u.institution || '',
+      country_city: u.country_city || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      rating_blitz: u.rating_blitz != null ? String(u.rating_blitz) : '',
+      rating_rapid: u.rating_rapid != null ? String(u.rating_rapid) : '',
+      fsr_rating_blitz: u.fsr_rating_blitz != null ? String(u.fsr_rating_blitz) : '',
+      fsr_rating_rapid: u.fsr_rating_rapid != null ? String(u.fsr_rating_rapid) : '',
+    });
   }
 
-  async function handleSaveRatings(e: React.FormEvent) {
+  async function handleSaveUser(e: React.FormEvent) {
     e.preventDefault();
     if (!editUser) return;
     setSaving(true);
+    setFormError('');
     const res = await fetch(AUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
       body: JSON.stringify({
-        _action: 'update_ratings',
+        _action: 'admin_update_user',
         user_id: editUser.id,
-        rating_blitz: ratingBlitz ? Number(ratingBlitz) : null,
-        rating_rapid: ratingRapid ? Number(ratingRapid) : null,
-        fsr_rating_blitz: fsrRatingBlitz ? Number(fsrRatingBlitz) : null,
-        fsr_rating_rapid: fsrRatingRapid ? Number(fsrRatingRapid) : null,
+        last_name: form.last_name.trim(),
+        first_name: form.first_name.trim(),
+        middle_name: form.middle_name.trim() || null,
+        birth_date: form.birth_date || null,
+        fsr_id: form.fsr_id.trim() || null,
+        coach_fio: form.coach_fio.trim() || null,
+        institution: form.institution.trim() || null,
+        country_city: form.country_city.trim() || null,
+        email: form.email.trim(),
+        phone: form.phone.trim() || null,
+        rating_blitz: form.rating_blitz ? Number(form.rating_blitz) : null,
+        rating_rapid: form.rating_rapid ? Number(form.rating_rapid) : null,
+        fsr_rating_blitz: form.fsr_rating_blitz ? Number(form.fsr_rating_blitz) : null,
+        fsr_rating_rapid: form.fsr_rating_rapid ? Number(form.fsr_rating_rapid) : null,
       }),
     });
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
     if (res.ok) {
-      toast.success('Рейтинги обновлены');
+      toast.success('Данные участника обновлены');
       setEditUser(null);
       fetchUsers(search);
     } else {
-      toast.error('Не удалось сохранить рейтинги');
+      setFormError(data.error || 'Не удалось сохранить данные');
     }
   }
 
@@ -135,7 +164,7 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => openEdit(u)} className="shrink-0">
-                <Icon name="Pencil" size={14} className="mr-1" /> Рейтинги
+                <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
               </Button>
             </div>
           ))}
@@ -144,23 +173,74 @@ export default function UsersSection({ password }: UsersSectionProps) {
 
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setEditUser(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-xl text-primary">Рейтинги</h2>
+              <h2 className="font-bold text-xl text-primary">Редактирование участника</h2>
               <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">{editUser.last_name} {editUser.first_name}</p>
-            <form onSubmit={handleSaveRatings} className="flex flex-col gap-4">
+            <form onSubmit={handleSaveUser} className="flex flex-col gap-4">
               <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Личные данные</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <Label>Фамилия *</Label>
+                    <Input className="mt-1" value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <Label>Имя *</Label>
+                    <Input className="mt-1" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <Label>Отчество</Label>
+                    <Input className="mt-1" value={form.middle_name} onChange={e => setForm(f => ({ ...f, middle_name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Дата рождения</Label>
+                    <Input type="date" className="mt-1" value={form.birth_date} onChange={e => setForm(f => ({ ...f, birth_date: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>ID ФШР</Label>
+                    <Input className="mt-1" value={form.fsr_id} onChange={e => setForm(f => ({ ...f, fsr_id: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>ФИО тренера</Label>
+                    <Input className="mt-1" value={form.coach_fio} onChange={e => setForm(f => ({ ...f, coach_fio: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Учебное заведение</Label>
+                    <Input className="mt-1" value={form.institution} onChange={e => setForm(f => ({ ...f, institution: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Страна / Город</Label>
+                    <Input className="mt-1" value={form.country_city} onChange={e => setForm(f => ({ ...f, country_city: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Контакты</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label>Email *</Label>
+                    <Input type="email" className="mt-1" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <Label>Телефон</Label>
+                    <Input className="mt-1" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Рейтинг МШ</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Блиц</Label>
-                    <Input type="number" className="mt-1" value={ratingBlitz} onChange={e => setRatingBlitz(e.target.value)} placeholder="Например: 1450" />
+                    <Input type="number" className="mt-1" value={form.rating_blitz} onChange={e => setForm(f => ({ ...f, rating_blitz: e.target.value }))} placeholder="Например: 1450" />
                   </div>
                   <div>
                     <Label>Рапид</Label>
-                    <Input type="number" className="mt-1" value={ratingRapid} onChange={e => setRatingRapid(e.target.value)} placeholder="Например: 1520" />
+                    <Input type="number" className="mt-1" value={form.rating_rapid} onChange={e => setForm(f => ({ ...f, rating_rapid: e.target.value }))} placeholder="Например: 1520" />
                   </div>
                 </div>
               </div>
@@ -169,14 +249,15 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Блиц</Label>
-                    <Input type="number" className="mt-1" value={fsrRatingBlitz} onChange={e => setFsrRatingBlitz(e.target.value)} placeholder="Например: 1450" />
+                    <Input type="number" className="mt-1" value={form.fsr_rating_blitz} onChange={e => setForm(f => ({ ...f, fsr_rating_blitz: e.target.value }))} placeholder="Например: 1450" />
                   </div>
                   <div>
                     <Label>Рапид</Label>
-                    <Input type="number" className="mt-1" value={fsrRatingRapid} onChange={e => setFsrRatingRapid(e.target.value)} placeholder="Например: 1520" />
+                    <Input type="number" className="mt-1" value={form.fsr_rating_rapid} onChange={e => setForm(f => ({ ...f, fsr_rating_rapid: e.target.value }))} placeholder="Например: 1520" />
                   </div>
                 </div>
               </div>
+              {formError && <p className="text-red-500 text-sm">{formError}</p>}
               <div className="flex gap-2 mt-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setEditUser(null)}>Отмена</Button>
                 <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</Button>

@@ -244,6 +244,39 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь не найден'})}
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
 
+    # Админ редактирует все данные участника (анкета + рейтинги)
+    if method == 'POST' and action == 'admin_update_user' and is_admin(event):
+        user_id = body.get('user_id')
+        email = (body.get('email') or '').strip().lower()
+        last_name = (body.get('last_name') or '').strip()
+        first_name = (body.get('first_name') or '').strip()
+        if not user_id or not email or not last_name or not first_name:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Заполните имя, фамилию и email'})}
+
+        cur.execute("SELECT id FROM users WHERE email = %s AND id != %s", (email, user_id))
+        if cur.fetchone():
+            conn.close()
+            return {'statusCode': 409, 'headers': cors_headers(), 'body': json.dumps({'error': 'Этот email уже используется другим участником'})}
+
+        cur.execute(
+            """UPDATE users SET last_name=%s, first_name=%s, middle_name=%s, birth_date=%s, fsr_id=%s,
+               coach_fio=%s, institution=%s, country_city=%s, email=%s, phone=%s,
+               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s WHERE id=%s""",
+            (last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
+             body.get('fsr_id') or None, body.get('coach_fio') or None, body.get('institution') or None,
+             body.get('country_city') or None, email, body.get('phone') or None,
+             body.get('rating_blitz'), body.get('rating_rapid'),
+             body.get('fsr_rating_blitz'), body.get('fsr_rating_rapid'), user_id)
+        )
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        conn.close()
+        if not row:
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь не найден'})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
+
     # Текущий пользователь по токену
     if method == 'GET':
         user = get_user_by_token(cur, token)
