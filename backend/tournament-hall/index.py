@@ -315,7 +315,7 @@ def maybe_advance(cur, tournament):
 
 def get_tournament(cur, tournament_id):
     cur.execute(
-        "SELECT id, title, time_control, rounds_count, hall_status, round_break_seconds, rating_type FROM tournaments WHERE id = %s",
+        "SELECT id, title, time_control, rounds_count, hall_status, round_break_seconds, rating_type, admin_message FROM tournaments WHERE id = %s",
         (tournament_id,)
     )
     row = cur.fetchone()
@@ -324,6 +324,7 @@ def get_tournament(cur, tournament_id):
     return {
         'id': row[0], 'title': row[1], 'time_control': row[2], 'rounds_count': row[3],
         'hall_status': row[4], 'round_break_seconds': row[5], 'rating_type': row[6] or 'rapid',
+        'admin_message': row[7],
     }
 
 

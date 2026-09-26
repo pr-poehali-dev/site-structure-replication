@@ -8,6 +8,7 @@ export interface Tournament {
   hall_status?: string;
   rating_type?: 'blitz' | 'rapid';
   max_participants?: number | null;
+  admin_message?: string | null;
 }
 
 export interface Application {
@@ -86,7 +87,7 @@ export const AUTH_URL = 'https://functions.poehali.dev/e53e4b4d-a551-44e6-8b21-6
 export const FSR_RATINGS_URL = 'https://functions.poehali.dev/de8fad97-4436-42d8-ae73-4dd429bcc3d4';
 export const USER_LOGS_URL = 'https://functions.poehali.dev/2bca9207-343b-46d4-8cb2-3189d6acadae';
 
-export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false, rounds_count: '5', rating_type: 'rapid' as 'blitz' | 'rapid', max_participants: '' };
+export const EMPTY_T_FORM = { title: '', description: '', date: '', location: '', age_category: '', price: '', time_control: '', time_msk: '', diploma_sample_url: '', regulation_url: '', announcement_url: '', hall_open: false, rounds_count: '5', rating_type: 'rapid' as 'blitz' | 'rapid', max_participants: '', admin_message: '' };
 export const EMPTY_KIT_FORM = { title: '', description: '', composition: '', price: '', icon: 'award', photo_url: '', sort_order: '0', is_active: true };
 export const STATUS_LABELS: Record<string, string> = { new: 'Новая', pending_payment: 'Ждёт оплаты', confirmed: 'Подтверждена', paid: 'Оплачена', cancelled: 'Отменена' };
 export const STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 text-blue-700', pending_payment: 'bg-orange-100 text-orange-700', confirmed: 'bg-green-100 text-green-700', paid: 'bg-yellow-100 text-yellow-700', cancelled: 'bg-red-100 text-red-700' };

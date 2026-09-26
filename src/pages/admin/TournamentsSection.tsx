@@ -195,6 +195,7 @@ export default function TournamentsSection({
       rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
       rating_type: t.rating_type || 'rapid',
       max_participants: t.max_participants != null ? String(t.max_participants) : '',
+      admin_message: t.admin_message || '',
     });
     setTError('');
     setTShowForm(true);
@@ -324,6 +325,12 @@ export default function TournamentsSection({
           <div className="md:col-span-2 flex items-center gap-2 border-t border-gray-100 pt-4">
             <input type="checkbox" id="hall_open" className="w-4 h-4 accent-secondary" checked={tForm.hall_open} onChange={e => setTForm({ ...tForm, hall_open: e.target.checked })} />
             <Label htmlFor="hall_open" className="cursor-pointer mb-0">Открыт турнирный зал (участники видят ссылку в кабинете)</Label>
+          </div>
+
+          <div className="md:col-span-2">
+            <Label>Сообщение администратора (отображается в турнирном зале над блоком «Туры»)</Label>
+            <Textarea className="mt-1" rows={2} placeholder="Например: перерыв между турами увеличен до 5 минут"
+              value={tForm.admin_message} onChange={e => setTForm({ ...tForm, admin_message: e.target.value })} />
           </div>
 
           <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-1">

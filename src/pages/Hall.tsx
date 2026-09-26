@@ -61,6 +61,7 @@ interface TournamentInfo {
   hall_status: string;
   round_break_seconds: number;
   rating_type?: 'blitz' | 'rapid';
+  admin_message?: string | null;
 }
 
 const RATING_TYPE_LABELS: Record<string, string> = { blitz: 'Блиц', rapid: 'Рапид' };
@@ -427,6 +428,13 @@ export default function Hall() {
                   <span className="text-sm text-primary font-medium">{players.length} участников</span>
                 </div>
               </div>
+
+              {tournament.admin_message && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl shadow-sm p-4 flex gap-2.5">
+                  <Icon name="Megaphone" size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 leading-snug whitespace-pre-wrap">{tournament.admin_message}</p>
+                </div>
+              )}
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Раунды</p>
