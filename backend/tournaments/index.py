@@ -177,7 +177,7 @@ def handler(event: dict, context) -> dict:
             # В разделении участвуют только заявки с подтверждённым участием (оплачена/подтверждена).
             # Новые и ждущие оплаты заявки остаются в исходном турнире как есть.
             cur.execute(
-                "SELECT id, fsr_id, user_id FROM applications WHERE tournament_id = %s AND status IN ('paid', 'confirmed')",
+                "SELECT id, fio, fsr_id, user_id FROM applications WHERE tournament_id = %s AND status IN ('paid', 'confirmed')",
                 (tournament_id,)
             )
             app_rows = cur.fetchall()
@@ -187,21 +187,22 @@ def handler(event: dict, context) -> dict:
 
             rating_col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
 
+            # Заявки без привязанного аккаунта (добавлены админом вручную) не имеют собственного
+            # рейтинга МШ — разделение по рейтингу для них некорректно. Такие заявки должны быть
+            # либо привязаны к аккаунту, либо удалены до разделения турнира.
+            no_account = [fio for _, fio, _, user_id in app_rows if not user_id]
+            if no_account:
+                conn.close()
+                names = ', '.join(no_account[:5]) + ('…' if len(no_account) > 5 else '')
+                return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({
+                    'error': f'В турнире есть заявки без привязанного аккаунта, у них нет своего рейтинга МШ: {names}. Привяжите аккаунт или удалите эти заявки перед разделением.'
+                })}
+
             enriched = []
-            for app_id, fsr_id, user_id in app_rows:
-                rating = None
-                if user_id:
-                    cur.execute(f"SELECT {rating_col} FROM users WHERE id = %s", (user_id,))
-                    r = cur.fetchone()
-                    if r and r[0] is not None:
-                        rating = r[0]
-                if rating is None and fsr_id:
-                    cur.execute(f"SELECT {rating_col} FROM fsr_official_cache WHERE fsr_id = %s", (fsr_id,))
-                    r = cur.fetchone()
-                    if r and r[0] is not None:
-                        rating = r[0]
-                if rating is None:
-                    rating = 1200
+            for app_id, fio, fsr_id, user_id in app_rows:
+                cur.execute(f"SELECT {rating_col} FROM users WHERE id = %s", (user_id,))
+                r = cur.fetchone()
+                rating = r[0] if r and r[0] is not None else 1200
                 enriched.append((app_id, rating))
 
             # Сильнейшие (по рейтингу МШ турнира — блиц или рапид) — в группу А.
