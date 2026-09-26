@@ -190,14 +190,27 @@ export default function Hall() {
   const hasLoadedOnceRef = useRef(false);
   const liveRoundNumberRef = useRef<number | null>(null);
 
-  const fetchHall = useCallback(async () => {
+  const fetchHall = useCallback(async (retriesLeft = 2) => {
     if (!tournamentId) return;
     try {
       const res = await fetch(`${HALL_URL}?tournament_id=${tournamentId}`, {
         headers: token ? { 'X-Auth-Token': token } : {},
       });
       const json = await res.json();
-      if (!res.ok) { setFetchError(json.error || 'Не удалось загрузить турнирный зал'); return; }
+      if (!res.ok) {
+        // Первая загрузка страницы (F5/переход) иногда попадает в кратковременный сбой
+        // сети или "холодный старт" backend-функции — единичная неудача ещё не значит,
+        // что зал действительно закрыт. Прежде чем показать пользователю жёсткий экран
+        // "зал скоро откроется", тихо пробуем ещё пару раз с небольшой паузой. Экран
+        // ошибки показываем только если это НЕ первая загрузка (тогда сообщение точно
+        // осмысленное, например зал правда ещё не открыт) или все попытки исчерпаны.
+        if (!hasLoadedOnceRef.current && retriesLeft > 0) {
+          setTimeout(() => fetchHall(retriesLeft - 1), 1000);
+          return;
+        }
+        setFetchError(json.error || 'Не удалось загрузить турнирный зал');
+        return;
+      }
       setData(json);
       setFetchError('');
       setPusherKey(json.pusher_key || null);
@@ -223,6 +236,10 @@ export default function Hall() {
       knownGameIdRef.current = newGameId;
       hasLoadedOnceRef.current = true;
     } catch {
+      if (!hasLoadedOnceRef.current && retriesLeft > 0) {
+        setTimeout(() => fetchHall(retriesLeft - 1), 1000);
+        return;
+      }
       setFetchError('Не удалось загрузить турнирный зал');
     }
   }, [tournamentId, token, navigate]);
