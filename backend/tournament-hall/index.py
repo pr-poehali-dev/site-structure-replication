@@ -25,8 +25,44 @@ def is_present(last_seen_at):
     return (datetime.utcnow() - last_seen_at).total_seconds() < PRESENCE_ONLINE_SECONDS
 
 
+_conn = None
+
+
 def get_conn():
-    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    """Переиспользует соединение с БД между вызовами функции на одном "тёплом" контейнере —
+    открытие нового TCP+TLS соединения на каждый опрос зала (раз в несколько секунд от
+    каждого участника) было основной причиной исчерпания лимита подключений к Postgres
+    при нескольких одновременных турнирах. Если соединение закрыто/протухло (например,
+    после холодного старта или долгого простоя), открываем новое. Тот же подход уже
+    используется в chess-game."""
+    global _conn
+    if _conn is not None:
+        try:
+            if _conn.closed == 0:
+                with _conn.cursor() as probe:
+                    probe.execute("SELECT 1")
+                return _conn
+        except Exception:
+            pass
+        try:
+            _conn.close()
+        except Exception:
+            pass
+        _conn = None
+    _conn = psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    return _conn
+
+
+def release_conn(conn):
+    """Вызывается вместо conn.close() в конце обработки запроса. Соединение НЕ закрывается —
+    оно переиспользуется между вызовами (см. get_conn). Откат неявной транзакции гарантирует
+    чистое состояние для следующего запроса независимо от того, был вызван conn.commit() на
+    этом пути или нет (ранний выход по ошибке без записи)."""
+    global _conn
+    try:
+        conn.rollback()
+    except Exception:
+        _conn = None
 
 
 def cors_headers():
@@ -360,12 +396,12 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         tournament_id = params.get('tournament_id')
         if not tournament_id:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'tournament_id required'})}
 
         tournament = get_tournament(cur, tournament_id)
         if not tournament:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
 
         next_round_at = None
@@ -481,12 +517,15 @@ def handler(event: dict, context) -> dict:
             (tournament_id,)
         )
         rounds_rows = cur.fetchall()
-        rounds = []
-        my_game_id = None
-        for rr in rounds_rows:
-            round_id, round_number, r_status, started_at, completed_at = rr
+
+        # Партии ВСЕХ туров турнира одним запросом (вместо запроса на каждый тур в цикле) —
+        # на турнир с 5-7 турами это было 5-7 отдельных SQL-запросов с 4 JOIN'ами на каждый
+        # опрос зала. При нескольких одновременных турнирах и опросе раз в несколько секунд
+        # от каждого участника это была основная нагрузка на БД.
+        games_by_round = {}
+        if rounds_rows:
             cur.execute(
-                """SELECT g.id, g.white_player_id, wp.fio, wp.user_id, wu.avatar_url,
+                """SELECT g.round_id, g.id, g.white_player_id, wp.fio, wp.user_id, wu.avatar_url,
                           g.black_player_id, bp.fio, bp.user_id, bu.avatar_url,
                           g.is_bye, g.status, g.result, g.fen
                    FROM tournament_games g
@@ -494,11 +533,18 @@ def handler(event: dict, context) -> dict:
                    LEFT JOIN tournament_players bp ON bp.id = g.black_player_id
                    LEFT JOIN users wu ON wu.id = wp.user_id
                    LEFT JOIN users bu ON bu.id = bp.user_id
-                   WHERE g.round_id = %s ORDER BY g.id ASC""",
-                (round_id,)
+                   WHERE g.tournament_id = %s ORDER BY g.round_id ASC, g.id ASC""",
+                (tournament_id,)
             )
+            for row in cur.fetchall():
+                games_by_round.setdefault(row[0], []).append(row[1:])
+
+        rounds = []
+        my_game_id = None
+        for rr in rounds_rows:
+            round_id, round_number, r_status, started_at, completed_at = rr
             games = []
-            for g in cur.fetchall():
+            for g in games_by_round.get(round_id, []):
                 games.append({
                     'id': g[0], 'white_player_id': g[1], 'white_fio': g[2], 'white_user_id': g[3], 'white_avatar_url': g[4],
                     'black_player_id': g[5], 'black_fio': g[6], 'black_user_id': g[7], 'black_avatar_url': g[8], 'is_bye': g[9],
@@ -513,7 +559,7 @@ def handler(event: dict, context) -> dict:
                 'games': games,
             })
 
-        conn.close()
+        release_conn(conn)
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
             'tournament': tournament, 'players': players, 'rounds': rounds,
             'my_player_id': my_player_id, 'my_game_id': my_game_id,
@@ -524,15 +570,15 @@ def handler(event: dict, context) -> dict:
 
     if method == 'POST' and action == 'start':
         if not is_admin:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
         tournament_id = body.get('tournament_id')
         tournament = get_tournament(cur, tournament_id)
         if not tournament:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
         if tournament['hall_status'] != 'not_started':
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир уже запущен'})}
 
         # В жеребьёвку 1-го тура попадают только те, кто реально зашёл в турнирный зал
@@ -553,7 +599,7 @@ def handler(event: dict, context) -> dict:
         already_in_hall = cur.fetchone()[0]
 
         if already_in_hall + len(no_account_apps) < 2:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно участников в турнирном зале (нужно минимум 2, зашедших в зал)'})}
 
         for app_id, user_id, fio in no_account_apps:
@@ -572,7 +618,7 @@ def handler(event: dict, context) -> dict:
         tournament = get_tournament(cur, tournament_id)
         round_id, start_events = start_next_round(cur, tournament, 1)
         conn.commit()
-        conn.close()
+        release_conn(conn)
         if not round_id:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось создать пары'})}
         trigger(f'tournament-{tournament_id}', 'round-started', {'round_number': 1})
@@ -582,12 +628,12 @@ def handler(event: dict, context) -> dict:
 
     if method == 'POST' and action == 'reset':
         if not is_admin:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
         tournament_id = body.get('tournament_id')
         tournament = get_tournament(cur, tournament_id)
         if not tournament:
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
 
         cur.execute(
@@ -603,8 +649,8 @@ def handler(event: dict, context) -> dict:
             (tournament_id,)
         )
         conn.commit()
-        conn.close()
+        release_conn(conn)
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
-    conn.close()
+    release_conn(conn)
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}
