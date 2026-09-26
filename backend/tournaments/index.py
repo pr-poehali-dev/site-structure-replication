@@ -155,6 +155,96 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
+        if action == 'split':
+            tournament_id = body.get('tournament_id')
+            cur.execute(
+                """SELECT id, title, description, date, location, age_category, price, time_control, time_msk,
+                   diploma_sample_url, regulation_url, announcement_url, hall_open, rounds_count, rating_type, hall_status
+                   FROM tournaments WHERE id = %s""",
+                (tournament_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.close()
+                return {'statusCode': 404, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Турнир не найден'})}
+            (t_id, title, description, date, location, age_category, price, time_control, time_msk,
+             diploma_sample_url, regulation_url, announcement_url, hall_open, rounds_count, rating_type, hall_status) = row
+
+            if hall_status != 'not_started':
+                conn.close()
+                return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Турнир уже начат — разделение невозможно'})}
+
+            # В разделении участвуют только заявки с подтверждённым участием (оплачена/подтверждена).
+            # Новые и ждущие оплаты заявки остаются в исходном турнире как есть.
+            cur.execute(
+                "SELECT id, fsr_id, user_id FROM applications WHERE tournament_id = %s AND status IN ('paid', 'confirmed')",
+                (tournament_id,)
+            )
+            app_rows = cur.fetchall()
+            if len(app_rows) < 2:
+                conn.close()
+                return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Недостаточно оплаченных/подтверждённых заявок для разделения (нужно минимум 2)'})}
+
+            rating_col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
+
+            enriched = []
+            for app_id, fsr_id, user_id in app_rows:
+                rating = None
+                if user_id:
+                    cur.execute(f"SELECT {rating_col} FROM users WHERE id = %s", (user_id,))
+                    r = cur.fetchone()
+                    if r and r[0] is not None:
+                        rating = r[0]
+                if rating is None and fsr_id:
+                    cur.execute(f"SELECT {rating_col} FROM fsr_official_cache WHERE fsr_id = %s", (fsr_id,))
+                    r = cur.fetchone()
+                    if r and r[0] is not None:
+                        rating = r[0]
+                if rating is None:
+                    rating = 1200
+                enriched.append((app_id, rating))
+
+            # Сильнейшие (по рейтингу МШ турнира — блиц или рапид) — в группу А.
+            # При нечётном числе участников в группе А на одного больше.
+            enriched.sort(key=lambda x: x[1], reverse=True)
+            total = len(enriched)
+            group_a_size = (total + 1) // 2
+            group_a = enriched[:group_a_size]
+            group_b = enriched[group_a_size:]
+
+            def create_group_tournament(suffix):
+                new_title = f"{title} — Группа {suffix}"
+                cur.execute(
+                    """INSERT INTO tournaments (title, description, date, location, age_category, price, time_control,
+                       diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type,
+                       max_participants, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'closed') RETURNING id""",
+                    (new_title, description, date, location, age_category, price, time_control,
+                     diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type,
+                     None)
+                )
+                return cur.fetchone()[0], new_title
+
+            group_a_id, group_a_title = create_group_tournament('А')
+            group_b_id, group_b_title = create_group_tournament('Б')
+
+            for app_id, _ in group_a:
+                cur.execute("UPDATE applications SET tournament_id = %s, tournament_title = %s WHERE id = %s", (group_a_id, group_a_title, app_id))
+            for app_id, _ in group_b:
+                cur.execute("UPDATE applications SET tournament_id = %s, tournament_title = %s WHERE id = %s", (group_b_id, group_b_title, app_id))
+
+            conn.commit()
+            conn.close()
+            return {
+                'statusCode': 200,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'ok': True,
+                    'group_a': {'id': group_a_id, 'title': group_a_title, 'count': len(group_a)},
+                    'group_b': {'id': group_b_id, 'title': group_b_title, 'count': len(group_b)},
+                })
+            }
+
         rating_type = body.get('rating_type') if body.get('rating_type') in ('blitz', 'rapid') else 'rapid'
         cur.execute(
             "INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type, max_participants, admin_message) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",

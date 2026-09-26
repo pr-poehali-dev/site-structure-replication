@@ -1,0 +1,2 @@
+UPDATE applications SET status = 'cancelled', tournament_title = 'QA Split Test (cancelled)' WHERE tournament_id = 31;
+UPDATE tournaments SET status = 'archived', title = 'QA Split Test (archived - remove me)' WHERE id = 31;

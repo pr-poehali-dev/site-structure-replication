@@ -40,6 +40,7 @@ export default function TournamentsSection({
   const [startingId, setStartingId] = useState<number | null>(null);
   const [startError, setStartError] = useState('');
   const [resettingId, setResettingId] = useState<number | null>(null);
+  const [splittingId, setSplittingId] = useState<number | null>(null);
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const regulationInputRef = useRef<HTMLInputElement>(null);
   const announcementInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +79,30 @@ export default function TournamentsSection({
       fetchTournaments();
     }
     setResettingId(null);
+  }
+
+  async function handleSplitTournament(t: Tournament) {
+    const tApps = apps.filter(a => a.tournament_id === t.id && (a.status === 'paid' || a.status === 'confirmed'));
+    if (tApps.length < 2) {
+      setStartError('Недостаточно оплаченных/подтверждённых заявок для разделения (нужно минимум 2)');
+      return;
+    }
+    if (!confirm(`Разделить турнир «${t.title}» на две группы по ${Math.ceil(tApps.length / 2)}/${Math.floor(tApps.length / 2)} участников? Будут созданы два новых турнира («Группа А» и «Группа Б»), участники распределены по рейтингу МШ. Исходный турнир останется как есть, без этих заявок. Отменить это действие нельзя.`)) return;
+    setSplittingId(t.id);
+    setStartError('');
+    const res = await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'split', tournament_id: t.id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStartError(data.error || 'Не удалось разделить турнир');
+    } else {
+      fetchTournaments();
+      fetchApps();
+    }
+    setSplittingId(null);
   }
 
   async function handleDeleteApp(a: Application) {
@@ -426,6 +451,13 @@ export default function TournamentsSection({
                           disabled={startingId === t.id} onClick={() => handleStartTournament(t)}>
                           <Icon name="Play" size={14} className="mr-1" />
                           {startingId === t.id ? 'Запускаю...' : 'Начать турнир'}
+                        </Button>
+                      )}
+                      {(!t.hall_status || t.hall_status === 'not_started') && (
+                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          disabled={splittingId === t.id} onClick={() => handleSplitTournament(t)}>
+                          <Icon name="Split" size={14} className="mr-1" />
+                          {splittingId === t.id ? 'Разделяю...' : 'Разделить турнир'}
                         </Button>
                       )}
                       {t.hall_status === 'active' && (
