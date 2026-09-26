@@ -212,18 +212,23 @@ def handler(event: dict, context) -> dict:
     # GET — полный список заявок для админа
     if method == 'GET':
         tournament_id = (event.get('queryStringParameters') or {}).get('tournament_id')
+        # Рейтинг МШ участника: сначала берётся из его профиля (rating_blitz/rating_rapid,
+        # если аккаунт привязан), иначе — из справочника ФШР по указанному в заявке ID.
+        select_sql = (
+            "SELECT a.id, a.tournament_id, a.tournament_title, a.fio, a.age, a.fsr_id, a.coach, a.country_city, "
+            "a.school, a.email, a.phone, a.status, a.notes, a.created_at, a.promo_code, "
+            "COALESCE(u.rating_blitz, f.rating_blitz), COALESCE(u.rating_rapid, f.rating_rapid) "
+            "FROM applications a "
+            "LEFT JOIN users u ON u.id = a.user_id "
+            "LEFT JOIN fsr_official_cache f ON f.fsr_id = a.fsr_id"
+        )
         if tournament_id:
-            cur.execute(
-                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at, promo_code FROM applications WHERE tournament_id = %s ORDER BY created_at DESC",
-                (tournament_id,)
-            )
+            cur.execute(select_sql + " WHERE a.tournament_id = %s ORDER BY a.created_at DESC", (tournament_id,))
         else:
-            cur.execute(
-                "SELECT id, tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, notes, created_at, promo_code FROM applications ORDER BY created_at DESC"
-            )
+            cur.execute(select_sql + " ORDER BY a.created_at DESC")
         rows = cur.fetchall()
         conn.close()
-        cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'fsr_id', 'coach', 'country_city', 'school', 'email', 'phone', 'status', 'notes', 'created_at', 'promo_code']
+        cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'fsr_id', 'coach', 'country_city', 'school', 'email', 'phone', 'status', 'notes', 'created_at', 'promo_code', 'rating_blitz', 'rating_rapid']
         apps = [dict(zip(cols, r)) for r in rows]
         for a in apps:
             a['created_at'] = str(a['created_at'])

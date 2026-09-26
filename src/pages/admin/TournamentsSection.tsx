@@ -500,12 +500,19 @@ export default function TournamentsSection({
                     <div className="border-t border-gray-100 pt-4 mt-4">
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Участники</p>
                       <div className="flex flex-col gap-1">
-                        {tApps.map((a, i) => (
+                        {tApps.map((a, i) => {
+                          const rating = t.rating_type === 'blitz' ? a.rating_blitz : a.rating_rapid;
+                          return (
                           <div key={a.id} className="flex items-center gap-2 text-sm">
                             <span className="text-gray-400 w-5 shrink-0">{i + 1}.</span>
                             <span className="font-medium text-gray-800">{a.fio}</span>
                             {a.age && <span className="text-gray-400">· {a.age}</span>}
                             {a.country_city && <span className="text-gray-400">· {a.country_city}</span>}
+                            {rating != null && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium shrink-0">
+                                {t.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}: {rating}
+                              </span>
+                            )}
                             <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-600'}`}>
                               {STATUS_LABELS[a.status] || a.status}
                             </span>
@@ -519,7 +526,8 @@ export default function TournamentsSection({
                               <Icon name={deletingAppId === a.id ? 'Loader2' : 'Trash2'} size={14} className={deletingAppId === a.id ? 'animate-spin' : ''} />
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

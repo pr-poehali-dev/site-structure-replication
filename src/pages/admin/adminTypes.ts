@@ -16,6 +16,7 @@ export interface Application {
   fio: string; age: string; fsr_id: string; coach: string; country_city: string;
   school: string; email: string; phone: string; status: string; notes: string; created_at: string;
   promo_code: string | null;
+  rating_blitz?: number | null; rating_rapid?: number | null;
 }
 
 export interface AwardKit {
