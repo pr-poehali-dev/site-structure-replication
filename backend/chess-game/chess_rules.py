@@ -1,8 +1,9 @@
 """Минимальный движок шахматных правил на чистом Python, без внешних зависимостей.
 
 Поддерживает: генерацию легальных ходов, рокировку, взятие на проходе,
-превращение пешки, шах/мат/пат, повторение позиции и правило 50 ходов
-не реализованы полно, но не требуются для базового зала.
+превращение пешки, шах/мат/пат, недостаточность материала и троекратное
+повторение позиции (см. position_key, используется в index.py при обработке
+хода). Правило 50 ходов не реализовано, не требуется для базового зала.
 """
 
 FILES = 'abcdefgh'
@@ -41,6 +42,32 @@ class Board:
         self.ep = parts[3] if len(parts) > 3 and parts[3] != '-' else None
         self.halfmove = int(parts[4]) if len(parts) > 4 else 0
         self.fullmove = int(parts[5]) if len(parts) > 5 else 1
+
+    def position_key(self):
+        """Ключ позиции для правила троекратного повторения: расположение фигур,
+        очередь хода, права рокировки и поле взятия на проходе — БЕЗ счётчиков
+        полуходов/ходов (halfmove/fullmove), которые всегда разные и по правилам
+        шахмат не влияют на то, повторилась позиция или нет."""
+        rows = []
+        for rank in range(7, -1, -1):
+            row = ''
+            empty = 0
+            for f in range(8):
+                p = self.board[rank][f]
+                if p is None:
+                    empty += 1
+                else:
+                    if empty:
+                        row += str(empty)
+                        empty = 0
+                    row += p
+            if empty:
+                row += str(empty)
+            rows.append(row)
+        board_part = '/'.join(rows)
+        ep = self.ep if self.ep else '-'
+        castling = self.castling if self.castling else '-'
+        return f"{board_part} {self.turn} {castling} {ep}"
 
     def to_fen(self):
         rows = []

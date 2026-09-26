@@ -69,6 +69,7 @@ const RESULT_REASON_LABELS: Record<string, string> = {
   checkmate: 'мат', stalemate: 'пат', draw_agreed: 'согласие сторон',
   resignation: 'сдача', timeout: 'закончилось время', insufficient_material: 'недостаточно материала для мата',
   bye: 'технический бай', first_move_timeout: 'не сделан первый ход за 1 минуту',
+  threefold_repetition: 'троекратное повторение позиции',
 };
 
 function parseFen(fen: string): (string | null)[][] {
@@ -1271,6 +1272,7 @@ function gameOutcomeText(result: string | null, reason: string | null): string {
   if (reason === 'stalemate') return 'Ничья: пат';
   if (reason === 'draw_agreed') return 'Ничья по соглашению сторон';
   if (reason === 'insufficient_material') return 'Ничья: недостаточно материала для мата';
+  if (reason === 'threefold_repetition') return 'Ничья: троекратное повторение позиции';
   if (reason === 'resignation') return result === '1-0' ? 'Чёрные сдались' : 'Белые сдались';
   if (reason === 'timeout') return result === '1-0' ? 'Чёрные просрочили время' : 'Белые просрочили время';
   if (reason === 'first_move_timeout') return 'Белые не сделали первый ход вовремя';

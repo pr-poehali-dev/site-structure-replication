@@ -16,6 +16,23 @@ RESIGNATION = 'resignation'
 TIMEOUT = 'timeout'
 INSUFFICIENT = 'insufficient_material'
 FIRST_MOVE_TIMEOUT = 'first_move_timeout'
+THREEFOLD_REPETITION = 'threefold_repetition'
+
+
+def count_position_repetitions(moves_including_current, target_fen):
+    """Считает, сколько раз позиция target_fen встречалась в партии — включая
+    начальную позицию перед первым ходом и позицию после каждого хода вплоть до
+    только что сделанного (moves_including_current — это game['moves'] уже С
+    добавленным текущим ходом). Сравнение идёт по position_key (фигуры + очередь
+    хода + права рокировки + взятие на проходе), а не по полному FEN, чтобы
+    отличающиеся только счётчиком ходов позиции считались одинаковыми, как того
+    требуют правила шахмат."""
+    target_key = Board(target_fen).position_key()
+    count = 1 if Board(START_FEN).position_key() == target_key else 0
+    for m in moves_including_current:
+        if Board(m['fen']).position_key() == target_key:
+            count += 1
+    return count
 
 FIRST_MOVE_GRACE_MS = 60000
 
@@ -481,6 +498,13 @@ def handler(event: dict, context) -> dict:
         elif board.is_insufficient_material():
             finish_game(cur, game_id, '1/2-1/2', INSUFFICIENT)
             game['status'], game['result'], game['result_reason'] = 'finished', '1/2-1/2', INSUFFICIENT
+            game_finished = True
+        elif count_position_repetitions(new_moves, new_fen) >= 3:
+            # Троекратное повторение позиции — ничья засчитывается автоматически (не по
+            # заявлению игрока, как в очном шахматном регламенте, а сразу движком), так
+            # как в этом онлайн-зале нет отдельного действия "заявить ничью".
+            finish_game(cur, game_id, '1/2-1/2', THREEFOLD_REPETITION)
+            game['status'], game['result'], game['result_reason'] = 'finished', '1/2-1/2', THREEFOLD_REPETITION
             game_finished = True
 
         round_events = check_round_completion(cur, game['tournament_id'], game['round_id']) if game_finished else []
