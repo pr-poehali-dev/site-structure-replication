@@ -434,7 +434,7 @@ export default function TournamentsSection({
                       {t.date && <p className="text-sm text-gray-500 mb-1">{new Date(t.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
                       {t.location && <p className="text-sm text-gray-500">{t.location}</p>}
                     </div>
-                    <div className="flex gap-2 flex-wrap shrink-0">
+                    <div className="flex gap-2 flex-wrap w-full lg:w-auto">
                       <Button variant="outline" size="sm" onClick={() => handleEditTournament(t)}>
                         <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
                       </Button>
