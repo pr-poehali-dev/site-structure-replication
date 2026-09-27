@@ -1,13 +1,31 @@
 import json
 import os
+import time
+import random
 from datetime import datetime
 
 import psycopg2
+import psycopg2.pool
 
 from chess_rules import Board, START_FEN
 from pusher_client import trigger, trigger_many
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
+
+# Пул соединений на "тёплый" контейнер — см. подробный комментарий у get_conn() ниже
+# и аналогичное решение в tournament-hall/index.py (там же описана история бага 26.09,
+# из-за которого раньше отказались от переиспользования соединений).
+_pool = None
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = psycopg2.pool.ThreadedConnectionPool(
+            1, 5, os.environ['DATABASE_URL'],
+            options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}"
+        )
+    return _pool
 
 CHECKMATE = 'checkmate'
 STALEMATE = 'stalemate'
@@ -61,23 +79,48 @@ def replay_moves_from_pgn(pgn):
 
 
 def get_conn():
-    """ВАЖНО: каждый вызов открывает НОВОЕ соединение — переиспользование общего соединения
-    между вызовами (через глобальную переменную) оказалось небезопасным: когда платформа
-    обрабатывает несколько запросов параллельно на одном "тёплом" контейнере (например,
-    несколько игроков одновременно делают ходы в разных партиях одного тура), параллельные
-    запросы на ОДНОМ соединении могут путать результаты своих SQL-запросов между собой.
-    Это привело к реальному багу 26.09 в турнирном зале (tournament-hall) — там же было
-    точно такое же переиспользование, из-за него часть игроков и очков "потерялась" при
-    одновременных запросах. Открытие нового соединения на каждый вызов исключает эту гонку
-    ценой чуть большей нагрузки на лимит подключений БД."""
-    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    """Берёт СВОЁ ОТДЕЛЬНОЕ соединение из пула (см. _get_pool выше). Раньше здесь на каждый
+    вызов открывался новый psycopg2.connect() — это избегало гонки данных (баг 26.09 в
+    tournament-hall, где несколько параллельных запросов делили ОДНО общее соединение и
+    путали результаты друг друга), но ценой нового TCP+TLS+auth хендшейка на каждый вызов,
+    что под турнирной нагрузкой упирало в лимит подключений/запросов к БД (rate limit
+    exceeded). Пул решает обе задачи: каждый вызов на всё время своей работы владеет
+    отдельным физическим соединением (гонка исключена так же, как и раньше), но соединения
+    переиспользуются между вызовами вместо пересоздания."""
+    return _get_pool().getconn()
 
 
 def release_conn(conn):
+    """Возвращает соединение в пул, предварительно откатывая любую незакоммиченную
+    транзакцию — иначе следующий вызов, получивший это соединение из пула, унаследовал
+    бы чужие незафиксированные изменения/блокировки."""
     try:
-        conn.close()
+        conn.rollback()
     except Exception:
         pass
+    try:
+        _get_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def commit_with_retry(conn, attempts=3):
+    """conn.commit() с повторными попытками при "rate limit exceeded" от БД — под залповой
+    нагрузкой (несколько игроков одновременно делают ходы/опрашивают партии одного тура)
+    провайдер БД периодически отклоняет запрос лимитом на частоту подключений/запросов
+    (QueryCanceled: rate limit exceeded). Повторная попытка через короткую случайную паузу
+    почти всегда проходит, и игрок не видит 502 там, где реального сбоя не было."""
+    for i in range(attempts):
+        try:
+            conn.commit()
+            return
+        except psycopg2.errors.QueryCanceled:
+            if i == attempts - 1:
+                raise
+            time.sleep(0.15 * (i + 1) + random.uniform(0, 0.15))
 
 
 def cors_headers():
@@ -323,7 +366,7 @@ def handler(event: dict, context) -> dict:
             (START_FEN, base_ms, base_ms, game_id)
         )
         cur.execute("DELETE FROM game_chat_messages WHERE game_id = %s", (game_id,))
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         trigger(f'game-{game_id}', 'update', {
             'id': int(game_id), 'status': 'active', 'result': None, 'result_reason': None,
@@ -347,23 +390,32 @@ def handler(event: dict, context) -> dict:
         first_move_grace_ms = compute_first_move_grace_ms(game)
 
         # Отмечаем присутствие игрока в партии — используется фронтендом для индикатора
-        # "соперник на связи" рядом с его именем. Обновляется на каждом опросе партии
-        # (push-событие 'update' его не даёт, но резервный опрос теперь достаточно частый —
-        # см. интервал в Game.tsx), поэтому статус отстаёт максимум на пару секунд.
+        # "соперник на связи" рядом с его именем. Резервный опрос идёт каждые 8с, но
+        # visibilitychange/восстановление Pusher-соединения могут вызвать доп. опрос почти
+        # сразу после обычного — условие "< now() - 3s" подавляет такие дублирующиеся write,
+        # не теряя точности индикатора (PRESENCE_ONLINE_SECONDS = 25).
         role_for_presence = player_role(game, user_id)
         if role_for_presence == 'white':
-            cur.execute("UPDATE tournament_games SET white_present_at = now() WHERE id = %s", (game_id,))
+            cur.execute(
+                """UPDATE tournament_games SET white_present_at = now() WHERE id = %s
+                   AND (white_present_at IS NULL OR white_present_at < now() - interval '3 seconds')""",
+                (game_id,)
+            )
             game['white_present_at'] = datetime.utcnow()
         elif role_for_presence == 'black':
-            cur.execute("UPDATE tournament_games SET black_present_at = now() WHERE id = %s", (game_id,))
+            cur.execute(
+                """UPDATE tournament_games SET black_present_at = now() WHERE id = %s
+                   AND (black_present_at IS NULL OR black_present_at < now() - interval '3 seconds')""",
+                (game_id,)
+            )
             game['black_present_at'] = datetime.utcnow()
         if role_for_presence:
-            conn.commit()
+            commit_with_retry(conn)
 
         if game['status'] == 'active' and first_move_grace_ms == 0:
             finish_game(cur, game['id'], '0-1', FIRST_MOVE_TIMEOUT, game['black_player_id'], game['white_player_id'])
             round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
-            conn.commit()
+            commit_with_retry(conn)
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
@@ -379,7 +431,7 @@ def handler(event: dict, context) -> dict:
             result = '0-1' if loser_color == 'white' else '1-0'
             finish_game(cur, game['id'], result, TIMEOUT, winner_id, loser_id, white_ms, black_ms)
             round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
-            conn.commit()
+            commit_with_retry(conn)
             game = load_game(cur, game_id)
             white_ms, black_ms = compute_live_times(game)
             first_move_grace_ms = None
@@ -509,7 +561,7 @@ def handler(event: dict, context) -> dict:
 
         round_events = check_round_completion(cur, game['tournament_id'], game['round_id']) if game_finished else []
 
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         # Синхронный trigger (дожидается ответа Pusher) — в serverless-окружении процесс
         # может быть заморожен сразу после возврата HTTP-ответа, поэтому фоновый поток,
@@ -543,7 +595,7 @@ def handler(event: dict, context) -> dict:
         result = '0-1' if role == 'white' else '1-0'
         finish_game(cur, game_id, result, RESIGNATION, winner_id, loser_id)
         round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'] = 'finished', result, RESIGNATION
@@ -566,7 +618,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Невозможно предложить ничью'})}
         player_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         cur.execute("UPDATE tournament_games SET draw_offered_by = %s WHERE id = %s", (player_id, game_id))
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['draw_offered_by'] = player_id
@@ -589,7 +641,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нельзя принять собственное предложение'})}
         finish_game(cur, game_id, '1/2-1/2', DRAW_AGREED)
         round_events = check_round_completion(cur, game['tournament_id'], game['round_id'])
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['status'], game['result'], game['result_reason'], game['draw_offered_by'] = 'finished', '1/2-1/2', DRAW_AGREED, None
@@ -607,7 +659,7 @@ def handler(event: dict, context) -> dict:
             release_conn(conn)
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Партия не найдена'})}
         cur.execute("UPDATE tournament_games SET draw_offered_by = NULL WHERE id = %s", (game_id,))
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         white_ms, black_ms = compute_live_times(game)
         game['draw_offered_by'] = None
@@ -630,7 +682,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы не участник этой партии'})}
         player_id = game['white_player_id'] if role == 'white' else game['black_player_id']
         cur.execute("INSERT INTO game_chat_messages (game_id, player_id, message) VALUES (%s, %s, %s)", (game_id, player_id, message))
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         fio = game['white_fio'] if role == 'white' else game['black_fio']
         trigger(f'game-{game_id}', 'chat', {'message': message, 'fio': fio, 'player_id': player_id})

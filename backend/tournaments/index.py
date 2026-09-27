@@ -1,16 +1,63 @@
 import json
 import os
 import base64
+import time
+import random
 import uuid
 import psycopg2
+import psycopg2.pool
 import boto3
 
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
 from pusher_client import trigger
 
+# Пул соединений на "тёплый" контейнер — та же схема, что в tournament-hall и chess-game
+# (см. подробный комментарий там): каждый вызов на время своей работы владеет отдельным
+# физическим соединением из пула, что убирает накладные расходы на новый TCP+TLS+auth
+# хендшейк на каждый вызов и снижает нагрузку на общий лимит подключений/запросов к БД.
+_pool = None
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = psycopg2.pool.ThreadedConnectionPool(
+            1, 3, os.environ['DATABASE_URL'],
+            options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}"
+        )
+    return _pool
+
+
 def get_conn():
-    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    return _get_pool().getconn()
+
+
+def release_conn(conn):
+    try:
+        conn.rollback()
+    except Exception:
+        pass
+    try:
+        _get_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def commit_with_retry(conn, attempts=3):
+    """conn.commit() с повторными попытками при "rate limit exceeded" от БД — см.
+    подробности в tournament-hall/index.py и chess-game/index.py."""
+    for i in range(attempts):
+        try:
+            conn.commit()
+            return
+        except psycopg2.errors.QueryCanceled:
+            if i == attempts - 1:
+                raise
+            time.sleep(0.15 * (i + 1) + random.uniform(0, 0.15))
 
 def get_s3():
     return boto3.client(
@@ -82,7 +129,7 @@ def handler(event: dict, context) -> dict:
 
     if method == 'GET':
         sync_finished_tournaments(cur)
-        conn.commit()
+        commit_with_retry(conn)
         cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type, max_participants, admin_message FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
@@ -96,7 +143,7 @@ def handler(event: dict, context) -> dict:
                 'time_msk': r[13], 'hall_open': r[14], 'rounds_count': r[15], 'hall_status': r[16],
                 'rating_type': r[17], 'max_participants': r[18], 'admin_message': r[19],
             })
-        conn.close()
+        release_conn(conn)
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
 
     if method == 'POST':
@@ -112,7 +159,7 @@ def handler(event: dict, context) -> dict:
             data = base64.b64decode(file_b64)
             s3 = get_s3()
             s3.put_object(Bucket='files', Key=key, Body=data, ContentType=content_type)
-            conn.close()
+            release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'url': cdn_url(key)})}
 
         if action == 'delete':
@@ -125,20 +172,20 @@ def handler(event: dict, context) -> dict:
             )
             cur.execute("DELETE FROM applications WHERE tournament_id = %s", (tournament_id,))
             cur.execute("DELETE FROM tournaments WHERE id = %s", (tournament_id,))
-            conn.commit()
-            conn.close()
+            commit_with_retry(conn)
+            release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
         if action == 'set_status':
             cur.execute("UPDATE tournaments SET status = %s WHERE id = %s", (body.get('status'), body.get('id')))
-            conn.commit()
-            conn.close()
+            commit_with_retry(conn)
+            release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
         if action == 'set_hall_open':
             cur.execute("UPDATE tournaments SET hall_open = %s WHERE id = %s", (bool(body.get('hall_open')), body.get('id')))
-            conn.commit()
-            conn.close()
+            commit_with_retry(conn)
+            release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
         if action == 'update':
@@ -151,8 +198,8 @@ def handler(event: dict, context) -> dict:
                  body.get('time_msk'), bool(body.get('hall_open')), body.get('rounds_count') or 5, rating_type,
                  body.get('max_participants') or None, body.get('admin_message') or None, body.get('id'))
             )
-            conn.commit()
-            conn.close()
+            commit_with_retry(conn)
+            release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
 
         if action == 'split':
@@ -165,13 +212,13 @@ def handler(event: dict, context) -> dict:
             )
             row = cur.fetchone()
             if not row:
-                conn.close()
+                release_conn(conn)
                 return {'statusCode': 404, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Турнир не найден'})}
             (t_id, title, description, date, location, age_category, price, time_control, time_msk,
              diploma_sample_url, regulation_url, announcement_url, hall_open, rounds_count, rating_type, hall_status) = row
 
             if hall_status != 'not_started':
-                conn.close()
+                release_conn(conn)
                 return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Турнир уже начат — разделение невозможно'})}
 
             # В разделении участвуют только заявки с подтверждённым участием (оплачена/подтверждена).
@@ -182,7 +229,7 @@ def handler(event: dict, context) -> dict:
             )
             app_rows = cur.fetchall()
             if len(app_rows) < 2:
-                conn.close()
+                release_conn(conn)
                 return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Недостаточно оплаченных/подтверждённых заявок для разделения (нужно минимум 2)'})}
 
             rating_col = 'rating_blitz' if rating_type == 'blitz' else 'rating_rapid'
@@ -192,7 +239,7 @@ def handler(event: dict, context) -> dict:
             # либо привязаны к аккаунту, либо удалены до разделения турнира.
             no_account = [fio for _, fio, _, user_id in app_rows if not user_id]
             if no_account:
-                conn.close()
+                release_conn(conn)
                 names = ', '.join(no_account[:5]) + ('…' if len(no_account) > 5 else '')
                 return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({
                     'error': f'В турнире есть заявки без привязанного аккаунта, у них нет своего рейтинга МШ: {names}. Привяжите аккаунт или удалите эти заявки перед разделением.'
@@ -234,8 +281,8 @@ def handler(event: dict, context) -> dict:
             for app_id, _ in group_b:
                 cur.execute("UPDATE applications SET tournament_id = %s, tournament_title = %s WHERE id = %s", (group_b_id, group_b_title, app_id))
 
-            conn.commit()
-            conn.close()
+            commit_with_retry(conn)
+            release_conn(conn)
             return {
                 'statusCode': 200,
                 'headers': {'Access-Control-Allow-Origin': '*'},
@@ -256,9 +303,9 @@ def handler(event: dict, context) -> dict:
              body.get('max_participants') or None, body.get('admin_message') or None)
         )
         new_id = cur.fetchone()[0]
-        conn.commit()
-        conn.close()
+        commit_with_retry(conn)
+        release_conn(conn)
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True, 'id': new_id})}
 
-    conn.close()
+    release_conn(conn)
     return {'statusCode': 405, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Method not allowed'})}

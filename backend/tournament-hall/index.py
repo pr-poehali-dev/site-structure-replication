@@ -1,13 +1,35 @@
 import json
 import os
 import re
+import time
+import random
 from datetime import datetime, timedelta
 
 import psycopg2
+import psycopg2.pool
 
 from swiss import make_pairings, assign_places, update_buchholz
 from rating import apply_rating_changes
 from pusher_client import trigger
+
+# Пул соединений на "тёплый" контейнер: до 5 физических соединений с БД, каждое
+# выдаётся ЦЕЛИКОМ одному вызову функции (getconn/putconn), а не делится между
+# параллельными запросами — поэтому гонка данных из бага 26.09 (см. историю ниже)
+# здесь невозможна: тот баг был вызван общим ОДНИМ соединением на все параллельные
+# запросы, а не пулом из нескольких независимых соединений. Пул просто избавляет
+# от накладных расходов на новый TCP+TLS+auth хендшейк на каждый вызов, что и было
+# основной причиной упора в лимит подключений/запросов к БД под турнирной нагрузкой.
+_pool = None
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = psycopg2.pool.ThreadedConnectionPool(
+            1, 5, os.environ['DATABASE_URL'],
+            options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}"
+        )
+    return _pool
 
 DEFAULT_BASE_MS = 600000
 DEFAULT_INC_MS = 0
@@ -26,24 +48,48 @@ def is_present(last_seen_at):
 
 
 def get_conn():
-    """ВАЖНО: каждый вызов открывает НОВОЕ соединение — переиспользование общего соединения
-    между вызовами (через глобальную переменную) оказалось небезопасным: когда несколько
-    игроков одновременно опрашивают зал (особенно в момент смены тура), платформа может
-    обрабатывать эти запросы параллельно на одном "тёплом" контейнере, и параллельные
-    запросы на ОДНОМ соединении путают результаты друг друга — это привело к реальному
-    багу 26.09: при жеребьёвке тура 6/7 в турнире 33 часть игроков "потерялась" из
-    выборки, потому что один запрос прочитал строки, предназначенные другому. Открытие
-    нового соединения на каждый вызов исключает эту гонку ценой чуть большей нагрузки
-    на лимит подключений БД — троттлинг тяжёлой логики (см. handler) и увеличенный
-    интервал опроса на фронтенде уже компенсируют это без риска для целостности данных."""
-    return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
+    """Берёт СВОЁ ОТДЕЛЬНОЕ соединение из пула (см. _get_pool выше) — в отличие от бага
+    26.09 (турнир 33, тур 6/7: часть игроков "потерялась" из выборки), где несколько
+    параллельных запросов делили ОДНО общее соединение и путали результаты друг друга,
+    здесь каждый вызов на всё время своей работы владеет отдельным физическим соединением
+    и возвращает его в пул только по завершении (release_conn) — гонка невозможна, а
+    накладные расходы на новый TCP+TLS+auth хендшейк на каждый вызов исключены."""
+    return _get_pool().getconn()
 
 
 def release_conn(conn):
+    """Возвращает соединение в пул. Если в нём осталась незакоммиченная транзакция
+    (например, после необработанного исключения) — откатывает её перед возвратом,
+    иначе следующий вызов, получивший это соединение из пула, унаследовал бы чужие
+    незафиксированные изменения/блокировки."""
     try:
-        conn.close()
+        conn.rollback()
     except Exception:
         pass
+    try:
+        _get_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def commit_with_retry(conn, attempts=3):
+    """conn.commit() с повторными попытками при "rate limit exceeded" от БД — под
+    залповой нагрузкой (все участники опрашивают зал почти одновременно в момент
+    смены тура) провайдер БД периодически отклоняет запрос лимитом на частоту
+    подключений/запросов (QueryCanceled: rate limit exceeded). Это не ошибка в
+    данных — повторная попытка через короткую случайную паузу почти всегда проходит,
+    и игрок не видит 502 там, где реального сбоя не было."""
+    for i in range(attempts):
+        try:
+            conn.commit()
+            return
+        except psycopg2.errors.QueryCanceled:
+            if i == attempts - 1:
+                raise
+            time.sleep(0.15 * (i + 1) + random.uniform(0, 0.15))
 
 
 def cors_headers():
@@ -437,44 +483,52 @@ def handler(event: dict, context) -> dict:
             should_advance = cur.fetchone() is not None
             if should_advance:
                 next_round_at, advance_events = maybe_advance(cur, tournament)
-                conn.commit()
+                commit_with_retry(conn)
                 for channel, ev, data in advance_events:
                     trigger(channel, ev, data)
                 tournament = get_tournament(cur, tournament_id)
             else:
                 next_round_at = peek_next_round_at(cur, tournament)
-                conn.commit()
+                commit_with_retry(conn)
 
         user_id = get_user_id_by_token(cur, auth_token) if not is_admin else None
         my_player_id = None
         if user_id:
-            # Зал опрашивается автоматически каждые ~20 секунд, пока открыта вкладка —
+            # Зал опрашивается автоматически каждые ~25 секунд, пока открыта вкладка —
             # без троттлинга каждый такой опрос попадал бы в лог как отдельный "заход в зал".
             # Пишем новую запись, только если с прошлого захода в ЭТОТ турнир прошло от
             # 5 минут (значит вкладка была закрыта/неактивна и это действительно новый визит).
+            # INSERT ... WHERE NOT EXISTS вместо SELECT+INSERT — тот же результат одним
+            # запросом к БД вместо двух.
             cur.execute(
-                """SELECT 1 FROM user_activity_logs
-                   WHERE user_id = %s AND event_type = 'hall_enter' AND meta->>'tournament_id' = %s
-                     AND created_at > now() - interval '5 minutes'""",
-                (user_id, str(tournament_id))
+                """INSERT INTO user_activity_logs (user_id, event_type, meta)
+                   SELECT %s, 'hall_enter', %s WHERE NOT EXISTS (
+                       SELECT 1 FROM user_activity_logs
+                       WHERE user_id = %s AND event_type = 'hall_enter' AND meta->>'tournament_id' = %s
+                         AND created_at > now() - interval '5 minutes'
+                   )""",
+                (user_id, json.dumps({'tournament_id': str(tournament_id), 'tournament_title': tournament['title']}),
+                 user_id, str(tournament_id))
             )
-            if not cur.fetchone():
-                cur.execute(
-                    "INSERT INTO user_activity_logs (user_id, event_type, meta) VALUES (%s, 'hall_enter', %s)",
-                    (user_id, json.dumps({'tournament_id': str(tournament_id), 'tournament_title': tournament['title']}))
-                )
+            # Присутствие участника — для индикатора "онлайн" в турнирной таблице
+            # (players[].online) и общего онлайн-статуса пользователя. Условие
+            # "last_seen_at < now() - 10s" превращает эти UPDATE в условные: если
+            # несколько событий на фронтенде (интервал, возврат на вкладку, восстановление
+            # Pusher-соединения) вызвали опрос зала почти одновременно, повторные запросы
+            # в это окно не порождают лишний write — только первый обновляет отметку.
             cur.execute(
                 """INSERT INTO user_online_status (user_id, last_seen) VALUES (%s, now())
-                   ON CONFLICT (user_id) DO UPDATE SET last_seen = now()""",
+                   ON CONFLICT (user_id) DO UPDATE SET last_seen = now()
+                   WHERE user_online_status.last_seen < now() - interval '10 seconds'""",
                 (user_id,)
             )
-            # Присутствие участника в турнирном зале — для индикатора "онлайн" в турнирной
-            # таблице (players[].online). Обновляется на каждом опросе зала этим участником.
             cur.execute(
-                "UPDATE tournament_players SET last_seen_at = now() WHERE tournament_id = %s AND user_id = %s",
+                """UPDATE tournament_players SET last_seen_at = now()
+                   WHERE tournament_id = %s AND user_id = %s
+                     AND (last_seen_at IS NULL OR last_seen_at < now() - interval '10 seconds')""",
                 (tournament_id, user_id)
             )
-            conn.commit()
+            commit_with_retry(conn)
 
             cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND user_id = %s", (tournament_id, user_id))
             r = cur.fetchone()
@@ -509,7 +563,7 @@ def handler(event: dict, context) -> dict:
                         (tournament_id, user_id, app_id, fio, player_rating, initial_points, can_join_late)
                     )
                     new_row = cur.fetchone()
-                    conn.commit()
+                    commit_with_retry(conn)
                     if new_row:
                         my_player_id = new_row[0]
                         trigger(f'tournament-{tournament_id}', 'player-joined', {})
@@ -648,10 +702,10 @@ def handler(event: dict, context) -> dict:
         # Приём заявок автоматически закрывается при старте турнира, если организатор
         # не закрыл его вручную заранее — после старта подать заявку уже бессмысленно.
         cur.execute("UPDATE tournaments SET hall_status = 'active', status = 'closed' WHERE id = %s", (tournament_id,))
-        conn.commit()
+        commit_with_retry(conn)
         tournament = get_tournament(cur, tournament_id)
         round_id, start_events = start_next_round(cur, tournament, 1)
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         if not round_id:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось создать пары'})}
@@ -682,7 +736,7 @@ def handler(event: dict, context) -> dict:
             "UPDATE tournaments SET hall_status = 'not_started', hall_open = false WHERE id = %s",
             (tournament_id,)
         )
-        conn.commit()
+        commit_with_retry(conn)
         release_conn(conn)
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
