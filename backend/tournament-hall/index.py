@@ -641,28 +641,22 @@ def handler(event: dict, context) -> dict:
             release_conn(conn)
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир уже запущен'})}
 
-        # В жеребьёвку 1-го тура попадают только те, кто реально зашёл в турнирный зал
-        # к моменту старта (уже есть запись в tournament_players — она создаётся автоматически
-        # при GET-запросе зала). Заявки без привязанного аккаунта (user_id IS NULL, добавлены
-        # админом вручную) не могут "зайти в зал" сами — их регистрируем при старте всегда,
-        # иначе они никогда не попадут в турнир.
+        # В жеребьёвку 1-го тура попадают ВСЕ участники с оплаченной заявкой — независимо
+        # от того, заходили ли они в турнирный зал до старта. Кто-то уже мог зарегистрироваться
+        # автоматически при заходе в зал (см. GET-обработчик выше) — для них ON CONFLICT DO
+        # NOTHING просто ничего не сделает. Остальных (в том числе заявки без привязанного
+        # аккаунта, добавленные админом вручную — у них user_id IS NULL) регистрируем здесь.
         cur.execute(
-            "SELECT id, user_id, fio FROM applications WHERE tournament_id = %s AND status = 'paid' AND user_id IS NULL",
+            "SELECT id, user_id, fio FROM applications WHERE tournament_id = %s AND status = 'paid'",
             (tournament_id,)
         )
-        no_account_apps = cur.fetchall()
+        paid_apps = cur.fetchall()
 
-        cur.execute(
-            "SELECT COUNT(*) FROM tournament_players WHERE tournament_id = %s",
-            (tournament_id,)
-        )
-        already_in_hall = cur.fetchone()[0]
-
-        if already_in_hall + len(no_account_apps) < 2:
+        if len(paid_apps) < 2:
             release_conn(conn)
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно участников в турнирном зале (нужно минимум 2, зашедших в зал)'})}
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно участников с оплаченной заявкой (нужно минимум 2)'})}
 
-        for app_id, user_id, fio in no_account_apps:
+        for app_id, user_id, fio in paid_apps:
             player_rating = get_player_rating(cur, user_id, tournament['rating_type'])
             cur.execute(
                 """INSERT INTO tournament_players (tournament_id, user_id, application_id, fio, rating)
