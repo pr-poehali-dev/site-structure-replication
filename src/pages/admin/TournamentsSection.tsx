@@ -46,7 +46,7 @@ export default function TournamentsSection({
   const announcementInputRef = useRef<HTMLInputElement>(null);
 
   async function handleStartTournament(t: Tournament) {
-    if (!confirm(`Начать турнир «${t.title}»? В жеребьёвку 1-го тура попадут все участники с оплаченной заявкой — независимо от того, заходили ли они в турнирный зал. Отменить это действие нельзя.`)) return;
+    if (!confirm(`Начать турнир «${t.title}»? В жеребьёвку 1-го тура попадут участники, которые хотя бы раз зашли в турнирный зал (даже если сейчас не в сети). Отменить это действие нельзя.`)) return;
     setStartingId(t.id);
     setStartError('');
     const res = await fetch(TOURNAMENT_HALL_URL, {
