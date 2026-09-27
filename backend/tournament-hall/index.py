@@ -153,6 +153,33 @@ def finish_expired_games(cur, tournament_id, round_id):
     return events
 
 
+def count_previous_round_participants(cur, tournament_id, round_number):
+    """Возвращает число РАЗНЫХ игроков, сыгравших в туре round_number (включая
+    получивших technical bye), или None, если такого тура ещё не было. Используется
+    как независимая сверка перед жеребьёвкой следующего тура — партии прошлого тура
+    уже завершены и не меняются, поэтому этот подсчёт не подвержен той же гонке,
+    что могла повредить свежий SELECT ... WHERE active = true (см. комментарий в
+    start_next_round про баг 26.09 в турнире 33 и повторный случай 27.09 в турнире 34,
+    когда при высокой нагрузке на БД SELECT активных игроков вернул только часть строк)."""
+    cur.execute(
+        "SELECT id FROM tournament_rounds WHERE tournament_id = %s AND round_number = %s",
+        (tournament_id, round_number)
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    prev_round_id = row[0]
+    cur.execute(
+        """SELECT COUNT(DISTINCT player_id) FROM (
+               SELECT white_player_id AS player_id FROM tournament_games WHERE round_id = %s
+               UNION
+               SELECT black_player_id AS player_id FROM tournament_games WHERE round_id = %s AND black_player_id IS NOT NULL
+           ) t""",
+        (prev_round_id, prev_round_id)
+    )
+    return cur.fetchone()[0]
+
+
 def get_previous_pairs(cur, tournament_id):
     cur.execute(
         "SELECT white_player_id, black_player_id FROM tournament_games WHERE tournament_id = %s AND black_player_id IS NOT NULL",
@@ -206,6 +233,18 @@ def start_next_round(cur, tournament, round_number):
     if len(players) < 2:
         cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
         return None, []
+
+    # Независимая сверка со 2-го тура и далее: сравниваем число только что прочитанных
+    # активных игроков с числом участников предыдущего (уже сыгранного и неизменного)
+    # тура. Эти данные читаются из разных источников и в разное время, поэтому если
+    # SELECT выше из-за перегрузки БД вернул только часть строк, здесь числа разойдутся —
+    # тур не создаём вообще (удаляем зарезервированную строку), и maybe_advance() при
+    # следующем опросе зала попробует жеребьёвку заново, когда нагрузка спадёт.
+    if round_number > 1:
+        prev_count = count_previous_round_participants(cur, tournament['id'], round_number - 1)
+        if prev_count is not None and len(players) < prev_count:
+            cur.execute("DELETE FROM tournament_rounds WHERE id = %s", (round_id,))
+            return None, []
 
     previous_pairs = get_previous_pairs(cur, tournament['id'])
     cur.execute("SELECT id FROM tournament_players WHERE tournament_id = %s AND byes_used > 0", (tournament['id'],))
