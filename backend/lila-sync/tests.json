@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight returns 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "ensure_account without token returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "ensure_account"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "resolve_bridge_token without secret returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "resolve_bridge_token", "bridge_token": "x"},
+      "expectedStatus": 401
+    }
+  ]
+}

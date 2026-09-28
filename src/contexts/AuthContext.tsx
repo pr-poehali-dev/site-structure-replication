@@ -2,7 +2,20 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import func2url from '../../backend/func2url.json';
 
 const AUTH_URL = func2url['auth'];
+const LILA_SYNC_URL = func2url['lila-sync'];
 const TOKEN_KEY = 'auth_token';
+
+// Фоновая синхронизация с зеркальным аккаунтом world-chess.ru — вызывается после
+// login/register и НЕ блокирует вход на сайт: пользователь продолжает работать сразу,
+// а создание/проверка Lila-аккаунта идёт в фоне. Ошибка намеренно проглатывается —
+// на UX нашего сайта она никак не должна влиять, попытка повторится при следующем входе.
+function syncLilaAccount(token: string) {
+  fetch(LILA_SYNC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+    body: JSON.stringify({ _action: 'ensure_account' }),
+  }).catch(() => {});
+}
 
 export interface UserProfile {
   id: number;
@@ -64,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     fetch(AUTH_URL, { headers: { 'X-Auth-Token': t } })
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => { setUser(data.user); setToken(t); })
+      .then(data => { setUser(data.user); setToken(t); syncLilaAccount(t); })
       .catch(() => { localStorage.removeItem(TOKEN_KEY); setUser(null); setToken(null); })
       .finally(() => setLoading(false));
   }, []);
@@ -98,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
     setUser(data.user);
+    syncLilaAccount(data.token);
     return { ok: true as const };
   }, []);
 
@@ -112,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
     setUser(data.user);
+    syncLilaAccount(data.token);
     return { ok: true as const };
   }, []);
 
