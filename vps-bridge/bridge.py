@@ -76,7 +76,11 @@ def login_to_lila(username: str, password: str):
     """Логинится в Lila изнутри сервера (server-to-server, минуя браузер пользователя)
     и возвращает (cookie_value, debug_info). cookie_value is None при неудаче —
     debug_info тогда содержит статусы/заголовки для диагностики."""
-    base_headers = {'Host': LILA_PUBLIC_HOST}
+    # User-Agent ОБЯЗАТЕЛЕН: без него (просто "python-requests/x.x" по умолчанию)
+    # запрос к Lila получает 404 — судя по всему, отсекается как бот ещё до самого
+    # приложения (Cloudflare/edge-защита перед Caddy). С обычным браузерным UA
+    # запрос доходит и обрабатывается нормально.
+    base_headers = {'Host': LILA_PUBLIC_HOST, 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'}
 
     r0 = requests.get(f'{LILA_INTERNAL_URL}/login', headers=base_headers, timeout=8)
     pre_cookie = extract_lila2(r0.headers.get('Set-Cookie'))
