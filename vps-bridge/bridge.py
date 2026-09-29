@@ -21,6 +21,7 @@
   export LILA_SYNC_URL=https://functions.poehali.dev/XXXXX   # URL функции lila-sync
   export LILA_BRIDGE_SECRET=...                               # тот же секрет, что в LILA_BRIDGE_SECRET на платформе
   export LILA_INTERNAL_URL=http://127.0.0.1:8080               # адрес, по которому Lila слушает НА ЭТОМ сервере
+  export LILA_PUBLIC_HOST=play.xn----8sba3atdzuy2a.xn--p1ai     # публичный домен Lila (punycode), нужен для заголовка Host
   gunicorn -w 2 -b 127.0.0.1:9321 bridge:app
 
 Nginx (см. nginx-bridge.conf.example) должен проксировать play.мир-шахмат.рф
@@ -38,6 +39,11 @@ app = Flask(__name__)
 LILA_SYNC_URL = os.environ['LILA_SYNC_URL']
 LILA_BRIDGE_SECRET = os.environ['LILA_BRIDGE_SECRET']
 LILA_INTERNAL_URL = os.environ.get('LILA_INTERNAL_URL', 'http://127.0.0.1:8080')
+# Lila (Play Framework) маршрутизирует запрос по заголовку Host — при обращении
+# напрямую на внутренний порт (127.0.0.1:8080) без публичного домена в Host
+# сервер не находит подходящий сайт/маршрут и отвечает 404 даже для реально
+# существующих путей типа /login. Поэтому явно подставляем публичный домен.
+LILA_PUBLIC_HOST = os.environ.get('LILA_PUBLIC_HOST', 'play.xn----8sba3atdzuy2a.xn--p1ai')
 
 
 def resolve_bridge_token(bridge_token: str):
@@ -70,10 +76,12 @@ def login_to_lila(username: str, password: str):
     """Логинится в Lila изнутри сервера (server-to-server, минуя браузер пользователя)
     и возвращает (cookie_value, debug_info). cookie_value is None при неудаче —
     debug_info тогда содержит статусы/заголовки для диагностики."""
-    r0 = requests.get(f'{LILA_INTERNAL_URL}/login', timeout=8)
+    base_headers = {'Host': LILA_PUBLIC_HOST}
+
+    r0 = requests.get(f'{LILA_INTERNAL_URL}/login', headers=base_headers, timeout=8)
     pre_cookie = extract_lila2(r0.headers.get('Set-Cookie'))
 
-    headers = {}
+    headers = dict(base_headers)
     if pre_cookie:
         headers['Cookie'] = f'lila2={pre_cookie}'
 
