@@ -53,18 +53,38 @@ def resolve_bridge_token(bridge_token: str):
     return data, None
 
 
+def extract_lila2(set_cookie_header):
+    """Достаёт значение cookie lila2 напрямую из сырого заголовка Set-Cookie.
+    ВАЖНО: не используем requests.Session()/cookie jar — Lila выставляет Domain=
+    play.мир-шахмат.рф (или world-chess.ru) в атрибуте cookie, а мы обращаемся к
+    LILA_INTERNAL_URL (обычно 127.0.0.1:8080) — requests сверяет домен ответа с
+    доменом в атрибуте cookie и, если они не совпадают, молча ОТБРАСЫВАЕТ такую
+    cookie из jar. Поэтому читаем Set-Cookie сами, без домен-фильтрации."""
+    if not set_cookie_header:
+        return None
+    m = re.search(r'lila2=([^;]+)', set_cookie_header)
+    return m.group(1) if m else None
+
+
 def login_to_lila(username: str, password: str):
     """Логинится в Lila изнутри сервера (server-to-server, минуя браузер пользователя)
     и возвращает значение cookie lila2, которую нужно выставить браузеру."""
     s = requests.Session()
-    s.get(f'{LILA_INTERNAL_URL}/login', timeout=8)  # первичная сессионная cookie
-    resp = s.post(
+    r0 = s.get(f'{LILA_INTERNAL_URL}/login', timeout=8)  # первичная сессионная cookie
+    pre_cookie = extract_lila2(r0.headers.get('Set-Cookie'))
+
+    headers = {}
+    if pre_cookie:
+        headers['Cookie'] = f'lila2={pre_cookie}'
+
+    resp = requests.post(
         f'{LILA_INTERNAL_URL}/login',
         data={'username': username, 'password': password, 'remember': 'true'},
+        headers=headers,
         allow_redirects=False,
         timeout=8,
     )
-    cookie_value = s.cookies.get('lila2')
+    cookie_value = extract_lila2(resp.headers.get('Set-Cookie'))
     if not cookie_value:
         return None
     return cookie_value
