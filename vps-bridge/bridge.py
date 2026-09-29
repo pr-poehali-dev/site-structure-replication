@@ -68,9 +68,9 @@ def extract_lila2(set_cookie_header):
 
 def login_to_lila(username: str, password: str):
     """Логинится в Lila изнутри сервера (server-to-server, минуя браузер пользователя)
-    и возвращает значение cookie lila2, которую нужно выставить браузеру."""
-    s = requests.Session()
-    r0 = s.get(f'{LILA_INTERNAL_URL}/login', timeout=8)  # первичная сессионная cookie
+    и возвращает (cookie_value, debug_info). cookie_value is None при неудаче —
+    debug_info тогда содержит статусы/заголовки для диагностики."""
+    r0 = requests.get(f'{LILA_INTERNAL_URL}/login', timeout=8)
     pre_cookie = extract_lila2(r0.headers.get('Set-Cookie'))
 
     headers = {}
@@ -85,9 +85,15 @@ def login_to_lila(username: str, password: str):
         timeout=8,
     )
     cookie_value = extract_lila2(resp.headers.get('Set-Cookie'))
-    if not cookie_value:
-        return None
-    return cookie_value
+    debug_info = {
+        'get_status': r0.status_code,
+        'get_set_cookie': r0.headers.get('Set-Cookie'),
+        'post_status': resp.status_code,
+        'post_set_cookie': resp.headers.get('Set-Cookie'),
+        'post_location': resp.headers.get('Location'),
+        'post_body_head': resp.text[:300] if not cookie_value else None,
+    }
+    return cookie_value, debug_info
 
 
 @app.route('/bridge/login')
@@ -103,9 +109,10 @@ def bridge_login():
     lila_username = data['lila_username']
     lila_password = data['lila_password']
 
-    cookie_value = login_to_lila(lila_username, lila_password)
+    cookie_value, debug_info = login_to_lila(lila_username, lila_password)
     if not cookie_value:
-        return Response('Lila login failed', status=502)
+        import json as _json
+        return Response(f'Lila login failed. Debug: {_json.dumps(debug_info)}', status=502)
 
     resp = Response(
         '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-ok","*")}</script>',
