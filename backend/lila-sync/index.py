@@ -27,7 +27,9 @@ def cors_headers():
 
 
 def get_fernet():
-    return Fernet(os.environ['LILA_ENC_KEY'].encode())
+    # .strip() защищает от случайных пробелов/переносов строк при вставке значения
+    # секрета через UI — Fernet требует ровно 32 байта в base64 без хвостовых символов.
+    return Fernet(os.environ['LILA_ENC_KEY'].strip().encode())
 
 
 def encrypt_password(plain: str) -> str:
@@ -169,6 +171,17 @@ def handler(event: dict, context) -> dict:
         if user['lila_sync_status'] == 'ok' and user['lila_username']:
             conn.close()
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'status': 'ok'})}
+
+        # Проверяем, что шифрование доступно, ДО обращения к Lila — иначе при сбое
+        # шифрования аккаунт в Lila уже будет создан, но потерян для нашей системы
+        # (email окажется навсегда занят, а мы не сможем повторить попытку).
+        try:
+            get_fernet()
+        except Exception as e:
+            conn.close()
+            raw = os.environ.get('LILA_ENC_KEY', '')
+            debug = f"len={len(raw)} head={raw[:8]!r} tail={raw[-8:]!r}"
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': False, 'status': 'error', 'error': f'Encryption key misconfigured: {e}', 'debug': debug})}
 
         username = make_lila_username(user['id'])
         password = make_lila_password()
