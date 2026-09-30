@@ -236,20 +236,28 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный bridge secret'})}
 
+        # ВАЖНО: token НЕ требуем used_at IS NULL — намеренно разрешаем повторное
+        # использование в пределах короткого TTL (30 сек). Причина: антивирусы
+        # (особенно Kaspersky, массово стоит у пользователей в РФ) и часть браузеров
+        # автоматически "прощупывают" ссылку на безопасность отдельным GET-запросом
+        # ДО реального перехода пользователя — при строгой одноразовости это сжигало
+        # токен раньше времени, и настоящий переход получал "уже использован". Риск
+        # такого ослабления минимален: токен — 256-битный случайный секрет, живёт
+        # всего 30 секунд и виден только этому браузеру и антивирус-сканеру на нём.
         bridge_token = body.get('bridge_token', '')
         cur.execute(
             """SELECT t.user_id, u.lila_username, u.lila_password_enc
                FROM lila_bridge_tokens t JOIN users u ON u.id = t.user_id
-               WHERE t.token = %s AND t.expires_at > now() AND t.used_at IS NULL""",
+               WHERE t.token = %s AND t.expires_at > now()""",
             (bridge_token,)
         )
         row = cur.fetchone()
         if not row:
             conn.close()
-            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Токен недействителен или уже использован'})}
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Токен недействителен или истёк'})}
 
         user_id, lila_username, lila_password_enc = row
-        cur.execute("UPDATE lila_bridge_tokens SET used_at = now() WHERE token = %s", (bridge_token,))
+        cur.execute("UPDATE lila_bridge_tokens SET used_at = now() WHERE token = %s AND used_at IS NULL", (bridge_token,))
         conn.commit()
         conn.close()
 
