@@ -6,17 +6,52 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, formatDate } from './utils';
+import func2url from '../../../backend/func2url.json';
 
 // Служебная статичная партия для быстрой проверки игры — создана админом между
 // тестовыми аккаунтами t1 и t2. Ссылка видна только этим двум аккаунтам.
 const DEMO_GAME_ID = 124;
 const DEMO_GAME_USER_IDS = [7, 8];
 
+const LILA_SYNC_URL = func2url['lila-sync'];
+// Мост на VPS рядом с Lila (world-chess.ru) — см. vps-bridge/bridge.py. Прямой
+// переход по клику (а не фоновый invisible iframe) — единственный способ тихого
+// входа, который не режут блокировщики трекеров в Firefox/Яндекс.Браузере: cookie
+// ставится в обычной top-level навигации, а не в стороннем iframe.
+const LILA_BRIDGE_ORIGIN = 'https://play.мир-шахмат.рф';
+
 export default function ProfileSection() {
-  const { user, updateProfile } = useAuth();
+  const { user, token, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [playLoading, setPlayLoading] = useState(false);
+
+  async function handlePlay() {
+    if (!token || playLoading) return;
+    setPlayLoading(true);
+    // Открываем вкладку СРАЗУ (синхронно с кликом) — иначе браузер расценит
+    // window.open после await fetch как всплывающее окно вне действия пользователя
+    // и заблокирует его. Адрес подставим в уже открытую вкладку после ответа сервера.
+    const win = window.open('about:blank', '_blank');
+    try {
+      const res = await fetch(LILA_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        body: JSON.stringify({ _action: 'issue_bridge_token' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.bridge_token && win) {
+        win.location.href = `${LILA_BRIDGE_ORIGIN}/bridge/login?token=${data.bridge_token}&redirect=1`;
+      } else if (win) {
+        win.close();
+      }
+    } catch {
+      win?.close();
+    } finally {
+      setPlayLoading(false);
+    }
+  }
 
   const [form, setForm] = useState({
     last_name: user?.last_name || '',
@@ -64,6 +99,19 @@ export default function ProfileSection() {
 
   return !editing ? (
     <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={handlePlay}
+        disabled={playLoading}
+        className="flex items-center gap-3 bg-primary text-primary-foreground rounded-2xl px-5 py-4 hover:bg-primary/90 transition-colors text-left disabled:opacity-70"
+      >
+        <Icon name={playLoading ? 'Loader2' : 'Play'} size={22} className={`shrink-0 ${playLoading ? 'animate-spin' : ''}`} />
+        <div className="flex-1 min-w-0">
+          <p className="font-heading font-bold text-base">Играть</p>
+          <p className="text-xs opacity-80">Откроется игровой зал в новой вкладке — вход выполнится автоматически</p>
+        </div>
+        <Icon name="ExternalLink" size={18} className="shrink-0 opacity-80" />
+      </button>
       {DEMO_GAME_USER_IDS.includes(user.id) && (
         <Link
           to={`/game/${DEMO_GAME_ID}`}

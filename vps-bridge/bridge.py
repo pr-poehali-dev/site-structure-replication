@@ -110,6 +110,14 @@ def login_to_lila(username: str, password: str):
 
 @app.route('/bridge/login')
 def bridge_login():
+    """Два режима вызова:
+    - Прямой переход пользователя по клику на кнопку "Играть" (top-level navigation,
+      не iframe) — сюда добавлен параметр redirect=1, после логина браузер СРАЗУ
+      уводится редиректом на саму Lila (параметр next, по умолчанию '/'). Именно
+      этот путь надёжен во всех браузерах: cookie ставится в обычном первом
+      (не третьем) контексте навигации, так её не режут блокировщики трекеров.
+    - Старый режим для невидимого фонового iframe (без redirect) оставлен для
+      браузеров без строгой защиты от трекеров — возвращает postMessage-скрипт."""
     bridge_token = request.args.get('token', '')
     if not bridge_token:
         return Response('Missing token', status=400)
@@ -126,10 +134,17 @@ def bridge_login():
         import json as _json
         return Response(f'Lila login failed. Debug: {_json.dumps(debug_info)}', status=502)
 
-    resp = Response(
-        '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-ok","*")}</script>',
-        mimetype='text/html',
-    )
+    if request.args.get('redirect'):
+        next_path = request.args.get('next', '/')
+        if not next_path.startswith('/'):
+            next_path = '/'
+        resp = Response(status=302)
+        resp.headers['Location'] = next_path
+    else:
+        resp = Response(
+            '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-ok","*")}</script>',
+            mimetype='text/html',
+        )
     # Cookie выставляется на ТЕКУЩИЙ домен (play.мир-шахмат.рф), на который реально
     # пришёл запрос — Flask сам берёт домен из заголовка Host, поэтому domain=None.
     resp.set_cookie(
