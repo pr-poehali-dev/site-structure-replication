@@ -49,7 +49,12 @@ export default function ProfileSection() {
       });
       const ensure = await ensureRes.json();
       if (!ensureRes.ok || ensure.ok === false) {
-        fail('Не удалось подготовить игровой аккаунт. Попробуйте ещё раз чуть позже или напишите в поддержку.');
+        const emailTaken = typeof ensure.error === 'string' && ensure.error.includes('email invalid or already taken');
+        fail(
+          emailTaken
+            ? 'Этот email уже занят в игровом зале (world-chess.ru). Напишите в поддержку — мы свяжем аккаунты.'
+            : 'Не удалось подготовить игровой аккаунт. Попробуйте ещё раз чуть позже или напишите в поддержку.'
+        );
         return;
       }
       const res = await fetch(LILA_SYNC_URL, {

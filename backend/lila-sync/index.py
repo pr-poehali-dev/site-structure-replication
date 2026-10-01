@@ -15,6 +15,14 @@ LILA_BASE_URL = os.environ.get('LILA_BASE_URL', 'https://world-chess.ru')
 BRIDGE_TOKEN_TTL_SECONDS = 30
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+NO_REDIRECT_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
 
@@ -81,7 +89,7 @@ def lila_request(path, data=None, cookie=None, method=None):
     if cookie:
         req.add_header('Cookie', cookie)
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with NO_REDIRECT_OPENER.open(req, timeout=8) as resp:
             set_cookie = resp.headers.get('Set-Cookie')
             return resp.status, set_cookie, resp.read().decode('utf-8', errors='replace')
     except urllib.error.HTTPError as e:
@@ -122,6 +130,8 @@ def register_on_lila(username: str, password: str, email: str):
     )
     if status not in (200, 302, 303):
         text = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', re.sub(r'<script.*?</script>|<style.*?</style>', '', body, flags=re.S)))
+        if 'Email address invalid or already taken' in text:
+            return False, 'Lila: email invalid or already taken', None
         i = text.find('Username')
         return False, f'Lila signup HTTP {status}: {text[i:i + 350] if i >= 0 else text[:350]}', None
     if 'username-exists' in body or 'already in use' in body.lower():
@@ -143,7 +153,7 @@ def login_on_lila(username: str, password: str):
         data={'username': username, 'password': password, 'remember': 'true'},
         cookie=cookie,
     )
-    if status not in (200, 302):
+    if status not in (200, 302, 303):
         return False, f'Lila login HTTP {status}'
     new_cookie = parse_session_cookie(set_cookie)
     if not new_cookie:
