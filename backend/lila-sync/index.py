@@ -124,8 +124,13 @@ def register_on_lila(username: str, password: str, email: str):
         return False, f'Lila signup HTTP {status}', None
     if 'username-exists' in body or 'already in use' in body.lower():
         return False, 'Username already in use on Lila', None
-    new_cookie = parse_session_cookie(set_cookie) or cookie
-    return True, None, new_cookie
+    # Статус 200 у Lila часто означает, что форма ОТКЛОНЕНА (ошибка валидации, капча,
+    # подтверждение email) — поэтому проверяем реальным логином, что аккаунт создан.
+    ok_login, login_result = login_on_lila(username, password)
+    if not ok_login:
+        snippet = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', body))[:200]
+        return False, f'Lila signup not confirmed (signup HTTP {status}; {login_result}): {snippet}', None
+    return True, None, login_result
 
 
 def login_on_lila(username: str, password: str):
