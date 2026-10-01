@@ -120,8 +120,10 @@ def register_on_lila(username: str, password: str, email: str):
         },
         cookie=cookie,
     )
-    if status not in (200, 302):
-        return False, f'Lila signup HTTP {status}', None
+    if status not in (200, 302, 303):
+        text = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', re.sub(r'<script.*?</script>|<style.*?</style>', '', body, flags=re.S)))
+        i = text.find('Username')
+        return False, f'Lila signup HTTP {status}: {text[i:i + 350] if i >= 0 else text[:350]}', None
     if 'username-exists' in body or 'already in use' in body.lower():
         return False, 'Username already in use on Lila', None
     # Статус 200 у Lila часто означает, что форма ОТКЛОНЕНА (ошибка валидации, капча,

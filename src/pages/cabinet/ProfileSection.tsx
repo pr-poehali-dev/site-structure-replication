@@ -26,6 +26,7 @@ export default function ProfileSection() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [playLoading, setPlayLoading] = useState(false);
+  const [playError, setPlayError] = useState('');
 
   async function handlePlay() {
     if (!token || playLoading) return;
@@ -33,21 +34,37 @@ export default function ProfileSection() {
     // Открываем вкладку СРАЗУ (синхронно с кликом) — иначе браузер расценит
     // window.open после await fetch как всплывающее окно вне действия пользователя
     // и заблокирует его. Адрес подставим в уже открытую вкладку после ответа сервера.
+    setPlayError('');
     const win = window.open('about:blank', '_blank');
+    const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+    const fail = (msg: string) => {
+      win?.close();
+      setPlayError(msg);
+    };
     try {
+      const ensureRes = await fetch(LILA_SYNC_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ _action: 'ensure_account' }),
+      });
+      const ensure = await ensureRes.json();
+      if (!ensureRes.ok || ensure.ok === false) {
+        fail('Не удалось подготовить игровой аккаунт. Попробуйте ещё раз чуть позже или напишите в поддержку.');
+        return;
+      }
       const res = await fetch(LILA_SYNC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+        headers,
         body: JSON.stringify({ _action: 'issue_bridge_token' }),
       });
       const data = await res.json();
       if (res.ok && data.bridge_token && win) {
         win.location.href = `${LILA_BRIDGE_ORIGIN}/bridge/login?token=${data.bridge_token}&redirect=1`;
-      } else if (win) {
-        win.close();
+      } else {
+        fail(data.error || 'Не удалось открыть игровой зал. Попробуйте ещё раз.');
       }
     } catch {
-      win?.close();
+      fail('Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.');
     } finally {
       setPlayLoading(false);
     }
@@ -112,6 +129,7 @@ export default function ProfileSection() {
         </div>
         <Icon name="ExternalLink" size={18} className="shrink-0 opacity-80" />
       </button>
+      {playError && <p className="text-sm text-red-500 -mt-2">{playError}</p>}
       {DEMO_GAME_USER_IDS.includes(user.id) && (
         <Link
           to={`/game/${DEMO_GAME_ID}`}
