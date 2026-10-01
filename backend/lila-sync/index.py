@@ -72,6 +72,15 @@ def make_lila_username(user_id: int) -> str:
     return f"wc{user_id}{suffix}"[:20]
 
 
+def make_service_email(user_id: int) -> str:
+    """Служебный уникальный email для зеркального аккаунта Lila. Реальный email игрока
+    не передаём: он может быть уже занят на Lila. Письма Lila на этот адрес никому
+    не приходят. Требует, чтобы на сервере Lila была отключена проверка MX-записи."""
+    domain = os.environ.get('LILA_SERVICE_EMAIL_DOMAIN', 'xn----8sba3atdzuy2a.xn--p1ai').strip()
+    suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(8))
+    return f"wc{user_id}x{suffix}@{domain}"
+
+
 def make_lila_password() -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(24))
@@ -203,7 +212,9 @@ def handler(event: dict, context) -> dict:
 
         username = make_lila_username(user['id'])
         password = make_lila_password()
-        ok, error, _cookie = register_on_lila(username, password, user['email'])
+        ok, error, _cookie = register_on_lila(username, password, make_service_email(user['id']))
+        if not ok and 'already in use' not in (error or ''):
+            ok, error, _cookie = register_on_lila(username, password, user['email'])
 
         if ok:
             cur.execute(
