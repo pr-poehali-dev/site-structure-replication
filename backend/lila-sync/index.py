@@ -139,12 +139,12 @@ def register_on_lila(username: str, password: str, email: str):
     )
     if status not in (200, 302, 303):
         text = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', re.sub(r'<script.*?</script>|<style.*?</style>', '', body, flags=re.S)))
+        if 'missing MX' in text:
+            return False, f'Lila: email domain has no MX ({email})', None
         if 'Email address invalid or already taken' in text:
             return False, 'Lila: email invalid or already taken', None
-        i = text.find('Username')
+        i = text.find('Password strength')
         return False, f'Lila signup HTTP {status}: {text[i:i + 350] if i >= 0 else text[:350]}', None
-    if 'username-exists' in body or 'already in use' in body.lower():
-        return False, 'Username already in use on Lila', None
     # Статус 200 у Lila часто означает, что форма ОТКЛОНЕНА (ошибка валидации, капча,
     # подтверждение email) — поэтому проверяем реальным логином, что аккаунт создан.
     ok_login, login_result = login_on_lila(username, password)
@@ -213,7 +213,7 @@ def handler(event: dict, context) -> dict:
         username = make_lila_username(user['id'])
         password = make_lila_password()
         ok, error, _cookie = register_on_lila(username, password, make_service_email(user['id']))
-        if not ok and 'already in use' not in (error or ''):
+        if not ok:
             ok, error, _cookie = register_on_lila(username, password, user['email'])
 
         if ok:
