@@ -145,15 +145,9 @@ def bridge_login():
             '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-ok","*")}</script>',
             mimetype='text/html',
         )
-    # Lila ставит свою cookie с явным Domain=. Если у браузера осталась старая
-    # lila2 с Domain, а мы ставим новую без Domain (host-only), в браузере живут
-    # ДВЕ cookie с одним именем, и Lila может прочитать старую (анонимную).
-    # Поэтому сначала гасим host-only вариант, затем ставим cookie с тем же Domain.
-    resp.delete_cookie('lila2', path='/', secure=True, httponly=True, samesite='Lax')
     resp.set_cookie(
         'lila2', cookie_value,
         max_age=315360000, secure=True, httponly=True, samesite='Lax', path='/',
-        domain=LILA_PUBLIC_HOST,
     )
     return resp
 
