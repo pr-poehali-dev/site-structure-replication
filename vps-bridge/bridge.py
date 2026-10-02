@@ -145,6 +145,12 @@ def bridge_login():
             '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-ok","*")}</script>',
             mimetype='text/html',
         )
+    root_host = LILA_PUBLIC_HOST.split('.', 1)[1] if '.' in LILA_PUBLIC_HOST else None
+    stale_domains = [LILA_PUBLIC_HOST, f'.{LILA_PUBLIC_HOST}']
+    if root_host:
+        stale_domains += [root_host, f'.{root_host}']
+    for stale in stale_domains:
+        resp.delete_cookie('lila2', path='/', domain=stale, secure=True, httponly=True, samesite='Lax')
     resp.set_cookie(
         'lila2', cookie_value,
         max_age=315360000, secure=True, httponly=True, samesite='Lax', path='/',
