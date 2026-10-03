@@ -221,6 +221,8 @@ export default function TournamentsSection({
       rating_type: t.rating_type || 'rapid',
       max_participants: t.max_participants != null ? String(t.max_participants) : '',
       admin_message: t.admin_message || '',
+      lila_tournament_ref: t.lila_tournament_id || '',
+      lila_tournament_password: t.lila_tournament_password || '',
     });
     setTError('');
     setTShowForm(true);
@@ -350,6 +352,21 @@ export default function TournamentsSection({
           <div className="md:col-span-2 flex items-center gap-2 border-t border-gray-100 pt-4">
             <input type="checkbox" id="hall_open" className="w-4 h-4 accent-secondary" checked={tForm.hall_open} onChange={e => setTForm({ ...tForm, hall_open: e.target.checked })} />
             <Label htmlFor="hall_open" className="cursor-pointer mb-0">Открыт турнирный зал (участники видят ссылку в кабинете)</Label>
+          </div>
+
+          <div className="md:col-span-2 border-t border-gray-100 pt-4">
+            <p className="text-sm font-semibold text-primary mb-3">Игровой зал (play.мир-шахмат.рф)</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Номер или ссылка турнира на Lila</Label>
+                <Input className="mt-1" placeholder="https://play.мир-шахмат.рф/swiss/AbCdEfGh" value={tForm.lila_tournament_ref} onChange={e => setTForm({ ...tForm, lila_tournament_ref: e.target.value })} />
+              </div>
+              <div>
+                <Label>Код для входа в турнир</Label>
+                <Input className="mt-1" placeholder="Пароль турнира в Lila" value={tForm.lila_tournament_password} onChange={e => setTForm({ ...tForm, lila_tournament_password: e.target.value })} />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Участники с подтверждённой заявкой попадут в турнир автоматически. Код они не видят.</p>
           </div>
 
           <div className="md:col-span-2">

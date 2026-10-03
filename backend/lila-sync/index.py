@@ -264,6 +264,46 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'bridge_token': bridge_token})}
 
+    if method == 'POST' and action == 'issue_tournament_token':
+        user = get_user_by_token(cur, auth_token)
+        if not user:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+        if not user['lila_username']:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Игровой аккаунт ещё не создан'})}
+        try:
+            tournament_id = int(body.get('tournament_id'))
+        except (TypeError, ValueError):
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не указан турнир'})}
+
+        cur.execute(
+            "SELECT lila_tournament_id FROM tournaments WHERE id = %s AND status = 'active'",
+            (tournament_id,)
+        )
+        trow = cur.fetchone()
+        if not trow or not trow[0]:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Для этого турнира ещё не открыт игровой зал'})}
+
+        cur.execute(
+            "SELECT 1 FROM applications WHERE user_id = %s AND tournament_id = %s AND status IN ('paid', 'confirmed') LIMIT 1",
+            (user['id'], tournament_id)
+        )
+        if not cur.fetchone():
+            conn.close()
+            return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нет подтверждённой заявки на этот турнир'})}
+
+        bridge_token = secrets.token_hex(32)
+        cur.execute(
+            "INSERT INTO lila_bridge_tokens (user_id, token, expires_at, tournament_id) VALUES (%s, %s, now() + interval '30 seconds', %s)",
+            (user['id'], bridge_token, tournament_id)
+        )
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'bridge_token': bridge_token})}
+
     # Вызывается МОСТОМ на VPS (server-to-server, не браузером) — обменивает одноразовый
     # bridge_token на логин Lila-аккаунта, чтобы мост мог сам залогиниться в Lila и выдать
     # браузеру настоящую cookie сессии. Защищено общим секретом X-Bridge-Secret.
@@ -283,7 +323,7 @@ def handler(event: dict, context) -> dict:
         # всего 30 секунд и виден только этому браузеру и антивирус-сканеру на нём.
         bridge_token = body.get('bridge_token', '')
         cur.execute(
-            """SELECT t.user_id, u.lila_username, u.lila_password_enc
+            """SELECT t.user_id, u.lila_username, u.lila_password_enc, t.tournament_id
                FROM lila_bridge_tokens t JOIN users u ON u.id = t.user_id
                WHERE t.token = %s AND t.expires_at > now()""",
             (bridge_token,)
@@ -293,18 +333,32 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Токен недействителен или истёк'})}
 
-        user_id, lila_username, lila_password_enc = row
+        user_id, lila_username, lila_password_enc, token_tournament_id = row
         cur.execute("UPDATE lila_bridge_tokens SET used_at = now() WHERE token = %s AND used_at IS NULL", (bridge_token,))
         conn.commit()
-        conn.close()
 
         if not lila_username or not lila_password_enc:
+            conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Lila-аккаунт не создан для этого пользователя'})}
 
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
+        result = {
             'lila_username': lila_username,
             'lila_password': decrypt_password(lila_password_enc),
-        })}
+        }
+        if token_tournament_id:
+            cur.execute(
+                """SELECT t.lila_tournament_id, t.lila_tournament_kind, t.lila_tournament_password
+                   FROM tournaments t
+                   WHERE t.id = %s AND EXISTS (
+                       SELECT 1 FROM applications a
+                       WHERE a.tournament_id = t.id AND a.user_id = %s AND a.status IN ('paid', 'confirmed'))""",
+                (token_tournament_id, user_id)
+            )
+            t = cur.fetchone()
+            if t and t[0]:
+                result['tournament'] = {'id': t[0], 'kind': t[1] or 'swiss', 'password': t[2] or ''}
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps(result)}
 
     conn.close()
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}

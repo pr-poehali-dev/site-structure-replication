@@ -45,6 +45,8 @@ LILA_INTERNAL_URL = os.environ.get('LILA_INTERNAL_URL', 'http://127.0.0.1:8080')
 # существующих путей типа /login. Поэтому явно подставляем публичный домен.
 LILA_PUBLIC_HOST = os.environ.get('LILA_PUBLIC_HOST', 'play.xn----8sba3atdzuy2a.xn--p1ai')
 
+BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+
 
 def resolve_bridge_token(bridge_token: str):
     resp = requests.post(
@@ -108,6 +110,35 @@ def login_to_lila(username: str, password: str):
     return cookie_value, debug_info
 
 
+def join_lila_tournament(cookie_value: str, tournament: dict):
+    """Записывает игрока в турнир Lila от его имени (форма «Участвовать»).
+    Возвращает путь турнира на Lila, куда нужно перенаправить браузер."""
+    kind = 'tournament' if tournament.get('kind') == 'arena' else 'swiss'
+    t_id = re.sub(r'[^A-Za-z0-9]', '', str(tournament.get('id', '')))[:8]
+    if not t_id:
+        return None
+    path = f'/{kind}/{t_id}'
+    data = {}
+    if tournament.get('password'):
+        data['password'] = tournament['password']
+    try:
+        requests.post(
+            f'{LILA_INTERNAL_URL}{path}/join',
+            data=data,
+            headers={
+                'Host': LILA_PUBLIC_HOST,
+                'Origin': f'https://{LILA_PUBLIC_HOST}',
+                'Cookie': f'lila2={cookie_value}',
+                'User-Agent': BROWSER_UA,
+            },
+            allow_redirects=False,
+            timeout=8,
+        )
+    except requests.RequestException:
+        pass
+    return path
+
+
 @app.route('/bridge/login')
 def bridge_login():
     """Два режима вызова:
@@ -134,8 +165,12 @@ def bridge_login():
         import json as _json
         return Response(f'Lila login failed. Debug: {_json.dumps(debug_info)}', status=502)
 
+    tournament_path = None
+    if data.get('tournament'):
+        tournament_path = join_lila_tournament(cookie_value, data['tournament'])
+
     if request.args.get('redirect'):
-        next_path = request.args.get('next', '/')
+        next_path = tournament_path or request.args.get('next', '/')
         if not next_path.startswith('/'):
             next_path = '/'
         resp = Response(status=302)

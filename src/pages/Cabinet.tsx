@@ -39,6 +39,7 @@ interface MyApplication {
   announcement_url: string | null;
   hall_status: string;
   place: number | null;
+  lila_ready?: boolean;
 }
 
 const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders'];
