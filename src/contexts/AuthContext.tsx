@@ -9,11 +9,11 @@ const TOKEN_KEY = 'auth_token';
 // login/register и НЕ блокирует вход на сайт: пользователь продолжает работать сразу,
 // а создание/проверка Lila-аккаунта идёт в фоне. Ошибка намеренно проглатывается —
 // на UX нашего сайта она никак не должна влиять, попытка повторится при следующем входе.
-function syncLilaAccount(token: string) {
+function syncLilaAccount(token: string, password?: string) {
   fetch(LILA_SYNC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
-    body: JSON.stringify({ _action: 'ensure_account' }),
+    body: JSON.stringify({ _action: 'ensure_account', password }),
   }).catch(() => {});
 }
 
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
     setUser(data.user);
-    syncLilaAccount(data.token);
+    syncLilaAccount(data.token, password);
     return { ok: true as const };
   }, []);
 
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
     setUser(data.user);
-    syncLilaAccount(data.token);
+    syncLilaAccount(data.token, payload.password);
     return { ok: true as const };
   }, []);
 

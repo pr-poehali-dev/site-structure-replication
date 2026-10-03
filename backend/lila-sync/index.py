@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -53,7 +54,7 @@ def get_user_by_token(cur, token: str):
     if not token:
         return None
     cur.execute(
-        """SELECT u.id, u.email, u.lila_username, u.lila_password_enc, u.lila_sync_status, u.login
+        """SELECT u.id, u.email, u.lila_username, u.lila_password_enc, u.lila_sync_status, u.login, u.password_hash, u.password_salt
            FROM user_sessions s JOIN users u ON u.id = s.user_id
            WHERE s.token = %s AND s.expires_at > now()""",
         (token,)
@@ -61,7 +62,7 @@ def get_user_by_token(cur, token: str):
     row = cur.fetchone()
     if not row:
         return None
-    return {'id': row[0], 'email': row[1], 'lila_username': row[2], 'lila_password_enc': row[3], 'lila_sync_status': row[4], 'login': row[5]}
+    return {'id': row[0], 'email': row[1], 'lila_username': row[2], 'lila_password_enc': row[3], 'lila_sync_status': row[4], 'login': row[5], 'password_hash': row[6], 'password_salt': row[7]}
 
 
 def make_lila_username(user_id: int) -> str:
@@ -211,8 +212,16 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': False, 'status': 'error', 'error': f'Encryption key misconfigured: {e}', 'debug': debug})}
 
         username = user['login'] or make_lila_username(user['id'])
-        password = make_lila_password()
+        site_password = body.get('password') or ''
+        use_site_password = bool(site_password) and hashlib.pbkdf2_hmac(
+            'sha256', site_password.encode('utf-8'), (user['password_salt'] or '').encode('utf-8'), 100000
+        ).hex() == user['password_hash']
+
+        password = site_password if use_site_password else make_lila_password()
         ok, error, _cookie = register_on_lila(username, password, make_service_email(user['id']))
+        if not ok and use_site_password:
+            password = make_lila_password()
+            ok, error, _cookie = register_on_lila(username, password, make_service_email(user['id']))
         if not ok:
             ok, error, _cookie = register_on_lila(username, password, user['email'])
 
