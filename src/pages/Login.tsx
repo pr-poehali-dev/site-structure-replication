@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ login: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setSubmitting(true);
-    const res = await login(form.email.trim().toLowerCase(), form.password);
+    const res = await login(form.login.trim(), form.password);
     setSubmitting(false);
     if (res.ok) {
       navigate('/cabinet');
@@ -41,8 +41,8 @@ export default function Login() {
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required className="mt-1" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+              <Label htmlFor="login">Логин или email</Label>
+              <Input id="login" required autoComplete="username" className="mt-1" value={form.login} onChange={e => setForm({ ...form, login: e.target.value })} />
             </div>
             <div>
               <Label htmlFor="password">Пароль</Label>

@@ -28,6 +28,7 @@ export interface UserProfile {
   institution: string | null;
   country_city: string | null;
   email: string;
+  login: string | null;
   phone: string | null;
   created_at: string;
   avatar_url: string | null;
@@ -47,6 +48,7 @@ export interface RegisterPayload {
   institution?: string;
   country_city?: string;
   email: string;
+  login: string;
   phone?: string;
   password: string;
 }
@@ -55,7 +57,7 @@ interface AuthContextValue {
   user: UserProfile | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  login: (identifier: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   register: (payload: RegisterPayload) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => void;
   updateProfile: (payload: Partial<RegisterPayload>) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -100,11 +102,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [token]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string) => {
     const res = await fetch(AUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ _action: 'login', email, password }),
+      body: JSON.stringify({ _action: 'login', login: identifier, password }),
     });
     const data = await res.json();
     if (!res.ok) return { ok: false as const, error: data.error || 'Ошибка входа' };

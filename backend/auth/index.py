@@ -1,3 +1,4 @@
+import re
 import json
 import os
 import hashlib
@@ -45,7 +46,9 @@ def hash_password(password: str, salt: str) -> str:
     return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
 
 
-USER_COLS = ['id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
+LOGIN_RE = re.compile(r'^(?=.{2,20}$)[A-Za-z](?:[A-Za-z0-9]|[_-](?=[A-Za-z0-9]))*$')
+
+USER_COLS = ['login', 'id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
              'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
              'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid']
 
@@ -111,6 +114,7 @@ def handler(event: dict, context) -> dict:
         password = body.get('password') or ''
         last_name = (body.get('last_name') or '').strip()
         first_name = (body.get('first_name') or '').strip()
+        login_name = (body.get('login') or '').strip()
 
         if not email or not password or not last_name or not first_name:
             conn.close()
@@ -119,10 +123,19 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пароль должен быть не короче 6 символов'})}
 
+        if not LOGIN_RE.match(login_name):
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Логин: 2-20 символов: латинские буквы, цифры, _ или -; начинается с буквы, не заканчивается на _ или -'})}
+
         cur.execute("SELECT id FROM users WHERE email = %s", (email,))
         if cur.fetchone():
             conn.close()
             return {'statusCode': 409, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь с таким email уже зарегистрирован'})}
+
+        cur.execute("SELECT id FROM users WHERE lower(login) = lower(%s) OR lower(lila_username) = lower(%s)", (login_name, login_name))
+        if cur.fetchone():
+            conn.close()
+            return {'statusCode': 409, 'headers': cors_headers(), 'body': json.dumps({'error': 'Этот логин уже занят'})}
 
         salt = secrets.token_hex(16)
         pwd_hash = hash_password(password, salt)
@@ -142,11 +155,11 @@ def handler(event: dict, context) -> dict:
         rating_rapid = fsr_rating_rapid
 
         cur.execute(
-            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, login, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
              fsr_id, body.get('coach_fio') or None, body.get('institution') or None,
-             body.get('country_city') or None, email, body.get('phone') or None, pwd_hash, salt,
+             body.get('country_city') or None, email, body.get('phone') or None, pwd_hash, salt, login_name,
              fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
         )
         user_id = cur.fetchone()[0]
@@ -167,14 +180,17 @@ def handler(event: dict, context) -> dict:
 
     # Вход
     if method == 'POST' and action == 'login':
-        email = (body.get('email') or '').strip().lower()
+        identifier = (body.get('login') or body.get('email') or '').strip().lower()
         password = body.get('password') or ''
 
-        cur.execute("SELECT id, password_hash, password_salt FROM users WHERE email = %s", (email,))
+        cur.execute(
+            "SELECT id, password_hash, password_salt FROM users WHERE email = %s OR lower(login) = %s ORDER BY (email = %s) DESC LIMIT 1",
+            (identifier, identifier, identifier)
+        )
         row = cur.fetchone()
         if not row or hash_password(password, row[2]) != row[1]:
             conn.close()
-            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный email или пароль'})}
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный логин/email или пароль'})}
 
         user_id = row[0]
         new_token = secrets.token_hex(32)

@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const EMPTY_FORM = {
   last_name: '', first_name: '', middle_name: '', birth_date: '',
   fsr_id: '', coach_fio: '', institution: '', country_city: '',
-  email: '', phone: '', password: '', password2: '',
+  login: '', email: '', phone: '', password: '', password2: '',
 };
 
 export default function Register() {
@@ -46,6 +46,7 @@ export default function Register() {
       coach_fio: form.coach_fio || undefined,
       institution: form.institution || undefined,
       country_city: form.country_city || undefined,
+      login: form.login.trim(),
       email: form.email.trim().toLowerCase(),
       phone: form.phone || undefined,
       password: form.password,
@@ -110,6 +111,12 @@ export default function Register() {
                 <Label>Страна / Город</Label>
                 <Input className="mt-1" value={form.country_city} onChange={e => set('country_city', e.target.value)} placeholder="Россия, Москва" />
               </div>
+            </div>
+
+            <div>
+              <Label>Логин *</Label>
+              <Input required minLength={2} maxLength={20} autoComplete="username" className="mt-1" value={form.login} onChange={e => set('login', e.target.value)} placeholder="Латиницей, 2-20 символов" />
+              <p className="text-xs text-gray-500 mt-1">Латинские буквы, цифры, _ и -. Этот же логин будет на play.мир-шахмат.рф</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-3">
