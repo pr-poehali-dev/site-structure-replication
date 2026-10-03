@@ -158,6 +158,41 @@ def bridge_login():
     return resp
 
 
+@app.route('/bridge/logout')
+def bridge_logout():
+    """Выход из Lila при выходе с мир-шахмат.рф: закрывает сессию на стороне Lila
+    (если получится) и удаляет cookie lila2 у браузера. Вызывается невидимым iframe."""
+    cookie_value = request.cookies.get('lila2')
+    if cookie_value:
+        try:
+            requests.post(
+                f'{LILA_INTERNAL_URL}/logout',
+                headers={
+                    'Host': LILA_PUBLIC_HOST,
+                    'Origin': f'https://{LILA_PUBLIC_HOST}',
+                    'Cookie': f'lila2={cookie_value}',
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                },
+                allow_redirects=False,
+                timeout=5,
+            )
+        except requests.RequestException:
+            pass
+
+    resp = Response(
+        '<script>if(window.parent!==window){window.parent.postMessage("lila-bridge-logout","*")}</script>',
+        mimetype='text/html',
+    )
+    resp.headers['Cache-Control'] = 'no-store'
+    root_host = LILA_PUBLIC_HOST.split('.', 1)[1] if '.' in LILA_PUBLIC_HOST else None
+    domains = [None, LILA_PUBLIC_HOST, f'.{LILA_PUBLIC_HOST}']
+    if root_host:
+        domains += [root_host, f'.{root_host}']
+    for d in domains:
+        resp.delete_cookie('lila2', path='/', domain=d, secure=True, httponly=True, samesite='Lax')
+    return resp
+
+
 @app.route('/bridge/health')
 def health():
     return {'ok': True}

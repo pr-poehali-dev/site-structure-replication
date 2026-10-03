@@ -4,6 +4,18 @@ import func2url from '../../backend/func2url.json';
 const AUTH_URL = func2url['auth'];
 const LILA_SYNC_URL = func2url['lila-sync'];
 const TOKEN_KEY = 'auth_token';
+const LILA_BRIDGE_LOGOUT_URL = 'https://play.мир-шахмат.рф/bridge/logout';
+
+function logoutFromLila() {
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'display:none;width:0;height:0;border:0';
+  frame.title = 'lila-logout';
+  const cleanup = () => frame.remove();
+  frame.onload = cleanup;
+  setTimeout(cleanup, 8000);
+  frame.src = `${LILA_BRIDGE_LOGOUT_URL}?t=${Date.now()}`;
+  document.body.appendChild(frame);
+}
 
 // Фоновая синхронизация с зеркальным аккаунтом world-chess.ru — вызывается после
 // login/register и НЕ блокирует вход на сайт: пользователь продолжает работать сразу,
@@ -137,10 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (t) {
       fetch(AUTH_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': t },
         body: JSON.stringify({ _action: 'logout' }),
       }).catch(() => {});
     }
+    logoutFromLila();
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
