@@ -23,6 +23,7 @@ import PlayerProfile from "./pages/PlayerProfile";
 import Contacts from "./pages/Contacts";
 import Olimpiady from "./pages/Olimpiady";
 import TestEmbed from "./pages/TestEmbed";
+import TestEmbed2 from "./pages/TestEmbed2";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/olimpiady" element={<Olimpiady />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/test-embed" element={<TestEmbed />} />
+            <Route path="/test-embed-2" element={<TestEmbed2 />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
