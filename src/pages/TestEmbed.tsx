@@ -8,9 +8,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LILA_ORIGIN = 'https://play.мир-шахмат.рф';
 
-function extractId(value: string) {
-  const m = value.match(/(?:swiss|tournament)\/([A-Za-z0-9_-]+)/);
-  return (m ? m[1] : value).trim();
+function parseRef(value: string): { kind: 'swiss' | 'tournament'; id: string } {
+  const m = value.match(/(swiss|tournament)\/([A-Za-z0-9_-]+)/);
+  if (m) return { kind: m[1] as 'swiss' | 'tournament', id: m[2] };
+  return { kind: 'swiss', id: value.trim() };
 }
 
 export default function TestEmbed() {
@@ -18,13 +19,14 @@ export default function TestEmbed() {
   const [params, setParams] = useSearchParams();
   const [input, setInput] = useState(params.get('id') || '');
   const [height, setHeight] = useState(850);
-  const tournamentId = extractId(params.get('id') || '');
-  const src = tournamentId ? `${LILA_ORIGIN}/embed/tournament/${tournamentId}` : '';
+  const kindParam = params.get('kind') === 'tournament' ? 'tournament' : 'swiss';
+  const tournamentId = parseRef(params.get('id') || '').id;
+  const src = tournamentId ? `${LILA_ORIGIN}/embed/${kindParam}/${tournamentId}` : '';
 
   function apply(e: React.FormEvent) {
     e.preventDefault();
-    const id = extractId(input);
-    if (id) setParams({ id });
+    const { kind, id } = parseRef(input);
+    if (id) setParams({ id, kind });
   }
 
   return (
@@ -56,6 +58,12 @@ export default function TestEmbed() {
           <p className="text-sm text-orange-700 bg-orange-50 border border-orange-100 rounded-lg px-4 py-3">
             Вы не вошли на сайт, поэтому в окне турнира вы тоже будете гостем.{' '}
             <Link to="/login" className="font-semibold underline">Войти</Link>
+          </p>
+        )}
+
+        {src && (
+          <p className="text-xs text-gray-500 break-all">
+            Адрес окна: {src}
           </p>
         )}
 
