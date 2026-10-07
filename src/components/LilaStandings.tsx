@@ -39,6 +39,14 @@ const parseNdjson = (text: string) =>
     .filter(l => l.trim())
     .map(l => JSON.parse(l));
 
+const safeParse = (text: string): LilaGame[] => {
+  try {
+    return parseNdjson(text);
+  } catch {
+    return [];
+  }
+};
+
 const ONGOING = ['created', 'started'];
 
 function buildRounds(games: LilaGame[], rows: LilaRow[], roundsCount: number) {
@@ -86,14 +94,14 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
     setError('');
     const base = `${LILA_ORIGIN}/api/${kind}/${tournamentId}`;
     Promise.all([
-      fetch(`${base}/results`),
-      fetch(`${base}/games?moves=false`),
-      fetch(base),
+      fetch(`${base}/results`, { headers: { Accept: 'application/x-ndjson' } }),
+      fetch(`${base}/games?moves=false`, { headers: { Accept: 'application/x-ndjson' } }),
+      fetch(base, { headers: { Accept: 'application/json' } }),
     ])
       .then(async ([res, gm, info]) => {
         if (!res.ok) throw new Error('Турнир не найден');
         setRows(parseNdjson(await res.text()));
-        setGames(gm.ok ? parseNdjson(await gm.text()) : []);
+        setGames(gm.ok ? safeParse(await gm.text()) : []);
         if (info.ok) {
           const data = await info.json();
           setRoundsCount(data.nbRounds || 0);
