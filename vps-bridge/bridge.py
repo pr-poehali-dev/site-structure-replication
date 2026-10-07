@@ -17,11 +17,13 @@
      авторизованными, без дополнительного логина.
 
 Установка:
-  pip install flask requests gunicorn
+  pip install flask requests gunicorn pymongo
   export LILA_SYNC_URL=https://functions.poehali.dev/XXXXX   # URL функции lila-sync
   export LILA_BRIDGE_SECRET=...                               # тот же секрет, что в LILA_BRIDGE_SECRET на платформе
   export LILA_INTERNAL_URL=http://127.0.0.1:8080               # адрес, по которому Lila слушает НА ЭТОМ сервере
   export LILA_PUBLIC_HOST=play.xn----8sba3atdzuy2a.xn--p1ai     # публичный домен Lila (punycode), нужен для заголовка Host
+  export LILA_MONGO_URI=mongodb://127.0.0.1:27017            # MongoDB Lila на этом сервере
+  export LILA_MONGO_DB=lichess                                 # имя базы Lila
   gunicorn -w 2 -b 127.0.0.1:9321 bridge:app
 
 Nginx (см. nginx-bridge.conf.example) должен проксировать play.мир-шахмат.рф
@@ -31,8 +33,10 @@ Nginx (см. nginx-bridge.conf.example) должен проксировать pl
 """
 import os
 import re
+import hmac
 import requests
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
@@ -44,6 +48,18 @@ LILA_INTERNAL_URL = os.environ.get('LILA_INTERNAL_URL', 'http://127.0.0.1:8080')
 # сервер не находит подходящий сайт/маршрут и отвечает 404 даже для реально
 # существующих путей типа /login. Поэтому явно подставляем публичный домен.
 LILA_PUBLIC_HOST = os.environ.get('LILA_PUBLIC_HOST', 'play.xn----8sba3atdzuy2a.xn--p1ai')
+
+LILA_MONGO_URI = os.environ.get('LILA_MONGO_URI', 'mongodb://127.0.0.1:27017')
+LILA_MONGO_DB = os.environ.get('LILA_MONGO_DB', 'lichess')
+_mongo = None
+
+
+def get_users_collection():
+    global _mongo
+    if _mongo is None:
+        _mongo = MongoClient(LILA_MONGO_URI, serverSelectionTimeoutMS=4000)
+    return _mongo[LILA_MONGO_DB]['user4']
+
 
 BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 
@@ -226,6 +242,35 @@ def bridge_logout():
     for d in domains:
         resp.delete_cookie('lila2', path='/', domain=d, secure=True, httponly=True, samesite='Lax')
     return resp
+
+
+@app.route('/bridge/set-rating', methods=['POST'])
+def set_rating():
+    """Записывает стартовые рейтинги блиц/рапид игрока в базу Lila. Вызывается нашим
+    backend (lila-sync) один раз после создания аккаунта. Защищён общим секретом.
+    Меняется только значение рейтинга (gl.r) — число партий и неопределённость не трогаются,
+    поэтому рейтинг остаётся предварительным, пока игрок не сыграет партии."""
+    secret = request.headers.get('X-Bridge-Secret', '')
+    if not hmac.compare_digest(secret, LILA_BRIDGE_SECRET):
+        return jsonify({'error': 'forbidden'}), 403
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get('username') or '').strip().lower()
+    try:
+        blitz = int(data['blitz'])
+        rapid = int(data['rapid'])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({'error': 'blitz and rapid required'}), 400
+    if not username or not (100 <= blitz <= 4000) or not (100 <= rapid <= 4000):
+        return jsonify({'error': 'bad values'}), 400
+
+    result = get_users_collection().update_one(
+        {'_id': username},
+        {'$set': {'perfs.blitz.gl.r': float(blitz), 'perfs.rapid.gl.r': float(rapid)}},
+    )
+    if result.matched_count == 0:
+        return jsonify({'error': 'user not found'}), 404
+    return jsonify({'ok': True})
 
 
 @app.route('/bridge/health')

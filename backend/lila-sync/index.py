@@ -114,6 +114,33 @@ def parse_session_cookie(set_cookie_header: str):
     return m.group(0) if m else None
 
 
+def seed_lila_rating(cur, conn, user_id: int, username: str):
+    """Один раз после создания аккаунта передаёт мосту на сервере Lila стартовые рейтинги ФШР
+    (блиц и рапид), чтобы мост записал их в базу Lila. Ошибки не прерывают регистрацию —
+    при неудаче отметка не ставится и попытка повторится при следующем ensure_account."""
+    try:
+        cur.execute(
+            "SELECT fsr_rating_blitz, fsr_rating_rapid, lila_rating_seeded_at FROM users WHERE id = %s",
+            (user_id,)
+        )
+        row = cur.fetchone()
+        if not row or row[2] is not None:
+            return
+        blitz, rapid = row[0] or 1000, row[1] or 1000
+        base = os.environ.get('LILA_BRIDGE_URL', 'https://play.xn----8sba3atdzuy2a.xn--p1ai').strip().rstrip('/')
+        payload = json.dumps({'username': username, 'blitz': int(blitz), 'rapid': int(rapid)}).encode()
+        req = urllib.request.Request(f"{base}/bridge/set-rating", data=payload, method='POST')
+        req.add_header('Content-Type', 'application/json')
+        req.add_header('User-Agent', 'Mozilla/5.0 (lila-sync-bridge)')
+        req.add_header('X-Bridge-Secret', os.environ.get('LILA_BRIDGE_SECRET', ''))
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            if resp.status == 200:
+                cur.execute("UPDATE users SET lila_rating_seeded_at = now() WHERE id = %s", (user_id,))
+                conn.commit()
+    except Exception as e:
+        print(f'seed_lila_rating failed for user {user_id}: {e}')
+
+
 def register_on_lila(username: str, password: str, email: str):
     """Регистрирует зеркальный аккаунт на world-chess.ru через обычную HTML-форму
     /signup — так же, как это делает браузер. ВАЖНО: на стороне Lila должна быть
@@ -197,6 +224,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
 
         if user['lila_sync_status'] == 'ok' and user['lila_username']:
+            seed_lila_rating(cur, conn, user['id'], user['lila_username'])
             conn.close()
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'status': 'ok'})}
 
@@ -233,6 +261,7 @@ def handler(event: dict, context) -> dict:
                 (username, encrypt_password(password), user['id'])
             )
             conn.commit()
+            seed_lila_rating(cur, conn, user['id'], username)
             conn.close()
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'status': 'ok'})}
         else:

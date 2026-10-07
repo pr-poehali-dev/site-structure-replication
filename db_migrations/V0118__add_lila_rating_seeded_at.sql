@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS lila_rating_seeded_at TIMESTAMP;
