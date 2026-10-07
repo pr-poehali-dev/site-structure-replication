@@ -17,6 +17,7 @@ import OrderStatus from "./pages/OrderStatus";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cabinet from "./pages/Cabinet";
+import TournamentRoom from "./pages/TournamentRoom";
 import Hall from "./pages/Hall";
 import Game from "./pages/Game";
 import PlayerProfile from "./pages/PlayerProfile";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/cabinet" element={<Cabinet />} />
             <Route path="/hall/:tournamentId" element={<Hall />} />
+            <Route path="/room/:tournamentId" element={<TournamentRoom />} />
             <Route path="/game/:gameId" element={<Game />} />
             <Route path="/player/:userId" element={<PlayerProfile />} />
             <Route path="/contacts" element={<Contacts />} />

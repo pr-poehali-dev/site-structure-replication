@@ -14,7 +14,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
     cur.execute(
         """SELECT t.id, t.title, t.description, t.date, t.location, t.age_category, t.price, t.time_control, t.status,
-                  t.diploma_sample_url, t.regulation_url, t.announcement_url, t.time_msk, t.max_participants,
+                  t.diploma_sample_url, t.regulation_url, t.announcement_url, t.time_msk, t.max_participants, t.lila_tournament_id, t.lila_tournament_kind,
                   COUNT(a.id) FILTER (WHERE a.status NOT IN ('cancelled'))
            FROM tournaments t
            LEFT JOIN applications a ON a.tournament_id = t.id
@@ -28,7 +28,7 @@ def handler(event: dict, context) -> dict:
     tournaments = []
     for r in rows:
         max_participants = r[13]
-        applied_count = r[14]
+        applied_count = r[16]
         tournaments.append({
             'id': r[0], 'title': r[1], 'description': r[2],
             'date': str(r[3]) if r[3] else None,
@@ -38,6 +38,7 @@ def handler(event: dict, context) -> dict:
             'diploma_sample_url': r[9], 'regulation_url': r[10], 'announcement_url': r[11],
             'time_msk': r[12],
             'max_participants': max_participants,
+            'lila_tournament_id': r[14], 'lila_tournament_kind': r[15] or 'swiss',
             'spots_left': (max(0, max_participants - applied_count) if max_participants else None),
         })
 
