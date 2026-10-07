@@ -12,6 +12,7 @@ import boto3
 from swiss import assign_places, update_buchholz
 from rating import apply_rating_changes
 from pusher_client import trigger
+from lila_ratings import recalc_from_lila
 
 # Пул соединений на "тёплый" контейнер — та же схема, что в tournament-hall и chess-game
 # (см. подробный комментарий там): каждый вызов на время своей работы владеет отдельным
@@ -201,6 +202,22 @@ def handler(event: dict, context) -> dict:
             commit_with_retry(conn)
             release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
+
+        if action == 'recalc_ratings':
+            cur.execute("SELECT id, title, rating_type, lila_tournament_id, lila_tournament_kind FROM tournaments WHERE id = %s", (body.get('id'),))
+            row = cur.fetchone()
+            if not row or not row[3]:
+                release_conn(conn)
+                return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Турнир не привязан к Lila'})}
+            try:
+                stats = recalc_from_lila(cur, row[0], row[1], row[2] or 'rapid', row[3], row[4] or 'swiss')
+            except Exception as e:
+                conn.rollback()
+                release_conn(conn)
+                return {'statusCode': 502, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': f'Не удалось получить рейтинги из Lila: {e}'})}
+            commit_with_retry(conn)
+            release_conn(conn)
+            return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True, **stats})}
 
         lila_id, lila_kind = parse_lila_tournament(body.get('lila_tournament_ref'))
         if body.get('lila_tournament_ref') and not lila_id:

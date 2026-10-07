@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -295,6 +296,25 @@ export default function TournamentsSection({
     fetchTournaments();
   }
 
+  async function handleRecalcRatings(t: Tournament) {
+    if (!confirm(`Пересчитать рейтинги МШ (блиц и рапид) по данным Lila для турнира «${t.title}»?`)) return;
+    try {
+      const res = await fetch(TOURNAMENTS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ _action: 'recalc_ratings', id: t.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Не удалось пересчитать рейтинги');
+        return;
+      }
+      toast.success(`Рейтинги обновлены: ${data.updated} из ${data.players} участников`);
+    } catch {
+      toast.error('Ошибка сети. Попробуйте ещё раз.');
+    }
+  }
+
   async function handleArchiveTournament(t: Tournament) {
     if (!confirm(`Перенести турнир «${t.title}» в архив? Он исчезнет из публичного раздела «Турниры».`)) return;
     await fetch(TOURNAMENTS_URL, {
@@ -500,6 +520,11 @@ export default function TournamentsSection({
                             <Icon name="Eye" size={14} className="mr-1" /> Зал
                           </Button>
                         </a>
+                      )}
+                      {t.lila_tournament_id && (
+                        <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => handleRecalcRatings(t)}>
+                          <Icon name="RefreshCw" size={14} className="mr-1" /> Пересчитать рейтинги
+                        </Button>
                       )}
                       <NotifyTournamentButton password={password} tournament={t} />
                       <Button variant="outline" size="sm" disabled={tApps.length === 0} onClick={() => handleExportApps(t)}>

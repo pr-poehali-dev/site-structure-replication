@@ -37,6 +37,7 @@ interface PlayerInfo {
   user_id: number;
   fio: string | null;
   avatar_url: string | null;
+  rating_delta?: number | null;
 }
 
 interface Props {
@@ -116,7 +117,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
         setRows(parsed);
         if (parsed.length) {
           const names = parsed.map(r => r.username).join(',');
-          fetch(`${PLAYERS_URL}?usernames=${encodeURIComponent(names)}`)
+          fetch(`${PLAYERS_URL}?usernames=${encodeURIComponent(names)}&tournament=${encodeURIComponent(tournamentId)}`)
             .then(r => (r.ok ? r.json() : { players: {} }))
             .then(d => setPlayers(d.players || {}))
             .catch(() => setPlayers({}));
@@ -196,7 +197,18 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                 })()}
                 {p.absent && <span className="ml-1.5 text-xs text-gray-400 font-normal">выбыл(а)</span>}
               </td>
-              <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
+              <td className="py-2 pr-2 text-right text-gray-500">
+                {p.rating}
+                {(() => {
+                  const d = players[p.username.toLowerCase()]?.rating_delta;
+                  if (d === null || d === undefined) return null;
+                  return (
+                    <span className={`ml-1.5 text-xs font-semibold ${d > 0 ? 'text-emerald-600' : d < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {d > 0 ? '+' : ''}{Math.round(d)}
+                    </span>
+                  );
+                })()}
+              </td>
               {roundNumbers.map(n => {
                 const c = cells.get(p.username.toLowerCase())?.[n];
                 return (

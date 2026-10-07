@@ -47,6 +47,17 @@ def handler(event: dict, context) -> dict:
     for uid, uname, last_name, first_name, avatar in cur.fetchall():
         fio = ' '.join(p for p in [last_name, first_name] if p)
         players[uname] = {'user_id': uid, 'fio': fio or None, 'avatar_url': avatar}
+    tournament_ref = (params.get('tournament') or '').strip()
+    if tournament_ref and players:
+        cur.execute(
+            """SELECT rh.user_id, rh.delta FROM rating_history rh
+               JOIN tournaments t ON t.id = rh.tournament_id
+               WHERE t.lila_tournament_id = %s""",
+            (tournament_ref,),
+        )
+        delta_by_user = {r[0]: float(r[1]) for r in cur.fetchall()}
+        for info in players.values():
+            info['rating_delta'] = delta_by_user.get(info['user_id'])
     cur.close()
     conn.close()
     return resp(200, {'players': players})
