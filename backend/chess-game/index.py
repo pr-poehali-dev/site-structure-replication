@@ -292,7 +292,7 @@ def check_round_completion(cur, tournament_id, round_id):
         )
         if cur.fetchone():
             assign_places(cur, tournament_id)
-            apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
+            pass  # apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
             return [(f"tournament-{tournament_id}", 'finished', {})]
         return []
     return [(f"tournament-{tournament_id}", 'round-completed', {'round_number': round_number})]

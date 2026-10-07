@@ -218,7 +218,7 @@ def finish_tournament_early(cur, tournament, rounds_played):
     (см. комментарий у maybe_advance)."""
     cur.execute("UPDATE tournaments SET rounds_count = %s WHERE id = %s", (rounds_played, tournament['id']))
     assign_places(cur, tournament['id'])
-    apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
+    pass  # apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
     cur.execute("UPDATE tournaments SET hall_status = 'finished' WHERE id = %s", (tournament['id'],))
     return [(f"tournament-{tournament['id']}", 'finished', {})]
 
@@ -386,7 +386,7 @@ def maybe_advance(cur, tournament):
                     )
                     if cur.fetchone():
                         assign_places(cur, tournament['id'])
-                        apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
+                        pass  # apply_rating_changes(cur, tournament['id'], tournament['title'], tournament['rating_type'])
                         events.append((f"tournament-{tournament['id']}", 'finished', {}))
                 else:
                     events.append((f"tournament-{tournament['id']}", 'round-completed', {'round_number': round_number}))

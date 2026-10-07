@@ -111,7 +111,7 @@ def sync_finished_tournaments(cur):
             continue
         update_buchholz(cur, tournament_id)
         assign_places(cur, tournament_id)
-        apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
+        pass  # apply_rating_changes(cur, tournament_id, title, rating_type or 'rapid')
         trigger(f"tournament-{tournament_id}", 'finished', {})
 
 def parse_lila_tournament(value):

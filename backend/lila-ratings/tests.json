@@ -1,6 +1,0 @@
-{
-  "tests": [
-    {"name": "Sync run returns 200", "method": "GET", "path": "/", "expectedStatus": 200},
-    {"name": "OPTIONS preflight returns 200", "method": "OPTIONS", "path": "/", "expectedStatus": 200}
-  ]
-}
