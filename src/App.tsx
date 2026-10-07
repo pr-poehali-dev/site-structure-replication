@@ -27,6 +27,7 @@ import TestEmbed2 from "./pages/TestEmbed2";
 import TestEmbed3 from "./pages/TestEmbed3";
 import TestEmbed4 from "./pages/TestEmbed4";
 import TestEmbed5 from "./pages/TestEmbed5";
+import TestTable from "./pages/TestTable";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/test-embed-3" element={<TestEmbed3 />} />
             <Route path="/test-embed-4" element={<TestEmbed4 />} />
             <Route path="/test-embed-5" element={<TestEmbed5 />} />
+            <Route path="/test-table" element={<TestTable />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
