@@ -1,0 +1,7 @@
+{
+  "tests": [
+    {"name": "Without usernames returns 400", "method": "GET", "path": "/", "expectedStatus": 400},
+    {"name": "Unknown username returns empty map", "method": "GET", "path": "/?usernames=nobody_xyz", "expectedStatus": 200, "expectedBody": {"players": {}}, "bodyMatcher": "partial"},
+    {"name": "OPTIONS preflight returns 200", "method": "OPTIONS", "path": "/", "expectedStatus": 200}
+  ]
+}

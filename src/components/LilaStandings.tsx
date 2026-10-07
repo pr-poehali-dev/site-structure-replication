@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import PlayerAvatar from '@/components/PlayerAvatar';
+import { shortFio } from '@/lib/fio';
+import func2url from '../../backend/func2url.json';
 
+const PLAYERS_URL = func2url['lila-players'];
 const LILA_ORIGIN = 'https://play.мир-шахмат.рф';
 
 interface LilaRow {
@@ -26,6 +31,12 @@ interface RoundCell {
   score: string;
   opponent: string;
   ongoing: boolean;
+}
+
+interface PlayerInfo {
+  user_id: number;
+  fio: string | null;
+  avatar_url: string | null;
 }
 
 interface Props {
@@ -85,6 +96,7 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [rows, setRows] = useState<LilaRow[]>([]);
   const [games, setGames] = useState<LilaGame[]>([]);
+  const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
   const [roundsCount, setRoundsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -100,7 +112,15 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
     ])
       .then(async ([res, gm, info]) => {
         if (!res.ok) throw new Error('Турнир не найден');
-        setRows(parseNdjson(await res.text()));
+        const parsed: LilaRow[] = parseNdjson(await res.text());
+        setRows(parsed);
+        if (parsed.length) {
+          const names = parsed.map(r => r.username).join(',');
+          fetch(`${PLAYERS_URL}?usernames=${encodeURIComponent(names)}`)
+            .then(r => (r.ok ? r.json() : { players: {} }))
+            .then(d => setPlayers(d.players || {}))
+            .catch(() => setPlayers({}));
+        }
         setGames(gm.ok ? safeParse(await gm.text()) : []);
         if (info.ok) {
           const data = await info.json();
@@ -157,7 +177,23 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                 )}
               </td>
               <td className="py-2 pr-2 font-medium text-gray-800">
-                {p.username}
+                {(() => {
+                  const info = players[p.username.toLowerCase()];
+                  const name = info?.fio ? shortFio(info.fio) : p.username;
+                  const inner = (
+                    <>
+                      <PlayerAvatar fio={info?.fio || p.username} avatarUrl={info?.avatar_url} size={22} />
+                      <span className="truncate">{name}</span>
+                    </>
+                  );
+                  return info ? (
+                    <Link to={`/player/${info.user_id}`} className="inline-flex items-center gap-1.5 hover:underline hover:text-secondary">
+                      {inner}
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">{inner}</span>
+                  );
+                })()}
                 {p.absent && <span className="ml-1.5 text-xs text-gray-400 font-normal">выбыл(а)</span>}
               </td>
               <td className="py-2 pr-2 text-right text-gray-500">{p.rating}</td>
