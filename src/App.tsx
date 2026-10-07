@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LilaBridge from "@/components/LilaBridge";
+import LilaRatingsSync from "@/components/LilaRatingsSync";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Turnir from "./pages/Turnir";
@@ -40,6 +41,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LilaBridge />
+          <LilaRatingsSync />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
