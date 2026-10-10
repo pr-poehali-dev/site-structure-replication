@@ -61,14 +61,14 @@ export default function HallFloatingButton() {
   return (
     <Link
       to={`/room/${target.tournament_id}`}
-      className="fixed bottom-5 right-5 z-50 group"
+      className="fixed bottom-6 right-6 z-50 group max-w-[calc(100vw-3rem)]"
       aria-label="Войти в турнирный зал"
     >
       <span className="absolute inset-0 rounded-full bg-red-600 opacity-60 animate-ping" />
-      <span className="relative flex items-center gap-2.5 rounded-full bg-red-600 text-white shadow-xl ring-4 ring-white/80 px-5 py-3.5 font-heading font-bold text-sm md:text-base transition-transform group-hover:scale-105 group-hover:bg-red-700">
-        <Icon name="DoorOpen" size={22} />
+      <span className="relative flex items-center gap-2.5 rounded-full bg-red-600 text-white shadow-xl ring-4 ring-white/80 px-7 py-5 font-heading font-bold text-lg md:text-2xl transition-transform group-hover:scale-105 group-hover:bg-red-700">
+        <Icon name="DoorOpen" size={34} />
         <span className="flex flex-col leading-tight text-left">
-          <span className="text-[11px] font-medium opacity-90">У вас активный турнир</span>
+          <span className="text-sm md:text-base font-medium opacity-90">У вас активный турнир</span>
           <span>Войти в турнирный зал</span>
         </span>
       </span>
