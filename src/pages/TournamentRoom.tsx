@@ -27,6 +27,19 @@ export default function TournamentRoom() {
   const { token, loading: authLoading } = useAuth();
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
+  const [frameHeight, setFrameHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== LILA_ORIGIN) return;
+      const d = e.data;
+      if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
+        setFrameHeight(Math.ceil(d.height));
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   useEffect(() => {
     if (authLoading || !tournamentId) return;
@@ -118,7 +131,13 @@ export default function TournamentRoom() {
               title="Турнир"
               className="w-full bg-white"
               scrolling="no"
-              style={{ height: '85vh', minHeight: 600, border: '1px solid #E5E2DC', borderRadius: 12, overflow: 'hidden' }}
+              style={{
+                height: frameHeight ?? '85vh',
+                minHeight: frameHeight ? undefined : 600,
+                border: '1px solid #E5E2DC',
+                borderRadius: 12,
+                overflow: 'hidden',
+              }}
               allow="fullscreen"
             />
             <LilaStandings tournamentId={lilaId} kind={kind} />

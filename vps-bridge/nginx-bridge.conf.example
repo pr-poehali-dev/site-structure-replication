@@ -21,8 +21,17 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
+    location = /bridge-static/embed-height.js {
+        alias /root/embed-height.js;
+        add_header Cache-Control "no-cache";
+    }
+
     location / {
         proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once on;
+        sub_filter_types text/html;
+        sub_filter '</body>' '<script src="/bridge-static/embed-height.js"></script></body>';
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Real-IP $remote_addr;
