@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { UserProfile } from '@/contexts/AuthContext';
@@ -48,10 +48,7 @@ export default function TournamentModals({
   participantsModal, setParticipantsModal, participants, participantsLoading,
   imagePreview, setImagePreview,
 }: TournamentModalsProps) {
-  const [editing, setEditing] = useState(false);
-  useEffect(() => { setEditing(false); }, [modalTournament?.id, sent]);
   const missingRequired = !form.fio.trim() || !form.age.trim() || !form.fsr_id.trim() || !form.country_city.trim() || !form.email.trim() || !form.phone.trim();
-  const showFields = editing || missingRequired;
   const summary: { label: string; value: string }[] = [
     { label: 'Участник', value: form.fio },
     { label: 'Возраст', value: form.age },
@@ -96,64 +93,28 @@ export default function TournamentModals({
                   </div>
                 ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                  {showFields ? (
-                    <>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">ФИО участника *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван Иванович" value={form.fio} onChange={e => setForm({ ...form, fio: e.target.value })} />
+                  <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-700 leading-relaxed">
+                    <p>
+                      Вы подаёте заявку на турнир <span className="font-semibold text-primary">«{modalTournament.title}»</span>
+                      {modalTournament.date ? <> ({modalTournament.date})</> : null}.
+                    </p>
+                    <dl className="mt-2 flex flex-col gap-1">
+                      {summary.map(r => (
+                        <div key={r.label} className="flex gap-2">
+                          <dt className="text-gray-400 shrink-0 w-32">{r.label}:</dt>
+                          <dd className="font-medium break-words min-w-0">{r.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <a href="/cabinet?tab=profile" className="inline-flex items-center mt-3 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50">
+                      <Icon name="Pencil" size={14} className="mr-1" /> Редактировать данные
+                    </a>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Возраст участника *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Например: 10 лет" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">ID ФШР *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Номер в системе ФШР" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">ФИО тренера</label>
-                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Петров Пётр Петрович" value={form.coach} onChange={e => setForm({ ...form, coach: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Страна / Город *</label>
-                    <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Россия, Москва" value={form.country_city} onChange={e => setForm({ ...form, country_city: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Учебное заведение</label>
-                    <input className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Шахматная школа / клуб" value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Электронная почта *</label>
-                    <input required type="email" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="example@mail.ru" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Телефон представителя *</label>
-                    <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-                  </div>
-                      {!missingRequired && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)}>
-                          <Icon name="Check" size={14} className="mr-1" /> Готово
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-700 leading-relaxed">
-                      <p>
-                        Вы подаёте заявку на турнир <span className="font-semibold text-primary">«{modalTournament.title}»</span>
-                        {modalTournament.date ? <> ({modalTournament.date})</> : null}.
-                      </p>
-                      <dl className="mt-2 flex flex-col gap-1">
-                        {summary.map(r => (
-                          <div key={r.label} className="flex gap-2">
-                            <dt className="text-gray-400 shrink-0 w-32">{r.label}:</dt>
-                            <dd className="font-medium break-words min-w-0">{r.value}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                      <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setEditing(true)}>
-                        <Icon name="Pencil" size={14} className="mr-1" /> Редактировать данные
-                      </Button>
-                    </div>
+                  {missingRequired && (
+                    <p className="text-sm text-red-500 flex items-start gap-1.5">
+                      <Icon name="AlertCircle" size={14} className="mt-0.5 shrink-0" />
+                      В профиле не заполнены обязательные данные (ФИО, возраст, ID ФШР, страна и город, почта, телефон). Заполните их в профиле.
+                    </p>
                   )}
                   {isPaid && (
                     <div className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-2 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
@@ -192,7 +153,7 @@ export default function TournamentModals({
                   {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
                   <Button
                     type="submit"
-                    disabled={submitting || insufficientBalance}
+                    disabled={submitting || insufficientBalance || missingRequired}
                     className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold mt-1"
                   >
                     {submitting

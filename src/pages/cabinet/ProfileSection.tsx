@@ -168,14 +168,14 @@ export default function ProfileSection() {
   ) : (
     <form onSubmit={handleSaveProfile} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3">
       <div className="grid sm:grid-cols-3 gap-3">
-        <div><Label>Фамилия *</Label><Input required className="mt-1" value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} /></div>
-        <div><Label>Имя *</Label><Input required className="mt-1" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
-        <div><Label>Отчество</Label><Input className="mt-1" value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })} /></div>
+        <div><Label>Фамилия *</Label><Input required disabled={!!user.last_name} className="mt-1 disabled:bg-gray-50" value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} /></div>
+        <div><Label>Имя *</Label><Input required disabled={!!user.first_name} className="mt-1 disabled:bg-gray-50" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
+        <div><Label>Отчество</Label><Input disabled={!!user.middle_name} className="mt-1 disabled:bg-gray-50" value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })} /></div>
       </div>
       <div className="grid sm:grid-cols-3 gap-3">
-        <div><Label>Дата рождения</Label><Input type="date" className="mt-1" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
+        <div><Label>Дата рождения</Label><Input type="date" disabled={!!user.birth_date} className="mt-1 disabled:bg-gray-50" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
         <div><Label>Возраст</Label><Input disabled className="mt-1 bg-gray-50" value={calcAge(form.birth_date) !== null ? `${calcAge(form.birth_date)} лет` : '—'} /></div>
-        <div><Label>ID ФШР</Label><Input className="mt-1" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
+        <div><Label>ID ФШР</Label><Input disabled={!!user.fsr_id} className="mt-1 disabled:bg-gray-50" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
       </div>
       <div><Label>ФИО тренера</Label><Input className="mt-1" value={form.coach_fio} onChange={e => setForm({ ...form, coach_fio: e.target.value })} /></div>
       <div className="grid sm:grid-cols-2 gap-3">
@@ -186,6 +186,7 @@ export default function ProfileSection() {
         <div><Label>Email</Label><Input disabled className="mt-1 bg-gray-50" value={user.email} /></div>
         <div><Label>Телефон представителя</Label><Input className="mt-1" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
       </div>
+      <p className="text-xs text-gray-400">ФИО, дату рождения и ID ФШР изменить нельзя. Если там ошибка, напишите нам в поддержку.</p>
       {saveMsg && <p className="text-sm text-red-500">{saveMsg}</p>}
       <div className="flex gap-2 mt-1">
         <Button type="submit" disabled={saving} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
