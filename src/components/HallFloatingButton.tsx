@@ -57,7 +57,6 @@ export default function HallFloatingButton() {
   if (HIDDEN_PREFIXES.some(p => pathname.startsWith(p))) return null;
 
   const target = halls[0];
-  const live = target.hall_status === 'active';
 
   return (
     <Link
@@ -65,14 +64,12 @@ export default function HallFloatingButton() {
       className="fixed bottom-5 right-5 z-50 group"
       aria-label="Войти в турнирный зал"
     >
-      <span className="absolute inset-0 rounded-full bg-secondary opacity-60 animate-ping" />
-      <span className="relative flex items-center gap-2.5 rounded-full bg-secondary text-secondary-foreground shadow-xl ring-4 ring-white/80 px-5 py-3.5 font-heading font-bold text-sm md:text-base transition-transform group-hover:scale-105">
+      <span className="absolute inset-0 rounded-full bg-red-600 opacity-60 animate-ping" />
+      <span className="relative flex items-center gap-2.5 rounded-full bg-red-600 text-white shadow-xl ring-4 ring-white/80 px-5 py-3.5 font-heading font-bold text-sm md:text-base transition-transform group-hover:scale-105 group-hover:bg-red-700">
         <Icon name="DoorOpen" size={22} />
         <span className="flex flex-col leading-tight text-left">
-          <span>{live ? 'Турнир идёт — войти' : 'Войти в турнирный зал'}</span>
-          {halls.length === 1 && (
-            <span className="text-[11px] font-medium opacity-80 max-w-[200px] truncate">{target.tournament_title}</span>
-          )}
+          <span className="text-[11px] font-medium opacity-90">У вас активный турнир</span>
+          <span>Войти в турнирный зал</span>
         </span>
       </span>
     </Link>
