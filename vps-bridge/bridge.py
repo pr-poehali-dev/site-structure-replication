@@ -137,26 +137,32 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
     data = {}
     if tournament.get('password'):
         data['password'] = tournament['password']
-    base = {
+    common = {
         'Host': LILA_PUBLIC_HOST,
         'Origin': f'https://{LILA_PUBLIC_HOST}',
         'Referer': f'https://{LILA_PUBLIC_HOST}{path}',
         'Cookie': f'lila2={cookie_value}',
         'User-Agent': BROWSER_UA,
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
     }
+    variants = [
+        ('xhr-text', {'Accept': 'text/plain, */*', 'X-Requested-With': 'XMLHttpRequest'}),
+        ('plain', {'Accept': '*/*'}),
+        ('xhr-json', {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}),
+    ]
     try:
-        me = requests.get(f'{LILA_INTERNAL_URL}/api/account', headers=base, allow_redirects=False, timeout=8)
-        app.logger.warning('lila join: /api/account -> HTTP %s, body=%s', me.status_code, me.text[:200])
-        join_resp = requests.post(
-            f'{LILA_INTERNAL_URL}{path}/join',
-            data=data,
-            headers=base,
-            allow_redirects=False,
-            timeout=8,
-        )
-        app.logger.warning('lila join %s -> HTTP %s, has_password=%s, location=%s, body=%s', path, join_resp.status_code, bool(data.get('password')), join_resp.headers.get('Location'), join_resp.text[:300])
+        page = requests.get(f'{LILA_INTERNAL_URL}{path}', headers={**common, 'Accept': 'text/html'}, allow_redirects=False, timeout=8)
+        app.logger.warning('lila join: page %s -> HTTP %s, logged_in=%s', path, page.status_code, 'data-user=' in page.text or 'class="user-link' in page.text)
+        for name, extra in variants:
+            r = requests.post(
+                f'{LILA_INTERNAL_URL}{path}/join',
+                data=data,
+                headers={**common, **extra},
+                allow_redirects=False,
+                timeout=8,
+            )
+            app.logger.warning('lila join %s [%s] -> HTTP %s, location=%s, body=%s', path, name, r.status_code, r.headers.get('Location'), r.text[:200])
+            if r.status_code != 404:
+                break
     except requests.RequestException as e:
         app.logger.warning('lila join %s failed: %s', path, e)
     return path
