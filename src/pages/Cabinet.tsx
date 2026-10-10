@@ -125,7 +125,7 @@ export default function Cabinet() {
                             <p className="font-semibold text-primary">{a.tournament_title}</p>
                             <p className="text-xs text-gray-400 mt-0.5">Заявка от {formatDate(a.created_at)}</p>
                           </div>
-                          <Link to={`/hall/${a.tournament_id}`}>
+                          <Link to={`/room/${a.tournament_id}`}>
                             <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
                               <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
                             </Button>

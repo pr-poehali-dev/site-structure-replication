@@ -93,7 +93,7 @@ export default function TournamentsList({
                 {isApplied && (
                   <div className="px-6 pb-3">
                     {hallOpen ? (
-                      <Link to={`/hall/${t.id}`}>
+                      <Link to={`/room/${t.id}`}>
                         <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
                           <Icon name="DoorOpen" size={16} className="mr-2" /> Войти в турнирный зал
                         </Button>
