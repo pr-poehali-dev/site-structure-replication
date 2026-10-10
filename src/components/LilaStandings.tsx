@@ -103,10 +103,13 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+    let first = true;
     setLoading(true);
     setError('');
     const base = `${LILA_ORIGIN}/api/${kind}/${tournamentId}`;
-    Promise.all([
+
+    const load = () => Promise.all([
       fetch(`${base}/results`, { headers: { Accept: 'application/x-ndjson' } }),
       fetch(`${base}/games?moves=false`, { headers: { Accept: 'application/x-ndjson' } }),
       fetch(base, { headers: { Accept: 'application/json' } }),
@@ -114,6 +117,8 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
       .then(async ([res, gm, info]) => {
         if (!res.ok) throw new Error('Турнир не найден');
         const parsed: LilaRow[] = parseNdjson(await res.text());
+        if (cancelled) return;
+        setError('');
         setRows(parsed);
         if (parsed.length) {
           const names = parsed.map(r => r.username).join(',');
@@ -128,8 +133,23 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           setRoundsCount(data.nbRounds || 0);
         }
       })
-      .catch(e => setError(e.message || 'Не удалось загрузить таблицу'))
-      .finally(() => setLoading(false));
+      .catch(e => {
+        if (first && !cancelled) setError(e.message || 'Не удалось загрузить таблицу');
+      })
+      .finally(() => {
+        first = false;
+        if (!cancelled) setLoading(false);
+      });
+
+    load();
+    const timer = setInterval(() => {
+      if (!document.hidden) load();
+    }, 7000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, [tournamentId, kind]);
 
   const { cells, count } = buildRounds(games, rows, roundsCount);
