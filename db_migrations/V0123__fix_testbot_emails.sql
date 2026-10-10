@@ -1,0 +1,2 @@
+UPDATE users SET email = login || '@mail.ru', lila_sync_status = 'pending', lila_sync_error = NULL WHERE login IN ('testbot1','testbot2','testbot3','testbot4','testbot5');
+UPDATE applications SET email = (SELECT login || '@mail.ru' FROM users WHERE users.id = applications.user_id) WHERE user_id IN (SELECT id FROM users WHERE login IN ('testbot1','testbot2','testbot3','testbot4','testbot5'));

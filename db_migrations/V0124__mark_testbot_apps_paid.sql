@@ -1,0 +1,1 @@
+UPDATE applications SET status = 'paid' WHERE id IN (435, 436, 437, 438, 439) AND tournament_id = 36;

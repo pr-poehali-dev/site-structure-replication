@@ -1,0 +1,1 @@
+UPDATE tournaments SET status = 'open' WHERE id = 36 AND status = 'closed' AND hall_status = 'not_started';
