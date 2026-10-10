@@ -132,8 +132,8 @@ export default function TournamentRoom() {
               className="w-full bg-white"
               scrolling="no"
               style={{
-                height: frameHeight ?? '85vh',
-                minHeight: frameHeight ? undefined : 600,
+                height: frameHeight ?? '113vh',
+                minHeight: frameHeight ? undefined : 800,
                 border: '1px solid #E5E2DC',
                 borderRadius: 12,
                 overflow: 'hidden',
