@@ -141,6 +141,32 @@ def seed_lila_rating(cur, conn, user_id: int, username: str):
         print(f'seed_lila_rating failed for user {user_id}: {e}')
 
 
+def join_lila_club(cur, conn, user_id: int, username: str, password: str):
+    """Вступает в клуб Lila (LILA_CLUB_ID) от имени игрока: логинится его учётными данными
+    и отправляет форму вступления. Ошибки не прерывают регистрацию — отметка ставится только
+    при успехе, поэтому попытка повторится при следующем ensure_account."""
+    club_id = os.environ.get('LILA_CLUB_ID', '').strip()
+    if not club_id:
+        return
+    try:
+        cur.execute("SELECT lila_club_joined_at FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if not row or row[0] is not None:
+            return
+        ok, cookie = login_on_lila(username, password)
+        if not ok:
+            print(f'join_lila_club login failed for user {user_id}: {cookie}')
+            return
+        status, _, body = lila_request(f'/team/{club_id}/join', data={'message': 'Автоматическое вступление'}, cookie=cookie)
+        if status in (200, 302, 303):
+            cur.execute("UPDATE users SET lila_club_joined_at = now() WHERE id = %s", (user_id,))
+            conn.commit()
+        else:
+            print(f'join_lila_club HTTP {status} for user {user_id}: {body[:200]}')
+    except Exception as e:
+        print(f'join_lila_club failed for user {user_id}: {e}')
+
+
 def register_on_lila(username: str, password: str, email: str):
     """Регистрирует зеркальный аккаунт на world-chess.ru через обычную HTML-форму
     /signup — так же, как это делает браузер. ВАЖНО: на стороне Lila должна быть
@@ -225,6 +251,8 @@ def handler(event: dict, context) -> dict:
 
         if user['lila_sync_status'] == 'ok' and user['lila_username']:
             seed_lila_rating(cur, conn, user['id'], user['lila_username'])
+            if user['lila_password_enc']:
+                join_lila_club(cur, conn, user['id'], user['lila_username'], decrypt_password(user['lila_password_enc']))
             conn.close()
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'status': 'ok'})}
 
@@ -262,6 +290,7 @@ def handler(event: dict, context) -> dict:
             )
             conn.commit()
             seed_lila_rating(cur, conn, user['id'], username)
+            join_lila_club(cur, conn, user['id'], username, password)
             conn.close()
             return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'status': 'ok'})}
         else:
