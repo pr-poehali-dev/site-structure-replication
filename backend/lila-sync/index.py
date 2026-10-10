@@ -338,7 +338,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не указан турнир'})}
 
         cur.execute(
-            "SELECT lila_tournament_id FROM tournaments WHERE id = %s AND status = 'active'",
+            "SELECT lila_tournament_id FROM tournaments WHERE id = %s AND status IN ('open', 'active')",
             (tournament_id,)
         )
         trow = cur.fetchone()
