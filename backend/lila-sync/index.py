@@ -121,7 +121,7 @@ def seed_lila_rating(cur, conn, user_id: int, username: str):
     при неудаче отметка не ставится и попытка повторится при следующем ensure_account."""
     try:
         cur.execute(
-            "SELECT fsr_rating_blitz, fsr_rating_rapid, lila_rating_seeded_at FROM users WHERE id = %s",
+            "SELECT COALESCE(rating_blitz, fsr_rating_blitz), COALESCE(rating_rapid, fsr_rating_rapid), lila_rating_seeded_at FROM users WHERE id = %s",
             (user_id,)
         )
         row = cur.fetchone()
