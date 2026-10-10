@@ -117,7 +117,8 @@ export default function TournamentRoom() {
               src={`${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
               title="Турнир"
               className="w-full bg-white"
-              style={{ height: '85vh', minHeight: 600, border: '1px solid #E5E2DC', borderRadius: 12 }}
+              scrolling="no"
+              style={{ height: '85vh', minHeight: 600, border: '1px solid #E5E2DC', borderRadius: 12, overflow: 'hidden' }}
               allow="fullscreen"
             />
             <LilaStandings tournamentId={lilaId} kind={kind} />
