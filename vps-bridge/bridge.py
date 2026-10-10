@@ -138,7 +138,7 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
     if tournament.get('password'):
         data['password'] = tournament['password']
     try:
-        requests.post(
+        join_resp = requests.post(
             f'{LILA_INTERNAL_URL}{path}/join',
             data=data,
             headers={
@@ -150,8 +150,9 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
             allow_redirects=False,
             timeout=8,
         )
-    except requests.RequestException:
-        pass
+        app.logger.warning('lila join %s -> HTTP %s, has_password=%s, body=%s', path, join_resp.status_code, bool(data.get('password')), join_resp.text[:300])
+    except requests.RequestException as e:
+        app.logger.warning('lila join %s failed: %s', path, e)
     return path
 
 
