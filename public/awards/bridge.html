@@ -144,27 +144,16 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
         &#x27;Cookie&#x27;: f&#x27;lila2={cookie_value}&#x27;,
         &#x27;User-Agent&#x27;: BROWSER_UA,
     }
-    variants = [
-        (&#x27;xhr-text&#x27;, {&#x27;Accept&#x27;: &#x27;text/plain, */*&#x27;, &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;}),
-        (&#x27;plain&#x27;, {&#x27;Accept&#x27;: &#x27;*/*&#x27;}),
-        (&#x27;xhr-json&#x27;, {&#x27;Accept&#x27;: &#x27;application/json&#x27;, &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;}),
-    ]
+    join_path = f&#x27;/api/swiss/{t_id}/join&#x27; if kind == &#x27;swiss&#x27; else f&#x27;/tournament/{t_id}/join&#x27;
     try:
-        page = requests.get(f&#x27;{LILA_INTERNAL_URL}{path}&#x27;, headers={**common, &#x27;Accept&#x27;: &#x27;text/html&#x27;}, allow_redirects=False, timeout=8)
-        app.logger.warning(&#x27;lila join: page %s -&gt; HTTP %s, logged_in=%s&#x27;, path, page.status_code, &#x27;data-user=&#x27; in page.text or &#x27;class=&quot;user-link&#x27; in page.text)
-        for m in re.finditer(r&#x27;.{0,120}join.{0,120}&#x27;, page.text, re.IGNORECASE):
-            app.logger.warning(&#x27;lila join: page-hint %s&#x27;, m.group(0).replace(&#x27;\n&#x27;, &#x27; &#x27;))
-        for name, extra in variants:
-            r = requests.post(
-                f&#x27;{LILA_INTERNAL_URL}{path}/join&#x27;,
-                data=data,
-                headers={**common, **extra},
-                allow_redirects=False,
-                timeout=8,
-            )
-            app.logger.warning(&#x27;lila join %s [%s] -&gt; HTTP %s, location=%s, body=%s&#x27;, path, name, r.status_code, r.headers.get(&#x27;Location&#x27;), r.text[:200])
-            if r.status_code != 404:
-                break
+        r = requests.post(
+            f&#x27;{LILA_INTERNAL_URL}{join_path}&#x27;,
+            data=data,
+            headers={**common, &#x27;Accept&#x27;: &#x27;application/json&#x27;, &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;},
+            allow_redirects=False,
+            timeout=8,
+        )
+        app.logger.warning(&#x27;lila join %s -&gt; HTTP %s, body=%s&#x27;, join_path, r.status_code, r.text[:200])
     except requests.RequestException as e:
         app.logger.warning(&#x27;lila join %s failed: %s&#x27;, path, e)
     return path

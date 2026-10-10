@@ -144,27 +144,16 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
         'Cookie': f'lila2={cookie_value}',
         'User-Agent': BROWSER_UA,
     }
-    variants = [
-        ('xhr-text', {'Accept': 'text/plain, */*', 'X-Requested-With': 'XMLHttpRequest'}),
-        ('plain', {'Accept': '*/*'}),
-        ('xhr-json', {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}),
-    ]
+    join_path = f'/api/swiss/{t_id}/join' if kind == 'swiss' else f'/tournament/{t_id}/join'
     try:
-        page = requests.get(f'{LILA_INTERNAL_URL}{path}', headers={**common, 'Accept': 'text/html'}, allow_redirects=False, timeout=8)
-        app.logger.warning('lila join: page %s -> HTTP %s, logged_in=%s', path, page.status_code, 'data-user=' in page.text or 'class="user-link' in page.text)
-        for m in re.finditer(r'.{0,120}join.{0,120}', page.text, re.IGNORECASE):
-            app.logger.warning('lila join: page-hint %s', m.group(0).replace('\n', ' '))
-        for name, extra in variants:
-            r = requests.post(
-                f'{LILA_INTERNAL_URL}{path}/join',
-                data=data,
-                headers={**common, **extra},
-                allow_redirects=False,
-                timeout=8,
-            )
-            app.logger.warning('lila join %s [%s] -> HTTP %s, location=%s, body=%s', path, name, r.status_code, r.headers.get('Location'), r.text[:200])
-            if r.status_code != 404:
-                break
+        r = requests.post(
+            f'{LILA_INTERNAL_URL}{join_path}',
+            data=data,
+            headers={**common, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+            allow_redirects=False,
+            timeout=8,
+        )
+        app.logger.warning('lila join %s -> HTTP %s, body=%s', join_path, r.status_code, r.text[:200])
     except requests.RequestException as e:
         app.logger.warning('lila join %s failed: %s', path, e)
     return path
