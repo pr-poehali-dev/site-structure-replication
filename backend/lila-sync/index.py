@@ -96,6 +96,7 @@ def lila_request(path, data=None, cookie=None, method=None):
     req = urllib.request.Request(url, data=body_bytes, method=method or ('POST' if data is not None else 'GET'))
     req.add_header('User-Agent', 'Mozilla/5.0 (lila-sync-bridge)')
     req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+    req.add_header('Accept-Language', 'ru-RU,ru;q=0.9')
     if cookie:
         req.add_header('Cookie', cookie)
     try:
