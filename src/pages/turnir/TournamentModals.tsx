@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { UserProfile } from '@/contexts/AuthContext';
@@ -48,6 +48,20 @@ export default function TournamentModals({
   participantsModal, setParticipantsModal, participants, participantsLoading,
   imagePreview, setImagePreview,
 }: TournamentModalsProps) {
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { setEditing(false); }, [modalTournament?.id, sent]);
+  const missingRequired = !form.fio.trim() || !form.age.trim() || !form.fsr_id.trim() || !form.country_city.trim() || !form.email.trim() || !form.phone.trim();
+  const showFields = editing || missingRequired;
+  const summary: { label: string; value: string }[] = [
+    { label: 'Участник', value: form.fio },
+    { label: 'Возраст', value: form.age },
+    { label: 'ID ФШР', value: form.fsr_id },
+    { label: 'Тренер', value: form.coach },
+    { label: 'Страна / Город', value: form.country_city },
+    { label: 'Учебное заведение', value: form.school },
+    { label: 'Почта', value: form.email },
+    { label: 'Телефон', value: form.phone },
+  ].filter(r => r.value && r.value.trim());
   const price = modalTournament?.price || 0;
   const isPaid = price > 0;
   const insufficientBalance = isPaid && balance < price;
@@ -82,6 +96,8 @@ export default function TournamentModals({
                   </div>
                 ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  {showFields ? (
+                    <>
                   <div>
                     <label className="text-sm font-medium text-gray-700">ФИО участника *</label>
                     <input required className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="Иванов Иван Иванович" value={form.fio} onChange={e => setForm({ ...form, fio: e.target.value })} />
@@ -114,6 +130,31 @@ export default function TournamentModals({
                     <label className="text-sm font-medium text-gray-700">Телефон представителя *</label>
                     <input required type="tel" className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary" placeholder="+7 999 000 00 00" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                   </div>
+                      {!missingRequired && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)}>
+                          <Icon name="Check" size={14} className="mr-1" /> Готово
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-sm text-gray-700 leading-relaxed">
+                      <p>
+                        Вы подаёте заявку на турнир <span className="font-semibold text-primary">«{modalTournament.title}»</span>
+                        {modalTournament.date ? <> ({modalTournament.date})</> : null}.
+                      </p>
+                      <dl className="mt-2 flex flex-col gap-1">
+                        {summary.map(r => (
+                          <div key={r.label} className="flex gap-2">
+                            <dt className="text-gray-400 shrink-0 w-32">{r.label}:</dt>
+                            <dd className="font-medium break-words min-w-0">{r.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setEditing(true)}>
+                        <Icon name="Pencil" size={14} className="mr-1" /> Редактировать данные
+                      </Button>
+                    </div>
+                  )}
                   {isPaid && (
                     <div className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-2 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
                       <span className="text-sm text-gray-700 flex items-center gap-1.5">
