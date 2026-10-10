@@ -244,6 +244,14 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': [user_to_dict(r) for r in rows]})}
 
+    # Текущий пользователь по токену
+    if method == 'GET':
+        user = get_user_by_token(cur, token)
+        conn.close()
+        if not user:
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user})}
+
     # Админ обновляет рейтинги пользователя
     if method == 'POST' and action == 'update_ratings' and is_admin(event):
         user_id = body.get('user_id')
