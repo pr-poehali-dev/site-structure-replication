@@ -152,6 +152,8 @@ def join_lila_tournament(cookie_value: str, tournament: dict):
     try:
         page = requests.get(f'{LILA_INTERNAL_URL}{path}', headers={**common, 'Accept': 'text/html'}, allow_redirects=False, timeout=8)
         app.logger.warning('lila join: page %s -> HTTP %s, logged_in=%s', path, page.status_code, 'data-user=' in page.text or 'class="user-link' in page.text)
+        for m in re.finditer(r'.{0,120}join.{0,120}', page.text, re.IGNORECASE):
+            app.logger.warning('lila join: page-hint %s', m.group(0).replace('\n', ' '))
         for name, extra in variants:
             r = requests.post(
                 f'{LILA_INTERNAL_URL}{path}/join',
