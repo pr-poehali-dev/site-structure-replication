@@ -252,6 +252,61 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user})}
 
+    # Админ удаляет нескольких участников вместе со всеми их заявками и связанными данными
+    if method == 'POST' and action == 'admin_delete_users' and is_admin(event):
+        raw_ids = body.get('user_ids') or []
+        ids = sorted({int(i) for i in raw_ids if str(i).lstrip('-').isdigit()})
+        if not ids:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не выбраны участники'})}
+        if len(ids) > 200:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Слишком много участников за раз'})}
+
+        try:
+            cur.execute("SELECT id FROM applications WHERE user_id = ANY(%s)", (ids,))
+            app_ids = [r[0] for r in cur.fetchall()]
+            cur.execute("SELECT id FROM tournament_players WHERE user_id = ANY(%s) OR application_id = ANY(%s)", (ids, app_ids))
+            player_ids = [r[0] for r in cur.fetchall()]
+            cur.execute(
+                "SELECT id FROM tournament_games WHERE white_player_id = ANY(%s) OR black_player_id = ANY(%s)",
+                (player_ids, player_ids)
+            )
+            game_ids = [r[0] for r in cur.fetchall()]
+
+            cur.execute("DELETE FROM game_chat_messages WHERE game_id = ANY(%s) OR player_id = ANY(%s)", (game_ids, player_ids))
+            cur.execute("DELETE FROM tournament_games WHERE id = ANY(%s)", (game_ids,))
+            cur.execute("DELETE FROM tournament_players WHERE id = ANY(%s)", (player_ids,))
+
+            cur.execute("DELETE FROM balance_transactions WHERE user_id = ANY(%s) OR application_id = ANY(%s)", (ids, app_ids))
+            cur.execute(
+                "UPDATE promo_codes SET used_by_user_id = NULL, used_by_application_id = NULL "
+                "WHERE used_by_user_id = ANY(%s) OR used_by_application_id = ANY(%s)", (ids, app_ids)
+            )
+            cur.execute("DELETE FROM subscription_usages WHERE application_id = ANY(%s)", (app_ids,))
+            cur.execute("UPDATE orders SET application_id = NULL WHERE application_id = ANY(%s)", (app_ids,))
+            cur.execute("UPDATE orders SET user_id = NULL WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("UPDATE award_orders SET user_id = NULL WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM applications WHERE id = ANY(%s)", (app_ids,))
+
+            cur.execute("DELETE FROM rating_history WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM user_activity_logs WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM user_online_status WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM user_sessions WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM lila_bridge_tokens WHERE user_id = ANY(%s)", (ids,))
+            cur.execute("DELETE FROM users WHERE id = ANY(%s)", (ids,))
+            deleted = cur.rowcount
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {'statusCode': 500, 'headers': cors_headers(), 'body': json.dumps({'error': f'Не удалось удалить: {str(e)[:200]}'})}
+
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({
+            'ok': True, 'deleted_users': deleted, 'deleted_applications': len(app_ids)
+        })}
+
     # Админ обновляет рейтинги пользователя
     if method == 'POST' and action == 'update_ratings' and is_admin(event):
         user_id = body.get('user_id')

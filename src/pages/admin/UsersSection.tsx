@@ -41,6 +41,53 @@ export default function UsersSection({ password }: UsersSectionProps) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setSelected(prev => {
+      const ids = new Set(users.map(u => u.id));
+      const next = new Set([...prev].filter(id => ids.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [users]);
+
+  const allSelected = users.length > 0 && selected.size === users.length;
+
+  function toggleOne(id: number) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(users.map(u => u.id)));
+  }
+
+  async function handleDeleteSelected() {
+    if (!selected.size) return;
+    setDeleting(true);
+    const res = await fetch(AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'admin_delete_users', user_ids: [...selected] }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setDeleting(false);
+    if (res.ok) {
+      toast.success(`Удалено участников: ${data.deleted_users}, заявок: ${data.deleted_applications}`);
+      setConfirmDelete(false);
+      setSelected(new Set());
+      fetchUsers(search);
+    } else {
+      toast.error(data.error || 'Не удалось удалить участников');
+    }
+  }
+
   function openEdit(u: UserAccount) {
     setEditUser(u);
     setFormError('');
@@ -120,6 +167,24 @@ export default function UsersSection({ password }: UsersSectionProps) {
         </div>
       </div>
 
+      {users.length > 0 && !loading && (
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3 bg-white rounded-xl shadow-sm px-4 py-2.5">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <input type="checkbox" className="w-4 h-4 accent-secondary" checked={allSelected} onChange={toggleAll} />
+            Выбрать всех ({users.length})
+          </label>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-primary">Выбрано: {selected.size}</span>
+              <Button variant="outline" size="sm" onClick={() => setSelected(new Set())}>Снять выбор</Button>
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setConfirmDelete(true)}>
+                <Icon name="Trash2" size={14} className="mr-1" /> Удалить
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-12 text-gray-400">Загрузка...</div>
       ) : users.length === 0 ? (
@@ -130,7 +195,14 @@ export default function UsersSection({ password }: UsersSectionProps) {
       ) : (
         <div className="flex flex-col gap-3">
           {users.map(u => (
-            <div key={u.id} className="bg-white rounded-2xl shadow p-5 flex items-center gap-4 flex-wrap">
+            <div key={u.id} className={`bg-white rounded-2xl shadow p-5 flex items-center gap-4 flex-wrap ${selected.has(u.id) ? 'ring-2 ring-secondary' : ''}`}>
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-secondary shrink-0"
+                checked={selected.has(u.id)}
+                onChange={() => toggleOne(u.id)}
+                aria-label="Выбрать участника"
+              />
               <Avatar className="w-12 h-12 shrink-0">
                 <AvatarImage src={u.avatar_url || undefined} alt={u.first_name} />
                 <AvatarFallback className="bg-gradient-to-br from-secondary/70 to-secondary text-white font-heading font-bold">
@@ -168,6 +240,23 @@ export default function UsersSection({ password }: UsersSectionProps) {
               </Button>
             </div>
           ))}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => !deleting && setConfirmDelete(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="font-bold text-xl text-primary mb-2">Удалить участников?</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Будет удалено участников: <b>{selected.size}</b>. Вместе с ними удалятся все их заявки, платежи по заявкам, партии в турнирах, история рейтинга и записи в таблицах турниров. Это действие нельзя отменить.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleting}>Отмена</Button>
+              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDeleteSelected} disabled={deleting}>
+                {deleting ? 'Удаляем...' : 'Удалить навсегда'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
