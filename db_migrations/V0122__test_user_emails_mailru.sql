@@ -1,0 +1,1 @@
+UPDATE users SET email = 't' || substring(login from 11) || '@mail.ru' WHERE login ~ '^testplayer[1-7]$';
