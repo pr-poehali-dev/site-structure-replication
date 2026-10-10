@@ -169,13 +169,18 @@ export function Header() {
                 </DropdownMenu>
               </div>
             ) : (
-              <LoginPopover
-                trigger={
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
-                    <Icon name="LogIn" size={16} /> Войти
-                  </button>
-                }
-              />
+              <>
+                <LoginPopover
+                  trigger={
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+                      <Icon name="LogIn" size={16} /> Войти
+                    </button>
+                  }
+                />
+                <a href="/register" className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary text-sm font-semibold hover:bg-primary/10 transition-colors">
+                  <Icon name="UserPlus" size={16} /> Регистрация
+                </a>
+              </>
             )
           )}
         </div>
@@ -220,9 +225,14 @@ export function Header() {
                 </button>
               </div>
             ) : (
-              <a href="/login" onClick={() => setMenuOpen(false)} className="py-2 text-primary font-semibold flex items-center gap-2">
-                <Icon name="LogIn" size={16} /> Войти
-              </a>
+              <>
+                <a href="/login" onClick={() => setMenuOpen(false)} className="py-2 text-primary font-semibold flex items-center gap-2">
+                  <Icon name="LogIn" size={16} /> Войти
+                </a>
+                <a href="/register" onClick={() => setMenuOpen(false)} className="py-2 text-primary font-semibold flex items-center gap-2">
+                  <Icon name="UserPlus" size={16} /> Регистрация
+                </a>
+              </>
             )
           )}
         </nav>
