@@ -116,9 +116,9 @@ def parse_session_cookie(set_cookie_header: str):
 
 
 def seed_lila_rating(cur, conn, user_id: int, username: str):
-    """Один раз после создания аккаунта передаёт мосту на сервере Lila стартовые рейтинги ФШР
-    (блиц и рапид), чтобы мост записал их в базу Lila. Ошибки не прерывают регистрацию —
-    при неудаче отметка не ставится и попытка повторится при следующем ensure_account."""
+    """Один раз при создании аккаунта передаёт мосту стартовые рейтинги (блиц и рапид),
+    чтобы мост записал их в базу Lila. Дальше рейтинги считает Lila, обратно сюда они
+    только читаются. Ошибки не прерывают регистрацию, повторов записи нет."""
     try:
         cur.execute(
             "SELECT COALESCE(rating_blitz, fsr_rating_blitz), COALESCE(rating_rapid, fsr_rating_rapid), lila_rating_seeded_at FROM users WHERE id = %s",
@@ -251,7 +251,6 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
 
         if user['lila_sync_status'] == 'ok' and user['lila_username']:
-            seed_lila_rating(cur, conn, user['id'], user['lila_username'])
             if user['lila_password_enc']:
                 join_lila_club(cur, conn, user['id'], user['lila_username'], decrypt_password(user['lila_password_enc']))
             conn.close()
