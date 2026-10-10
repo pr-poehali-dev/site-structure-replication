@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import PlayerProfileModal from '@/components/PlayerProfileModal';
 import PlayerAvatar from '@/components/PlayerAvatar';
 import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
@@ -101,6 +101,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [roundsCount, setRoundsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [profileId, setProfileId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -208,9 +209,13 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                     </>
                   );
                   return info ? (
-                    <Link to={`/player/${info.user_id}`} className="inline-flex items-center gap-1.5 hover:underline hover:text-secondary">
+                    <button
+                      type="button"
+                      onClick={() => setProfileId(info.user_id)}
+                      className="inline-flex items-center gap-1.5 hover:underline hover:text-secondary text-left"
+                    >
                       {inner}
-                    </Link>
+                    </button>
                   ) : (
                     <span className="inline-flex items-center gap-1.5">{inner}</span>
                   );
@@ -257,6 +262,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           ))}
         </tbody>
       </table>
+      <PlayerProfileModal userId={profileId} onClose={() => setProfileId(null)} />
     </div>
   );
 }
