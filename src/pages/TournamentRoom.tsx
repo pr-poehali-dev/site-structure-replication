@@ -4,9 +4,11 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import LilaStandings from '@/components/LilaStandings';
+import { useAuth } from '@/contexts/AuthContext';
 import func2url from '../../backend/func2url.json';
 
 const PUBLIC_URL = func2url['tournaments-public'];
+const LILA_SYNC_URL = func2url['lila-sync'];
 const LILA_ORIGIN = 'https://play.мир-шахмат.рф';
 
 interface RoomTournament {
@@ -22,6 +24,31 @@ export default function TournamentRoom() {
   const { tournamentId } = useParams();
   const [tournament, setTournament] = useState<RoomTournament | null>(null);
   const [loading, setLoading] = useState(true);
+  const { token, loading: authLoading } = useAuth();
+  const [joinSrc, setJoinSrc] = useState<string | null>(null);
+  const [joined, setJoined] = useState(false);
+
+  useEffect(() => {
+    if (authLoading || !tournamentId) return;
+    if (!token) {
+      setJoined(true);
+      return;
+    }
+    let cancelled = false;
+    const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+    const post = (body: object) =>
+      fetch(LILA_SYNC_URL, { method: 'POST', headers, body: JSON.stringify(body) }).then(r => (r.ok ? r.json() : Promise.reject()));
+    post({ _action: 'ensure_account' })
+      .then(() => post({ _action: 'issue_tournament_token', tournament_id: Number(tournamentId) }))
+      .then(d => {
+        if (cancelled) return;
+        if (d.bridge_token) setJoinSrc(`${LILA_ORIGIN}/bridge/login?token=${d.bridge_token}`);
+        else setJoined(true);
+      })
+      .catch(() => { if (!cancelled) setJoined(true); });
+    const fallback = setTimeout(() => { if (!cancelled) setJoined(true); }, 12000);
+    return () => { cancelled = true; clearTimeout(fallback); };
+  }, [token, authLoading, tournamentId]);
 
   useEffect(() => {
     fetch(PUBLIC_URL)
@@ -62,7 +89,22 @@ export default function TournamentRoom() {
           </div>
         )}
 
-        {lilaId && (
+        {lilaId && !joined && (
+          <div className="flex items-center gap-2 text-muted-foreground py-6">
+            <Icon name="Loader2" size={20} className="animate-spin" /> Подключаем вас к турниру...
+          </div>
+        )}
+
+        {joinSrc && !joined && (
+          <iframe
+            src={joinSrc}
+            title="lila-join"
+            style={{ display: 'none', width: 0, height: 0, border: 0 }}
+            onLoad={() => setJoined(true)}
+          />
+        )}
+
+        {lilaId && joined && (
           <>
             <iframe
               src={`${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
