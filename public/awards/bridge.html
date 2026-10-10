@@ -1,0 +1,293 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>bridge.py</title></head><body><pre style="white-space:pre-wrap;font:13px monospace">&quot;&quot;&quot;
+Мост тихой авторизации между мир-шахмат.рф и Lila (world-chess.ru).
+
+Разворачивается на VPS рядом с Lila, на поддомене play.мир-шахмат.рф
+(через Nginx reverse proxy, см. nginx-bridge.conf.example рядом).
+
+Поток:
+  1. Пользователь входит на мир-шахмат.рф — наш backend (lila-sync) выдаёт
+     одноразовый короткоживущий bridge_token.
+  2. Фронтенд мир-шахмат.рф открывает невидимый iframe:
+     https://play.мир-шахмат.рф/bridge/login?token=&lt;bridge_token&gt;
+  3. Этот сервис обменивает bridge_token на логин/пароль зеркального
+     Lila-аккаунта (server-to-server запрос к lila-sync с общим секретом),
+     логинится в Lila от имени пользователя и выставляет браузеру НАСТОЯЩУЮ
+     cookie сессии Lila — уже на домене play.мир-шахмат.рф.
+  4. Дальше игры/турниры открываются в iframe на play.мир-шахмат.рф уже
+     авторизованными, без дополнительного логина.
+
+Установка:
+  pip install flask requests gunicorn pymongo
+  export LILA_SYNC_URL=https://functions.poehali.dev/XXXXX   # URL функции lila-sync
+  export LILA_BRIDGE_SECRET=...                               # тот же секрет, что в LILA_BRIDGE_SECRET на платформе
+  export LILA_INTERNAL_URL=http://127.0.0.1:8080               # адрес, по которому Lila слушает НА ЭТОМ сервере
+  export LILA_PUBLIC_HOST=play.xn----8sba3atdzuy2a.xn--p1ai     # публичный домен Lila (punycode), нужен для заголовка Host
+  export LILA_MONGO_URI=mongodb://127.0.0.1:27017            # MongoDB Lila на этом сервере
+  export LILA_MONGO_DB=lichess                                 # имя базы Lila
+  gunicorn -w 2 -b 127.0.0.1:9321 bridge:app
+
+Nginx (см. nginx-bridge.conf.example) должен проксировать play.мир-шахмат.рф
+на 127.0.0.1:9321 для путей /bridge/*, и на Lila (127.0.0.1:8080) для всего
+остального — так браузер видит play.мир-шахмат.рф как один сайт, где и
+живёт сама игра, и мост для входа.
+&quot;&quot;&quot;
+import os
+import re
+import hmac
+import requests
+from flask import Flask, request, Response, jsonify
+from pymongo import MongoClient
+
+app = Flask(__name__)
+
+LILA_SYNC_URL = os.environ[&#x27;LILA_SYNC_URL&#x27;]
+LILA_BRIDGE_SECRET = os.environ[&#x27;LILA_BRIDGE_SECRET&#x27;]
+LILA_INTERNAL_URL = os.environ.get(&#x27;LILA_INTERNAL_URL&#x27;, &#x27;http://127.0.0.1:8080&#x27;)
+# Lila (Play Framework) маршрутизирует запрос по заголовку Host — при обращении
+# напрямую на внутренний порт (127.0.0.1:8080) без публичного домена в Host
+# сервер не находит подходящий сайт/маршрут и отвечает 404 даже для реально
+# существующих путей типа /login. Поэтому явно подставляем публичный домен.
+LILA_PUBLIC_HOST = os.environ.get(&#x27;LILA_PUBLIC_HOST&#x27;, &#x27;play.xn----8sba3atdzuy2a.xn--p1ai&#x27;)
+
+LILA_MONGO_URI = os.environ.get(&#x27;LILA_MONGO_URI&#x27;, &#x27;mongodb://127.0.0.1:27017&#x27;)
+LILA_MONGO_DB = os.environ.get(&#x27;LILA_MONGO_DB&#x27;, &#x27;lichess&#x27;)
+_mongo = None
+
+
+def get_users_collection():
+    global _mongo
+    if _mongo is None:
+        _mongo = MongoClient(LILA_MONGO_URI, serverSelectionTimeoutMS=4000)
+    return _mongo[LILA_MONGO_DB][&#x27;user4&#x27;]
+
+
+BROWSER_UA = &#x27;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36&#x27;
+
+
+def resolve_bridge_token(bridge_token: str):
+    resp = requests.post(
+        LILA_SYNC_URL,
+        json={&#x27;_action&#x27;: &#x27;resolve_bridge_token&#x27;, &#x27;bridge_token&#x27;: bridge_token},
+        headers={&#x27;X-Bridge-Secret&#x27;: LILA_BRIDGE_SECRET},
+        timeout=8,
+    )
+    if resp.status_code != 200:
+        return None, resp.json().get(&#x27;error&#x27;, f&#x27;HTTP {resp.status_code}&#x27;)
+    data = resp.json()
+    return data, None
+
+
+def extract_lila2(set_cookie_header):
+    &quot;&quot;&quot;Достаёт значение cookie lila2 напрямую из сырого заголовка Set-Cookie.
+    ВАЖНО: не используем requests.Session()/cookie jar — Lila выставляет Domain=
+    play.мир-шахмат.рф (или world-chess.ru) в атрибуте cookie, а мы обращаемся к
+    LILA_INTERNAL_URL (обычно 127.0.0.1:8080) — requests сверяет домен ответа с
+    доменом в атрибуте cookie и, если они не совпадают, молча ОТБРАСЫВАЕТ такую
+    cookie из jar. Поэтому читаем Set-Cookie сами, без домен-фильтрации.&quot;&quot;&quot;
+    if not set_cookie_header:
+        return None
+    m = re.search(r&#x27;lila2=([^;]+)&#x27;, set_cookie_header)
+    return m.group(1) if m else None
+
+
+def login_to_lila(username: str, password: str):
+    &quot;&quot;&quot;Логинится в Lila изнутри сервера (server-to-server, минуя браузер пользователя)
+    и возвращает (cookie_value, debug_info). cookie_value is None при неудаче —
+    debug_info тогда содержит статусы/заголовки для диагностики.&quot;&quot;&quot;
+    # User-Agent ОБЯЗАТЕЛЕН: без него (просто &quot;python-requests/x.x&quot; по умолчанию)
+    # запрос к Lila получает 404 — судя по всему, отсекается как бот ещё до самого
+    # приложения (Cloudflare/edge-защита перед Caddy). С обычным браузерным UA
+    # запрос доходит и обрабатывается нормально.
+    base_headers = {&#x27;Host&#x27;: LILA_PUBLIC_HOST, &#x27;User-Agent&#x27;: &#x27;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36&#x27;}
+
+    r0 = requests.get(f&#x27;{LILA_INTERNAL_URL}/login&#x27;, headers=base_headers, timeout=8)
+    pre_cookie = extract_lila2(r0.headers.get(&#x27;Set-Cookie&#x27;))
+
+    headers = dict(base_headers)
+    if pre_cookie:
+        headers[&#x27;Cookie&#x27;] = f&#x27;lila2={pre_cookie}&#x27;
+
+    resp = requests.post(
+        f&#x27;{LILA_INTERNAL_URL}/login&#x27;,
+        data={&#x27;username&#x27;: username, &#x27;password&#x27;: password, &#x27;remember&#x27;: &#x27;true&#x27;},
+        headers=headers,
+        allow_redirects=False,
+        timeout=8,
+    )
+    cookie_value = extract_lila2(resp.headers.get(&#x27;Set-Cookie&#x27;))
+    debug_info = {
+        &#x27;get_status&#x27;: r0.status_code,
+        &#x27;get_set_cookie&#x27;: r0.headers.get(&#x27;Set-Cookie&#x27;),
+        &#x27;post_status&#x27;: resp.status_code,
+        &#x27;post_set_cookie&#x27;: resp.headers.get(&#x27;Set-Cookie&#x27;),
+        &#x27;post_location&#x27;: resp.headers.get(&#x27;Location&#x27;),
+        &#x27;post_body_head&#x27;: resp.text[:300] if not cookie_value else None,
+    }
+    return cookie_value, debug_info
+
+
+def join_lila_tournament(cookie_value: str, tournament: dict):
+    &quot;&quot;&quot;Записывает игрока в турнир Lila от его имени (форма «Участвовать»).
+    Возвращает путь турнира на Lila, куда нужно перенаправить браузер.&quot;&quot;&quot;
+    kind = &#x27;tournament&#x27; if tournament.get(&#x27;kind&#x27;) == &#x27;arena&#x27; else &#x27;swiss&#x27;
+    t_id = re.sub(r&#x27;[^A-Za-z0-9]&#x27;, &#x27;&#x27;, str(tournament.get(&#x27;id&#x27;, &#x27;&#x27;)))[:8]
+    if not t_id:
+        return None
+    path = f&#x27;/{kind}/{t_id}&#x27;
+    data = {}
+    if tournament.get(&#x27;password&#x27;):
+        data[&#x27;password&#x27;] = tournament[&#x27;password&#x27;]
+    common = {
+        &#x27;Host&#x27;: LILA_PUBLIC_HOST,
+        &#x27;Origin&#x27;: f&#x27;https://{LILA_PUBLIC_HOST}&#x27;,
+        &#x27;Referer&#x27;: f&#x27;https://{LILA_PUBLIC_HOST}{path}&#x27;,
+        &#x27;Cookie&#x27;: f&#x27;lila2={cookie_value}&#x27;,
+        &#x27;User-Agent&#x27;: BROWSER_UA,
+    }
+    variants = [
+        (&#x27;xhr-text&#x27;, {&#x27;Accept&#x27;: &#x27;text/plain, */*&#x27;, &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;}),
+        (&#x27;plain&#x27;, {&#x27;Accept&#x27;: &#x27;*/*&#x27;}),
+        (&#x27;xhr-json&#x27;, {&#x27;Accept&#x27;: &#x27;application/json&#x27;, &#x27;X-Requested-With&#x27;: &#x27;XMLHttpRequest&#x27;}),
+    ]
+    try:
+        page = requests.get(f&#x27;{LILA_INTERNAL_URL}{path}&#x27;, headers={**common, &#x27;Accept&#x27;: &#x27;text/html&#x27;}, allow_redirects=False, timeout=8)
+        app.logger.warning(&#x27;lila join: page %s -&gt; HTTP %s, logged_in=%s&#x27;, path, page.status_code, &#x27;data-user=&#x27; in page.text or &#x27;class=&quot;user-link&#x27; in page.text)
+        for m in re.finditer(r&#x27;.{0,120}join.{0,120}&#x27;, page.text, re.IGNORECASE):
+            app.logger.warning(&#x27;lila join: page-hint %s&#x27;, m.group(0).replace(&#x27;\n&#x27;, &#x27; &#x27;))
+        for name, extra in variants:
+            r = requests.post(
+                f&#x27;{LILA_INTERNAL_URL}{path}/join&#x27;,
+                data=data,
+                headers={**common, **extra},
+                allow_redirects=False,
+                timeout=8,
+            )
+            app.logger.warning(&#x27;lila join %s [%s] -&gt; HTTP %s, location=%s, body=%s&#x27;, path, name, r.status_code, r.headers.get(&#x27;Location&#x27;), r.text[:200])
+            if r.status_code != 404:
+                break
+    except requests.RequestException as e:
+        app.logger.warning(&#x27;lila join %s failed: %s&#x27;, path, e)
+    return path
+
+
+@app.route(&#x27;/bridge/login&#x27;)
+def bridge_login():
+    &quot;&quot;&quot;Два режима вызова:
+    - Прямой переход пользователя по клику на кнопку &quot;Играть&quot; (top-level navigation,
+      не iframe) — сюда добавлен параметр redirect=1, после логина браузер СРАЗУ
+      уводится редиректом на саму Lila (параметр next, по умолчанию &#x27;/&#x27;). Именно
+      этот путь надёжен во всех браузерах: cookie ставится в обычном первом
+      (не третьем) контексте навигации, так её не режут блокировщики трекеров.
+    - Старый режим для невидимого фонового iframe (без redirect) оставлен для
+      браузеров без строгой защиты от трекеров — возвращает postMessage-скрипт.&quot;&quot;&quot;
+    bridge_token = request.args.get(&#x27;token&#x27;, &#x27;&#x27;)
+    if not bridge_token:
+        return Response(&#x27;Missing token&#x27;, status=400)
+
+    data, error = resolve_bridge_token(bridge_token)
+    if error:
+        return Response(f&#x27;Bridge error: {error}&#x27;, status=400)
+
+    lila_username = data[&#x27;lila_username&#x27;]
+    lila_password = data[&#x27;lila_password&#x27;]
+
+    cookie_value, debug_info = login_to_lila(lila_username, lila_password)
+    if not cookie_value:
+        import json as _json
+        return Response(f&#x27;Lila login failed. Debug: {_json.dumps(debug_info)}&#x27;, status=502)
+
+    tournament_path = None
+    if data.get(&#x27;tournament&#x27;):
+        tournament_path = join_lila_tournament(cookie_value, data[&#x27;tournament&#x27;])
+
+    if request.args.get(&#x27;redirect&#x27;):
+        next_path = tournament_path or request.args.get(&#x27;next&#x27;, &#x27;/&#x27;)
+        if not next_path.startswith(&#x27;/&#x27;):
+            next_path = &#x27;/&#x27;
+        resp = Response(status=302)
+        resp.headers[&#x27;Location&#x27;] = next_path
+    else:
+        resp = Response(
+            &#x27;&lt;script&gt;if(window.parent!==window){window.parent.postMessage(&quot;lila-bridge-ok&quot;,&quot;*&quot;)}&lt;/script&gt;&#x27;,
+            mimetype=&#x27;text/html&#x27;,
+        )
+    root_host = LILA_PUBLIC_HOST.split(&#x27;.&#x27;, 1)[1] if &#x27;.&#x27; in LILA_PUBLIC_HOST else None
+    stale_domains = [LILA_PUBLIC_HOST, f&#x27;.{LILA_PUBLIC_HOST}&#x27;]
+    if root_host:
+        stale_domains += [root_host, f&#x27;.{root_host}&#x27;]
+    for stale in stale_domains:
+        resp.delete_cookie(&#x27;lila2&#x27;, path=&#x27;/&#x27;, domain=stale, secure=True, httponly=True, samesite=&#x27;Lax&#x27;)
+    resp.set_cookie(
+        &#x27;lila2&#x27;, cookie_value,
+        max_age=315360000, secure=True, httponly=True, samesite=&#x27;Lax&#x27;, path=&#x27;/&#x27;,
+    )
+    return resp
+
+
+@app.route(&#x27;/bridge/logout&#x27;)
+def bridge_logout():
+    &quot;&quot;&quot;Выход из Lila при выходе с мир-шахмат.рф: закрывает сессию на стороне Lila
+    (если получится) и удаляет cookie lila2 у браузера. Вызывается невидимым iframe.&quot;&quot;&quot;
+    cookie_value = request.cookies.get(&#x27;lila2&#x27;)
+    if cookie_value:
+        try:
+            requests.post(
+                f&#x27;{LILA_INTERNAL_URL}/logout&#x27;,
+                headers={
+                    &#x27;Host&#x27;: LILA_PUBLIC_HOST,
+                    &#x27;Origin&#x27;: f&#x27;https://{LILA_PUBLIC_HOST}&#x27;,
+                    &#x27;Cookie&#x27;: f&#x27;lila2={cookie_value}&#x27;,
+                    &#x27;User-Agent&#x27;: &#x27;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36&#x27;,
+                },
+                allow_redirects=False,
+                timeout=5,
+            )
+        except requests.RequestException:
+            pass
+
+    resp = Response(
+        &#x27;&lt;script&gt;if(window.parent!==window){window.parent.postMessage(&quot;lila-bridge-logout&quot;,&quot;*&quot;)}&lt;/script&gt;&#x27;,
+        mimetype=&#x27;text/html&#x27;,
+    )
+    resp.headers[&#x27;Cache-Control&#x27;] = &#x27;no-store&#x27;
+    root_host = LILA_PUBLIC_HOST.split(&#x27;.&#x27;, 1)[1] if &#x27;.&#x27; in LILA_PUBLIC_HOST else None
+    domains = [None, LILA_PUBLIC_HOST, f&#x27;.{LILA_PUBLIC_HOST}&#x27;]
+    if root_host:
+        domains += [root_host, f&#x27;.{root_host}&#x27;]
+    for d in domains:
+        resp.delete_cookie(&#x27;lila2&#x27;, path=&#x27;/&#x27;, domain=d, secure=True, httponly=True, samesite=&#x27;Lax&#x27;)
+    return resp
+
+
+@app.route(&#x27;/bridge/set-rating&#x27;, methods=[&#x27;POST&#x27;])
+def set_rating():
+    &quot;&quot;&quot;Записывает стартовые рейтинги блиц/рапид игрока в базу Lila. Вызывается нашим
+    backend (lila-sync) один раз после создания аккаунта. Защищён общим секретом.
+    Меняется только значение рейтинга (gl.r) — число партий и неопределённость не трогаются,
+    поэтому рейтинг остаётся предварительным, пока игрок не сыграет партии.&quot;&quot;&quot;
+    secret = request.headers.get(&#x27;X-Bridge-Secret&#x27;, &#x27;&#x27;)
+    if not hmac.compare_digest(secret, LILA_BRIDGE_SECRET):
+        return jsonify({&#x27;error&#x27;: &#x27;forbidden&#x27;}), 403
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get(&#x27;username&#x27;) or &#x27;&#x27;).strip().lower()
+    try:
+        blitz = int(data[&#x27;blitz&#x27;])
+        rapid = int(data[&#x27;rapid&#x27;])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({&#x27;error&#x27;: &#x27;blitz and rapid required&#x27;}), 400
+    if not username or not (100 &lt;= blitz &lt;= 4000) or not (100 &lt;= rapid &lt;= 4000):
+        return jsonify({&#x27;error&#x27;: &#x27;bad values&#x27;}), 400
+
+    result = get_users_collection().update_one(
+        {&#x27;_id&#x27;: username},
+        {&#x27;$set&#x27;: {&#x27;perfs.blitz.gl.r&#x27;: float(blitz), &#x27;perfs.rapid.gl.r&#x27;: float(rapid)}},
+    )
+    if result.matched_count == 0:
+        return jsonify({&#x27;error&#x27;: &#x27;user not found&#x27;}), 404
+    return jsonify({&#x27;ok&#x27;: True})
+
+
+@app.route(&#x27;/bridge/health&#x27;)
+def health():
+    return {&#x27;ok&#x27;: True}</pre></body></html>
