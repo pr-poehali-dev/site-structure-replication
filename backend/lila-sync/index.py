@@ -325,6 +325,7 @@ def handler(event: dict, context) -> dict:
 
     if method == 'POST' and action == 'issue_tournament_token':
         user = get_user_by_token(cur, auth_token)
+        print(f"issue_tournament_token: user={user['id'] if user else None} lila_username={bool(user and user['lila_username'])} tournament_id={body.get('tournament_id')!r}")
         if not user:
             conn.close()
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}

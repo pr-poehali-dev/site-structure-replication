@@ -36,8 +36,15 @@ export default function TournamentRoom() {
     }
     let cancelled = false;
     const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
-    const post = (body: object) =>
-      fetch(LILA_SYNC_URL, { method: 'POST', headers, body: JSON.stringify(body) }).then(r => (r.ok ? r.json() : Promise.reject()));
+    const post = (body: { _action: string }) =>
+      fetch(LILA_SYNC_URL, { method: 'POST', headers, body: JSON.stringify(body) }).then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          console.warn('lila-sync', body._action, r.status, data);
+          return Promise.reject(data);
+        }
+        return data;
+      });
     post({ _action: 'ensure_account' })
       .then(() => post({ _action: 'issue_tournament_token', tournament_id: Number(tournamentId) }))
       .then(d => {
@@ -45,7 +52,7 @@ export default function TournamentRoom() {
         if (d.bridge_token) setJoinSrc(`${LILA_ORIGIN}/bridge/login?token=${d.bridge_token}`);
         else setJoined(true);
       })
-      .catch(() => { if (!cancelled) setJoined(true); });
+      .catch(e => { console.warn('lila join failed', e); if (!cancelled) setJoined(true); });
     const fallback = setTimeout(() => { if (!cancelled) setJoined(true); }, 12000);
     return () => { cancelled = true; clearTimeout(fallback); };
   }, [token, authLoading, tournamentId]);
