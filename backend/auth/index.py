@@ -338,25 +338,31 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 409, 'headers': cors_headers(), 'body': json.dumps({'error': 'Этот email уже используется другим участником'})}
 
+        def num(v):
+            return int(v) if v not in (None, '') else None
+
         cur.execute(
             """UPDATE users SET
-               last_name = COALESCE(NULLIF(last_name, ''), %s),
-               first_name = COALESCE(NULLIF(first_name, ''), %s),
-               middle_name = COALESCE(NULLIF(middle_name, ''), %s),
-               birth_date = COALESCE(birth_date, %s),
-               fsr_id = COALESCE(NULLIF(fsr_id, ''), %s),
-               coach_fio=%s, institution=%s, country_city=%s, phone=%s WHERE id=%s""",
-            (body.get('last_name'), body.get('first_name'), body.get('middle_name') or None,
-             body.get('birth_date') or None, body.get('fsr_id') or None, body.get('coach_fio') or None,
-             body.get('institution') or None, body.get('country_city') or None, body.get('phone') or None,
-             user['id'])
+               last_name=%s, first_name=%s, middle_name=%s, birth_date=%s, fsr_id=%s,
+               coach_fio=%s, institution=%s, country_city=%s, email=%s, phone=%s,
+               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s
+               WHERE id=%s""",
+            (last_name, first_name, (body.get('middle_name') or '').strip() or None,
+             body.get('birth_date') or None, (body.get('fsr_id') or '').strip() or None,
+             (body.get('coach_fio') or '').strip() or None, (body.get('institution') or '').strip() or None,
+             (body.get('country_city') or '').strip() or None, email, (body.get('phone') or '').strip() or None,
+             num(body.get('rating_blitz')), num(body.get('rating_rapid')),
+             num(body.get('fsr_rating_blitz')), num(body.get('fsr_rating_rapid')),
+             user_id)
         )
         conn.commit()
 
-        cur.execute(f"{USER_SELECT} WHERE id = %s", (user['id'],))
-        updated = user_to_dict(cur.fetchone())
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user_id,))
+        row = cur.fetchone()
         conn.close()
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': updated})}
+        if not row:
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Участник не найден'})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
 
     conn.close()
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}
