@@ -94,6 +94,16 @@ export default function Register() {
               <div>
                 <Label>ID ФШР</Label>
                 <Input className="mt-1" value={form.fsr_id} onChange={e => set('fsr_id', e.target.value)} placeholder="Номер в системе ФШР" />
+                <div className="mt-2 flex items-start gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2 text-sm text-primary">
+                  <Icon name="Info" size={16} className="mt-0.5 shrink-0" />
+                  <p>
+                    Узнать свой ID можно на сайте{' '}
+                    <a href="https://ratings.ruchess.ru/" target="_blank" rel="noopener noreferrer" className="font-semibold underline">
+                      ratings.ruchess.ru
+                    </a>
+                    . Если ID нет, оставьте поле пустым.
+                  </p>
+                </div>
               </div>
             </div>
 
