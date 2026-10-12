@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
@@ -20,6 +20,8 @@ export default function Register() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [website, setWebsite] = useState('');
+  const openedAt = useRef(Date.now());
 
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: string) {
     setForm(f => ({ ...f, [key]: value }));
@@ -50,6 +52,8 @@ export default function Register() {
       email: form.email.trim().toLowerCase(),
       phone: form.phone || undefined,
       password: form.password,
+      website,
+      elapsed_ms: Date.now() - openedAt.current,
     });
     setSubmitting(false);
     if (res.ok) {
@@ -71,6 +75,16 @@ export default function Register() {
             <h1 className="font-heading font-bold text-2xl text-primary">Регистрация участника</h1>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+            />
             <div className="grid sm:grid-cols-3 gap-3">
               <div>
                 <Label>Фамилия *</Label>

@@ -63,6 +63,8 @@ export interface RegisterPayload {
   login: string;
   phone?: string;
   password: string;
+  website?: string;
+  elapsed_ms?: number;
 }
 
 interface AuthContextValue {

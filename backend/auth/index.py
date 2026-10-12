@@ -110,6 +110,10 @@ def handler(event: dict, context) -> dict:
 
     # Регистрация нового участника
     if method == 'POST' and action == 'register':
+        elapsed = body.get('elapsed_ms')
+        if body.get('website') or not isinstance(elapsed, (int, float)) or elapsed < 4000:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не удалось зарегистрироваться. Попробуйте ещё раз.'})}
         email = (body.get('email') or '').strip().lower()
         password = body.get('password') or ''
         last_name = (body.get('last_name') or '').strip()
