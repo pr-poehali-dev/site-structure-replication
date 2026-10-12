@@ -88,7 +88,7 @@ export default function TournamentsSection({
       setStartError('Недостаточно оплаченных/подтверждённых заявок для разделения (нужно минимум 2)');
       return;
     }
-    if (!confirm(`Разделить турнир «${t.title}» на две группы по ${Math.ceil(tApps.length / 2)}/${Math.floor(tApps.length / 2)} участников? Будут созданы два новых турнира («Группа А» и «Группа Б»), участники распределены по рейтингу МШ. Исходный турнир останется как есть, без этих заявок. Отменить это действие нельзя.`)) return;
+    if (!confirm(`Разделить турнир «${t.title}» на две группы по ${Math.ceil(tApps.length / 2)}/${Math.floor(tApps.length / 2)} участников? Будут созданы два новых турнира («Группа А» и «Группа Б»), участники распределены по рейтингу МШ. Ссылку на Lila для каждой группы нужно будет указать вручную. Исходный турнир останется как есть, без этих заявок. Отменить это действие нельзя.`)) return;
     setSplittingId(t.id);
     setStartError('');
     const res = await fetch(TOURNAMENTS_URL, {
@@ -102,6 +102,7 @@ export default function TournamentsSection({
     } else {
       fetchTournaments();
       fetchApps();
+      toast.success(`Созданы «${data.group_a?.title}» и «${data.group_b?.title}». Создайте для каждой группы турнир в Lila и укажите ссылку через «Редактировать».`, { duration: 12000 });
     }
     setSplittingId(null);
   }
@@ -460,6 +461,11 @@ export default function TournamentsSection({
                         {tApps.length > 0 && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
                             {tApps.length}{t.max_participants ? `/${t.max_participants}` : ''} заявок
+                          </span>
+                        )}
+                        {!t.lila_tournament_id && / — Группа [АБ]$/.test(t.title) && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex items-center gap-1">
+                            <Icon name="Link2Off" size={11} /> Нет ссылки на Lila
                           </span>
                         )}
                         {t.hall_open && (
