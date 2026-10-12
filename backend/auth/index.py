@@ -50,7 +50,7 @@ LOGIN_RE = re.compile(r'^(?=.{2,20}$)[A-Za-z](?:[A-Za-z0-9]|[_-](?=[A-Za-z0-9]))
 
 USER_COLS = ['login', 'id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
              'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
-             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid', 'bonus_balance']
+             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid', 'bonus_balance', 'referral_code']
 
 USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
 
@@ -159,13 +159,21 @@ def handler(event: dict, context) -> dict:
         rating_blitz = fsr_rating_blitz
         rating_rapid = fsr_rating_rapid
 
+        referred_by = None
+        ref_code = (body.get('ref_code') or '').strip().lower()
+        if ref_code:
+            cur.execute("SELECT id FROM users WHERE lower(referral_code) = %s", (ref_code,))
+            ref_row = cur.fetchone()
+            if ref_row:
+                referred_by = ref_row[0]
+
         cur.execute(
-            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, login, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, login, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid, referred_by)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
              fsr_id, body.get('coach_fio') or None, body.get('institution') or None,
              body.get('country_city') or None, email, body.get('phone') or None, pwd_hash, salt, login_name,
-             fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid)
+             fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid, referred_by)
         )
         user_id = cur.fetchone()[0]
 

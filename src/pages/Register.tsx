@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
@@ -14,6 +14,8 @@ const EMPTY_FORM = {
   login: '', email: '', phone: '', password: '', password2: '',
 };
 
+const REF_KEY = 'referral_code';
+
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -22,6 +24,11 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [website, setWebsite] = useState('');
   const openedAt = useRef(Date.now());
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) localStorage.setItem(REF_KEY, ref);
+  }, []);
 
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: string) {
     setForm(f => ({ ...f, [key]: value }));
@@ -54,9 +61,11 @@ export default function Register() {
       password: form.password,
       website,
       elapsed_ms: Date.now() - openedAt.current,
+      ref_code: localStorage.getItem(REF_KEY) || undefined,
     });
     setSubmitting(false);
     if (res.ok) {
+      localStorage.removeItem(REF_KEY);
       navigate('/cabinet');
     } else {
       setError(res.error);

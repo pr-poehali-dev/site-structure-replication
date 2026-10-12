@@ -330,6 +330,26 @@ def handler(event, context):
                         INSERT INTO {S}balance_transactions (user_id, amount, type, description, order_id)
                         VALUES (%s, %s, 'topup', 'Пополнение баланса через ЮKassa', %s)
                     """, (order_user_id, amount, order_id))
+                    cur.execute(f"""
+                        SELECT u.referred_by, u.last_name, u.first_name FROM {S}users u WHERE u.id = %s
+                    """, (order_user_id,))
+                    ref_row = cur.fetchone()
+                    if ref_row and ref_row[0]:
+                        referrer_id = ref_row[0]
+                        bonus = round(float(amount) * 0.25, 2)
+                        if bonus > 0:
+                            cur.execute(f"""
+                                SELECT 1 FROM {S}balance_transactions WHERE type = 'bonus_referral' AND order_id = %s
+                            """, (order_id,))
+                            if not cur.fetchone():
+                                cur.execute(f"""
+                                    UPDATE {S}users SET bonus_balance = bonus_balance + %s WHERE id = %s
+                                """, (bonus, referrer_id))
+                                invitee = f"{ref_row[1] or ''} {ref_row[2] or ''}".strip()
+                                cur.execute(f"""
+                                    INSERT INTO {S}balance_transactions (user_id, amount, type, description, order_id, account, source_user_id)
+                                    VALUES (%s, %s, 'bonus_referral', %s, %s, 'bonus', %s)
+                                """, (referrer_id, bonus, f"25% от пополнения приглашённого: {invitee}", order_id, order_user_id))
                 conn.commit()
                 if order_type == 'subscription' and subscription_id and sub_row:
                     sub_code, sub_plan_title, sub_total, sub_email, sub_name = sub_row

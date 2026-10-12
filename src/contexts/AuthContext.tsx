@@ -49,6 +49,7 @@ export interface UserProfile {
   fsr_rating_blitz: number | null;
   fsr_rating_rapid: number | null;
   bonus_balance?: number;
+  referral_code?: string;
 }
 
 export interface RegisterPayload {
@@ -66,6 +67,7 @@ export interface RegisterPayload {
   password: string;
   website?: string;
   elapsed_ms?: number;
+  ref_code?: string;
 }
 
 interface AuthContextValue {

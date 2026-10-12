@@ -120,6 +120,25 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
 
     # Баланс и история транзакций
+    if method == 'GET' and (event.get('queryStringParameters') or {}).get('scope') == 'referrals':
+        cur.execute("SELECT referral_code FROM users WHERE id = %s", (user_id,))
+        code = cur.fetchone()[0]
+        cur.execute(
+            """SELECT u.id, u.last_name, u.first_name, u.login, u.created_at,
+                      COALESCE((SELECT SUM(t.amount) FROM balance_transactions t
+                                WHERE t.user_id = %s AND t.type = 'bonus_referral' AND t.source_user_id = u.id), 0)
+               FROM users u WHERE u.referred_by = %s ORDER BY u.created_at DESC""",
+            (user_id, user_id)
+        )
+        rows = cur.fetchall()
+        conn.close()
+        referrals = [
+            {'id': r[0], 'name': f"{r[1]} {r[2]}".strip(), 'login': r[3], 'created_at': str(r[4]), 'earned': float(r[5])}
+            for r in rows
+        ]
+        total = sum(x['earned'] for x in referrals)
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'referral_code': code, 'referrals': referrals, 'total_earned': total})}
+
     if method == 'GET':
         cur.execute("SELECT balance, bonus_balance FROM users WHERE id = %s", (user_id,))
         bal_row = cur.fetchone()
