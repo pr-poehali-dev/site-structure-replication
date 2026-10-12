@@ -19,6 +19,7 @@ export interface ApplicationForm {
 interface TournamentModalsProps {
   user: UserProfile | null;
   balance: number;
+  bonusBalance: number;
 
   // Модал заявки
   modalTournament: Tournament | null;
@@ -42,7 +43,7 @@ interface TournamentModalsProps {
 }
 
 export default function TournamentModals({
-  user, balance,
+  user, balance, bonusBalance,
   modalTournament, closeModal, sent, form, setForm, handleSubmit,
   submitting, submitError,
   participantsModal, setParticipantsModal, participants, participantsLoading,
@@ -61,7 +62,10 @@ export default function TournamentModals({
   ].filter(r => r.value && r.value.trim());
   const price = modalTournament?.price || 0;
   const isPaid = price > 0;
-  const insufficientBalance = isPaid && balance < price;
+  const bonusPart = isPaid ? Math.min(bonusBalance, price) : 0;
+  const moneyPart = isPaid ? price - bonusPart : 0;
+  const insufficientBalance = isPaid && balance + bonusBalance < price;
+  const fmt = (n: number) => n.toLocaleString('ru');
   return (
     <>
       {/* Modal */}
@@ -117,18 +121,27 @@ export default function TournamentModals({
                     </p>
                   )}
                   {isPaid && (
-                    <div className={`rounded-lg border px-3 py-2.5 flex items-center justify-between gap-2 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
-                      <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                    <div className={`rounded-lg border px-3 py-2.5 flex flex-col gap-1.5 ${insufficientBalance ? 'bg-red-50 border-red-200' : 'bg-secondary/10 border-secondary/30'}`}>
+                      <p className="text-sm text-gray-700 flex items-center gap-1.5">
                         <Icon name="Wallet" size={15} className={insufficientBalance ? 'text-red-500' : 'text-secondary'} />
-                        Взнос {price.toLocaleString('ru')} ₽ спишется с баланса
-                      </span>
-                      <span className={`text-sm font-bold shrink-0 ${insufficientBalance ? 'text-red-500' : 'text-primary'}`}>{balance.toLocaleString('ru')} ₽</span>
+                        Взнос {fmt(price)} ₽
+                      </p>
+                      <div className="text-xs text-gray-600 flex flex-col gap-0.5">
+                        <div className="flex justify-between gap-2">
+                          <span>Бонусный счёт: {fmt(bonusBalance)} ₽</span>
+                          {!insufficientBalance && bonusPart > 0 && <span className="font-semibold text-primary">спишется {fmt(bonusPart)} ₽</span>}
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>Баланс: {fmt(balance)} ₽</span>
+                          {!insufficientBalance && moneyPart > 0 && <span className="font-semibold text-primary">спишется {fmt(moneyPart)} ₽</span>}
+                        </div>
+                      </div>
                     </div>
                   )}
                   {insufficientBalance && (
                     <p className="text-sm text-red-500 flex items-center gap-1.5">
                       <Icon name="AlertCircle" size={14} />
-                      Недостаточно средств на балансе.{' '}
+                      Недостаточно средств на бонусном счёте и балансе.{' '}
                       <a href="/cabinet?tab=balance" className="underline hover:no-underline font-medium">Пополнить →</a>
                     </p>
                   )}
@@ -159,7 +172,7 @@ export default function TournamentModals({
                     {submitting
                       ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Обработка...</>
                       : isPaid
-                        ? <><Icon name="Wallet" size={16} className="mr-2" />Списать {price.toLocaleString('ru')} ₽ и подать заявку</>
+                        ? <><Icon name="Wallet" size={16} className="mr-2" />Оплатить {price.toLocaleString('ru')} ₽ и подать заявку</>
                         : <><Icon name="ClipboardCheck" size={16} className="mr-2" />Подать заявку</>
                     }
                   </Button>

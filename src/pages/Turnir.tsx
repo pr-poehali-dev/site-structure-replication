@@ -42,6 +42,7 @@ export default function Turnir() {
   const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string; hall_open: boolean; hall_status: string }[]>([]);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [balance, setBalance] = useState(0);
+  const [bonusBalance, setBonusBalance] = useState(0);
 
   // Модал списка участников
   const [participantsModal, setParticipantsModal] = useState<Tournament | null>(null);
@@ -67,10 +68,10 @@ export default function Turnir() {
   }, [token]);
 
   const fetchBalance = useCallback(() => {
-    if (!token) { setBalance(0); return; }
+    if (!token) { setBalance(0); setBonusBalance(0); return; }
     fetch(BALANCE_URL, { headers: { 'X-Auth-Token': token } })
       .then(r => r.json())
-      .then(data => setBalance(data.balance || 0))
+      .then(data => { setBalance(data.balance || 0); setBonusBalance(data.bonus_balance || 0); })
       .catch(() => {});
   }, [token]);
 
@@ -186,6 +187,7 @@ export default function Turnir() {
       <TournamentModals
         user={user}
         balance={balance}
+        bonusBalance={bonusBalance}
         modalTournament={modalTournament}
         closeModal={closeModal}
         sent={sent}

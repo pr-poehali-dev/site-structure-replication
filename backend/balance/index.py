@@ -14,7 +14,7 @@ def cors_headers():
     return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-Admin-Password',
     }
 
 
@@ -80,6 +80,40 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor()
 
+    admin_password = headers.get('X-Admin-Password') or headers.get('x-admin-password', '')
+    if method == 'POST' and action == 'admin_bonus':
+        if not admin_password or admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        try:
+            target_id = int(body.get('user_id'))
+            delta = round(float(body.get('amount')), 2)
+        except (TypeError, ValueError):
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Некорректные данные'})}
+        if delta == 0:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Сумма не может быть нулевой'})}
+        cur.execute("SELECT bonus_balance FROM users WHERE id = %s FOR UPDATE", (target_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь не найден'})}
+        if float(row[0]) + delta < 0:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нельзя списать больше, чем есть на бонусном счёте'})}
+        note = (body.get('description') or '').strip()
+        desc = note or ('Начисление бонусов администратором' if delta > 0 else 'Списание бонусов администратором')
+        cur.execute("UPDATE users SET bonus_balance = bonus_balance + %s WHERE id = %s", (delta, target_id))
+        cur.execute(
+            """INSERT INTO balance_transactions (user_id, amount, type, description, account)
+               VALUES (%s, %s, 'bonus_admin', %s, 'bonus')""",
+            (target_id, delta, desc)
+        )
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'bonus_balance': float(row[0]) + delta})}
+
     user_id = get_user_id_by_token(cur, token)
     if not user_id:
         conn.close()
@@ -87,20 +121,22 @@ def handler(event: dict, context) -> dict:
 
     # Баланс и история транзакций
     if method == 'GET':
-        cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
-        balance = float(cur.fetchone()[0])
+        cur.execute("SELECT balance, bonus_balance FROM users WHERE id = %s", (user_id,))
+        bal_row = cur.fetchone()
+        balance = float(bal_row[0])
+        bonus_balance = float(bal_row[1])
         cur.execute(
-            """SELECT id, amount, type, description, created_at FROM balance_transactions
+            """SELECT id, amount, type, description, created_at, account FROM balance_transactions
                WHERE user_id = %s ORDER BY created_at DESC LIMIT 100""",
             (user_id,)
         )
         rows = cur.fetchall()
         conn.close()
         transactions = [
-            {'id': r[0], 'amount': float(r[1]), 'type': r[2], 'description': r[3], 'created_at': str(r[4])}
+            {'id': r[0], 'amount': float(r[1]), 'type': r[2], 'description': r[3], 'created_at': str(r[4]), 'account': r[5]}
             for r in rows
         ]
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'balance': balance, 'transactions': transactions})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'balance': balance, 'bonus_balance': bonus_balance, 'transactions': transactions})}
 
     # Создание платежа на пополнение баланса через ЮKassa
     if method == 'POST' and action == 'topup':

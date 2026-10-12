@@ -48,6 +48,7 @@ export interface UserProfile {
   rating_rapid: number | null;
   fsr_rating_blitz: number | null;
   fsr_rating_rapid: number | null;
+  bonus_balance?: number;
 }
 
 export interface RegisterPayload {

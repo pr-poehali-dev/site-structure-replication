@@ -72,6 +72,7 @@ export interface UserAccount {
   institution: string | null; country_city: string | null; email: string; phone: string | null;
   created_at: string; avatar_url: string | null; rating_blitz: number | null; rating_rapid: number | null;
   fsr_rating_blitz: number | null; fsr_rating_rapid: number | null;
+  bonus_balance?: number;
 }
 
 export const TOURNAMENTS_URL = 'https://functions.poehali.dev/9a8eb98d-1a35-4b77-9828-603a76a903ed';

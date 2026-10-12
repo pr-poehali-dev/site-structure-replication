@@ -6,6 +6,9 @@ import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { UserAccount, AUTH_URL } from './adminTypes';
+import func2url from '../../../backend/func2url.json';
+
+const BALANCE_URL = func2url['balance'];
 
 interface UsersSectionProps {
   password: string;
@@ -29,6 +32,9 @@ export default function UsersSection({ password }: UsersSectionProps) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [bonusAmount, setBonusAmount] = useState('');
+  const [bonusNote, setBonusNote] = useState('');
+  const [bonusSaving, setBonusSaving] = useState(false);
 
   const fetchUsers = useCallback(async (q = '') => {
     setLoading(true);
@@ -88,8 +94,33 @@ export default function UsersSection({ password }: UsersSectionProps) {
     }
   }
 
+  async function handleBonus() {
+    if (!editUser) return;
+    const value = parseFloat(bonusAmount);
+    if (!value) { toast.error('Введите сумму бонусов'); return; }
+    setBonusSaving(true);
+    try {
+      const res = await fetch(BALANCE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ _action: 'admin_bonus', user_id: editUser.id, amount: value, description: bonusNote }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Не удалось изменить бонусы'); return; }
+      toast.success('Бонусный счёт обновлён');
+      setEditUser({ ...editUser, bonus_balance: data.bonus_balance });
+      setUsers(list => list.map(x => x.id === editUser.id ? { ...x, bonus_balance: data.bonus_balance } : x));
+      setBonusAmount('');
+      setBonusNote('');
+    } finally {
+      setBonusSaving(false);
+    }
+  }
+
   function openEdit(u: UserAccount) {
     setEditUser(u);
+    setBonusAmount('');
+    setBonusNote('');
     setFormError('');
     setForm({
       last_name: u.last_name || '',
@@ -345,6 +376,19 @@ export default function UsersSection({ password }: UsersSectionProps) {
                     <Input type="number" className="mt-1" value={form.fsr_rating_rapid} onChange={e => setForm(f => ({ ...f, fsr_rating_rapid: e.target.value }))} placeholder="Например: 1520" />
                   </div>
                 </div>
+              </div>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Бонусный счёт: {(editUser.bonus_balance ?? 0).toLocaleString('ru')} ₽
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2">
+                  <Input type="number" step="1" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} placeholder="+500 или -200" />
+                  <Input value={bonusNote} onChange={e => setBonusNote(e.target.value)} placeholder="Комментарий (необязательно)" />
+                  <Button type="button" variant="outline" onClick={handleBonus} disabled={bonusSaving}>
+                    {bonusSaving ? 'Сохранение...' : 'Применить'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Положительное число начисляет бонусы, отрицательное списывает.</p>
               </div>
               {formError && <p className="text-red-500 text-sm">{formError}</p>}
               <div className="flex gap-2 mt-2">

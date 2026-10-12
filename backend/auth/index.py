@@ -50,7 +50,7 @@ LOGIN_RE = re.compile(r'^(?=.{2,20}$)[A-Za-z](?:[A-Za-z0-9]|[_-](?=[A-Za-z0-9]))
 
 USER_COLS = ['login', 'id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
              'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
-             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid']
+             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid', 'bonus_balance']
 
 USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
 
@@ -59,6 +59,7 @@ def user_to_dict(row):
     d = dict(zip(USER_COLS, row))
     d['birth_date'] = str(d['birth_date']) if d['birth_date'] else None
     d['created_at'] = str(d['created_at'])
+    d['bonus_balance'] = float(d['bonus_balance'] or 0)
     return d
 
 

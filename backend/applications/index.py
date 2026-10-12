@@ -94,25 +94,35 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
         tournament_id = body.get('tournament_id')
         cur.execute(
-            "SELECT id, price, status FROM applications WHERE user_id = %s AND tournament_id = %s AND status NOT IN ('cancelled')",
+            "SELECT id, price, status, bonus_paid FROM applications WHERE user_id = %s AND tournament_id = %s AND status NOT IN ('cancelled')",
             (user_id, tournament_id)
         )
         app_row = cur.fetchone()
         if not app_row:
             conn.close()
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Заявка не найдена'})}
-        app_id, app_price, app_status = app_row
+        app_id, app_price, app_status, app_bonus = app_row
         cur.execute(
             "UPDATE applications SET status = 'cancelled' WHERE id = %s",
             (app_id,)
         )
         if app_price and float(app_price) > 0 and app_status == 'paid':
-            cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (app_price, user_id))
-            cur.execute(
-                """INSERT INTO balance_transactions (user_id, amount, type, description, application_id)
-                   VALUES (%s, %s, 'refund', 'Возврат взноса за отменённое участие', %s)""",
-                (user_id, app_price, app_id)
-            )
+            bonus_back = min(float(app_bonus or 0), float(app_price))
+            money_back = round(float(app_price) - bonus_back, 2)
+            if bonus_back > 0:
+                cur.execute("UPDATE users SET bonus_balance = bonus_balance + %s WHERE id = %s", (bonus_back, user_id))
+                cur.execute(
+                    """INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account)
+                       VALUES (%s, %s, 'refund', 'Возврат взноса за отменённое участие', %s, 'bonus')""",
+                    (user_id, bonus_back, app_id)
+                )
+            if money_back > 0:
+                cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (money_back, user_id))
+                cur.execute(
+                    """INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account)
+                       VALUES (%s, %s, 'refund', 'Возврат взноса за отменённое участие', %s, 'money')""",
+                    (user_id, money_back, app_id)
+                )
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
@@ -162,21 +172,27 @@ def handler(event: dict, context) -> dict:
             if not user_id:
                 conn.close()
                 return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Необходимо авторизоваться'})}
-            cur.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
+            cur.execute("SELECT balance, bonus_balance FROM users WHERE id = %s FOR UPDATE", (user_id,))
             balance_row = cur.fetchone()
             current_balance = float(balance_row[0]) if balance_row else 0
-            if current_balance < price:
+            current_bonus = float(balance_row[1]) if balance_row else 0
+            if current_balance + current_bonus < price:
                 conn.close()
                 return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Недостаточно средств на балансе. Пополните баланс в личном кабинете.'})}
+            bonus_part = round(min(current_bonus, price), 2)
+            money_part = round(price - bonus_part, 2)
+        else:
+            bonus_part = 0
+            money_part = 0
 
         initial_status = 'paid' if price > 0 else 'new'
         cur.execute(
-            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id, price, paid_from_balance)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id, price, paid_from_balance, bonus_paid)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
             (tournament_id, body.get('tournament_title'), body.get('fio'),
              body.get('age'), body.get('fsr_id'), body.get('coach'),
              body.get('country_city'), body.get('school'), body.get('email'), body.get('phone'),
-             initial_status, user_id, price if price > 0 else None, price > 0)
+             initial_status, user_id, price if price > 0 else None, price > 0, bonus_part)
         )
         new_id = cur.fetchone()[0]
 
@@ -189,12 +205,21 @@ def handler(event: dict, context) -> dict:
                 cur.execute("UPDATE tournaments SET status = 'closed' WHERE id = %s AND status = 'open'", (tournament_id,))
 
         if price > 0:
-            cur.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (price, user_id))
-            cur.execute(
-                """INSERT INTO balance_transactions (user_id, amount, type, description, application_id)
-                   VALUES (%s, %s, 'payment', %s, %s)""",
-                (user_id, -price, f"Оплата взноса: {body.get('tournament_title') or ''}", new_id)
-            )
+            pay_desc = f"Оплата взноса: {body.get('tournament_title') or ''}"
+            if bonus_part > 0:
+                cur.execute("UPDATE users SET bonus_balance = bonus_balance - %s WHERE id = %s", (bonus_part, user_id))
+                cur.execute(
+                    """INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account)
+                       VALUES (%s, %s, 'payment', %s, %s, 'bonus')""",
+                    (user_id, -bonus_part, pay_desc, new_id)
+                )
+            if money_part > 0:
+                cur.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (money_part, user_id))
+                cur.execute(
+                    """INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account)
+                       VALUES (%s, %s, 'payment', %s, %s, 'money')""",
+                    (user_id, -money_part, pay_desc, new_id)
+                )
 
         conn.commit()
         try:

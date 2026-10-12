@@ -16,6 +16,7 @@ interface Transaction {
   type: string;
   description: string | null;
   created_at: string;
+  account?: 'money' | 'bonus';
 }
 
 const TYPE_LABELS: Record<string, { label: string; icon: string; className: string }> = {
@@ -23,6 +24,8 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; className: stri
   payment: { label: 'Списание', icon: 'ArrowUpCircle', className: 'text-red-500' },
   refund: { label: 'Возврат', icon: 'RotateCcw', className: 'text-secondary' },
   promo: { label: 'Промокод', icon: 'Gift', className: 'text-purple-600' },
+  bonus_admin: { label: 'Бонусы', icon: 'Sparkles', className: 'text-purple-600' },
+  bonus_referral: { label: 'Бонусы за приглашение', icon: 'Users', className: 'text-purple-600' },
 };
 
 function sleep(ms: number) {
@@ -32,6 +35,8 @@ function sleep(ms: number) {
 export default function BalanceSection() {
   const { user, token } = useAuth();
   const [balance, setBalance] = useState(0);
+  const [bonusBalance, setBonusBalance] = useState(0);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'money' | 'bonus'>('all');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState('500');
@@ -49,6 +54,7 @@ export default function BalanceSection() {
       .then(r => r.json())
       .then(data => {
         setBalance(data.balance || 0);
+        setBonusBalance(data.bonus_balance || 0);
         setTransactions(data.transactions || []);
       })
       .finally(() => setLoading(false));
@@ -136,19 +142,37 @@ export default function BalanceSection() {
     }
   }
 
+  const visibleTransactions = transactions.filter(t => historyFilter === 'all' || (t.account || 'money') === historyFilter);
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">Текущий баланс</p>
-            <p className="font-heading font-bold text-4xl text-primary">
-              {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${balance.toLocaleString('ru')} ₽`}
-            </p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Текущий баланс</p>
+              <p className="font-heading font-bold text-3xl text-primary">
+                {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${balance.toLocaleString('ru')} ₽`}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+              <Icon name="Wallet" size={24} className="text-secondary" />
+            </div>
           </div>
-          <div className="w-14 h-14 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
-            <Icon name="Wallet" size={26} className="text-secondary" />
+        </div>
+        <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-gray-400 text-sm mb-1">Бонусный счёт</p>
+              <p className="font-heading font-bold text-3xl text-purple-700">
+                {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${bonusBalance.toLocaleString('ru')} ₽`}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center shrink-0">
+              <Icon name="Sparkles" size={24} className="text-purple-600" />
+            </div>
           </div>
+          <p className="text-xs text-gray-400 mt-3">Бонусами можно оплатить участие в турнирах. Они списываются первыми, остаток доплачивается с баланса.</p>
         </div>
       </div>
 
@@ -211,17 +235,31 @@ export default function BalanceSection() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="font-heading font-bold text-lg text-primary mb-4">История операций</h3>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <h3 className="font-heading font-bold text-lg text-primary">История операций</h3>
+          <div className="flex gap-1">
+            {([['all', 'Все'], ['money', 'Баланс'], ['bonus', 'Бонусы']] as const).map(([key, label]) => (
+              <button
+                type="button"
+                key={key}
+                onClick={() => setHistoryFilter(key)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${historyFilter === key ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <div className="text-gray-400 py-6"><Icon name="Loader2" size={20} className="animate-spin inline mr-2" />Загрузка...</div>
-        ) : transactions.length === 0 ? (
+        ) : visibleTransactions.length === 0 ? (
           <div className="text-center py-8 bg-muted/40 rounded-xl text-gray-400">
             <Icon name="Receipt" size={28} className="mx-auto mb-2 opacity-30" />
             <p>Операций пока не было</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {transactions.map(t => {
+            {visibleTransactions.map(t => {
               const meta = TYPE_LABELS[t.type] || { label: t.type, icon: 'Circle', className: 'text-gray-500' };
               const isPositive = t.amount > 0;
               return (
@@ -229,7 +267,10 @@ export default function BalanceSection() {
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon name={meta.icon} size={18} className={meta.className} />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{t.description || meta.label}</p>
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {t.description || meta.label}
+                        {t.account === 'bonus' && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 align-middle">бонусы</span>}
+                      </p>
                       <p className="text-xs text-gray-400">{formatDateTime(t.created_at)}</p>
                     </div>
                   </div>
