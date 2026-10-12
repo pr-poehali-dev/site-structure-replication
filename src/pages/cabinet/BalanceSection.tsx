@@ -167,21 +167,96 @@ export default function BalanceSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-gray-400 text-sm mb-1">Текущий баланс</p>
-              <p className="font-heading font-bold text-3xl text-primary">
-                {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${balance.toLocaleString('ru')} ₽`}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
-              <Icon name="Wallet" size={24} className="text-secondary" />
-            </div>
+      <section className="rounded-3xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+            <Icon name="Wallet" size={18} className="text-amber-700" />
+          </div>
+          <h2 className="font-heading font-bold text-lg text-primary">Мой баланс</h2>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-gray-400 text-sm mb-1">Деньги на счёте</p>
+            <p className="font-heading font-bold text-3xl text-primary">
+              {loading ? <Icon name="Loader2" size={28} className="animate-spin inline" /> : `${balance.toLocaleString('ru')} ₽`}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+            <Icon name="Wallet" size={24} className="text-amber-700" />
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-6">
+
+        {checkingPayment && (
+          <div className="bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+            <Icon name="Loader2" size={15} className="animate-spin" /> Проверяем оплату, баланс обновится автоматически...
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-3">Пополнить баланс</h3>
+            <form onSubmit={handleTopup} className="flex flex-col gap-3">
+              <div className="grid grid-cols-4 gap-2">
+                {[500, 1000, 2000, 5000].map(v => (
+                  <button
+                    type="button"
+                    key={v}
+                    onClick={() => setAmount(String(v))}
+                    className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors ${amount === String(v) ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                  >
+                    {v} ₽
+                  </button>
+                ))}
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-secondary pr-8"
+                  placeholder="Введите сумму"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₽</span>
+              </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <Button type="submit" disabled={submitting} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                {submitting ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Создаём платёж...</> : <><Icon name="CreditCard" size={16} className="mr-2" />Пополнить через ЮKassa</>}
+              </Button>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-3">Активировать промокод</h3>
+            <form onSubmit={handleActivatePromo} className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm uppercase tracking-wider font-mono focus:outline-none focus:ring-2 focus:ring-secondary"
+                placeholder="Введите промокод"
+              />
+              <Button type="submit" disabled={promoActivating || !promoCode.trim()} variant="outline" className="shrink-0">
+                {promoActivating ? <Icon name="Loader2" size={16} className="animate-spin" /> : <><Icon name="Gift" size={16} className="mr-2" />Активировать</>}
+              </Button>
+            </form>
+            {promoError && <p className="text-red-500 text-sm mt-2">{promoError}</p>}
+            {promoSuccess && <p className="text-green-600 text-sm mt-2">{promoSuccess}</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-purple-200 bg-purple-50/60 p-4 sm:p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+            <Icon name="Sparkles" size={18} className="text-purple-600" />
+          </div>
+          <h2 className="font-heading font-bold text-lg text-primary">Бонусы и приглашения</h2>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-gray-400 text-sm mb-1">Бонусный счёт</p>
@@ -195,93 +270,35 @@ export default function BalanceSection() {
           </div>
           <p className="text-xs text-gray-400 mt-3">Бонусами можно оплатить участие в турнирах. Они списываются первыми, остаток доплачивается с баланса.</p>
         </div>
-      </div>
 
-      <div className="bg-gradient-to-r from-purple-50 to-white rounded-2xl border border-purple-100 shadow-sm p-5">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
-            <Icon name="Users" size={20} className="text-purple-600" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-heading font-bold text-primary">Приглашайте друзей и получайте бонусы</h3>
-            <p className="text-sm text-gray-500 mt-0.5 mb-3">
-              За каждое пополнение баланса приглашённым участником вы получаете 25% от суммы на бонусный счёт. Бонусами можно оплачивать участие в турнирах.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                readOnly
-                value={referralLink || 'Загрузка...'}
-                onFocus={e => e.currentTarget.select()}
-                className="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
-              />
-              <Button onClick={copyReferralLink} disabled={!referralLink} className="shrink-0">
-                <Icon name="Copy" size={15} className="mr-2" /> Скопировать
-              </Button>
+        <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+              <Icon name="Users" size={20} className="text-purple-600" />
             </div>
-            <a href="/cabinet?tab=referrals" className="inline-block mt-2 text-xs text-purple-700 hover:underline font-medium">
-              Список приглашённых мною →
-            </a>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-heading font-bold text-primary">Приглашайте друзей и получайте бонусы</h3>
+              <p className="text-sm text-gray-500 mt-0.5 mb-3">
+                За каждое пополнение баланса приглашённым участником вы получаете 25% от суммы на бонусный счёт. Бонусами можно оплачивать участие в турнирах.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  readOnly
+                  value={referralLink || 'Загрузка...'}
+                  onFocus={e => e.currentTarget.select()}
+                  className="flex-1 min-w-0 rounded-lg border border-purple-200 bg-purple-50/50 px-3 py-2 text-sm text-gray-700"
+                />
+                <Button onClick={copyReferralLink} disabled={!referralLink} className="shrink-0 bg-purple-600 text-white hover:bg-purple-700">
+                  <Icon name="Copy" size={15} className="mr-2" /> Скопировать
+                </Button>
+              </div>
+              <a href="/cabinet?tab=referrals" className="inline-block mt-2 text-xs text-purple-700 hover:underline font-medium">
+                Список приглашённых мною →
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-
-      {checkingPayment && (
-        <div className="bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-          <Icon name="Loader2" size={15} className="animate-spin" /> Проверяем оплату, баланс обновится автоматически...
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="font-heading font-bold text-lg text-primary mb-4">Пополнить баланс</h3>
-        <form onSubmit={handleTopup} className="flex flex-col gap-3 max-w-sm">
-          <div className="grid grid-cols-4 gap-2">
-            {[500, 1000, 2000, 5000].map(v => (
-              <button
-                type="button"
-                key={v}
-                onClick={() => setAmount(String(v))}
-                className={`px-2 py-2 rounded-lg text-sm font-medium border transition-colors ${amount === String(v) ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
-              >
-                {v} ₽
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-secondary pr-8"
-              placeholder="Введите сумму"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₽</span>
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <Button type="submit" disabled={submitting} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
-            {submitting ? <><Icon name="Loader2" size={16} className="mr-2 animate-spin" />Создаём платёж...</> : <><Icon name="CreditCard" size={16} className="mr-2" />Пополнить через ЮKassa</>}
-          </Button>
-        </form>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="font-heading font-bold text-lg text-primary mb-4">Активировать промокод</h3>
-        <form onSubmit={handleActivatePromo} className="flex gap-2 max-w-sm">
-          <input
-            type="text"
-            value={promoCode}
-            onChange={e => setPromoCode(e.target.value.toUpperCase())}
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm uppercase tracking-wider font-mono focus:outline-none focus:ring-2 focus:ring-secondary"
-            placeholder="Введите промокод"
-          />
-          <Button type="submit" disabled={promoActivating || !promoCode.trim()} variant="outline" className="shrink-0">
-            {promoActivating ? <Icon name="Loader2" size={16} className="animate-spin" /> : <><Icon name="Gift" size={16} className="mr-2" />Активировать</>}
-          </Button>
-        </form>
-        {promoError && <p className="text-red-500 text-sm mt-2">{promoError}</p>}
-        {promoSuccess && <p className="text-green-600 text-sm mt-2">{promoSuccess}</p>}
-      </div>
+      </section>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
