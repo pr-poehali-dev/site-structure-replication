@@ -39,19 +39,29 @@ def get_user_id_by_token(cur, token: str):
     return row[0] if row else None
 
 
-def fetch_lila_games(kind: str, lila_id: str, username: str) -> list:
-    path = 'tournament' if kind == 'arena' else 'swiss'
-    query = urllib.parse.urlencode({'player': username, 'moves': 'true', 'lastFen': 'true', 'clocks': 'false', 'opening': 'false'})
+REFRESH_MINUTES = 5
+MAX_SYNC_PER_REQUEST = 3
+
+
+def lila_get(path: str, accept: str = 'application/json') -> str:
     req = urllib.request.Request(
-        f'{LILA}/api/{path}/{lila_id}/games?{query}',
-        headers={'Accept': 'application/x-ndjson', 'User-Agent': 'Mozilla/5.0 (mir-shakhmat)'},
+        f'{LILA}{path}',
+        headers={'Accept': accept, 'User-Agent': 'Mozilla/5.0 (mir-shakhmat)'},
     )
+    with urllib.request.urlopen(req, timeout=4) as r:
+        return r.read().decode('utf-8')
+
+
+def fetch_tournament(kind: str, lila_id: str):
+    path = 'tournament' if kind == 'arena' else 'swiss'
     try:
-        with urllib.request.urlopen(req, timeout=4) as r:
-            text = r.read().decode('utf-8')
+        info = json.loads(lila_get(f'/api/{path}/{lila_id}'))
+        finished = bool(info.get('isFinished')) if kind == 'arena' else info.get('status') == 'finished'
+        query = urllib.parse.urlencode({'moves': 'true', 'lastFen': 'true', 'clocks': 'false', 'opening': 'false'})
+        text = lila_get(f'/api/{path}/{lila_id}/games?{query}', 'application/x-ndjson')
     except Exception as e:
-        print(f'lila games fetch failed {path}/{lila_id}: {e}')
-        return []
+        print(f'lila sync failed {path}/{lila_id}: {e}')
+        return None
     games = []
     for line in text.split('\n'):
         line = line.strip()
@@ -60,10 +70,58 @@ def fetch_lila_games(kind: str, lila_id: str, username: str) -> list:
                 games.append(json.loads(line))
             except ValueError:
                 pass
-    return games
+    return finished, games
 
 
-def build_lila_items(cur, user_id: int, username: str) -> list:
+def sync_tournaments(cur, conn, tournaments):
+    cur.execute(
+        "SELECT tournament_id, is_finished, synced_at > now() - make_interval(mins => %s) FROM lila_tournament_sync WHERE tournament_id = ANY(%s)",
+        (REFRESH_MINUTES, [t[0] for t in tournaments])
+    )
+    state = {r[0]: (r[1], r[2]) for r in cur.fetchall()}
+
+    stale = []
+    for t in tournaments:
+        finished, fresh = state.get(t[0], (False, False))
+        if t[0] in state and (finished or fresh):
+            continue
+        stale.append((t, t[0] not in state))
+    stale.sort(key=lambda x: not x[1])
+    stale = [t for t, _ in stale[:MAX_SYNC_PER_REQUEST]]
+    if not stale:
+        return
+
+    with ThreadPoolExecutor(max_workers=MAX_SYNC_PER_REQUEST) as pool:
+        fetched = list(pool.map(lambda t: fetch_tournament(t[4], str(t[3])), stale))
+
+    for t, res in zip(stale, fetched):
+        if res is None:
+            continue
+        finished, games = res
+        for g in games:
+            players = g.get('players') or {}
+            white = ((players.get('white') or {}).get('user') or {}).get('id')
+            black = ((players.get('black') or {}).get('user') or {}).get('id')
+            if not g.get('id') or not white or not black:
+                continue
+            cur.execute(
+                """INSERT INTO lila_games (game_id, tournament_id, white_username, black_username, winner, status, speed, moves_count, last_fen, created_at_ms, last_move_ms)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   ON CONFLICT (game_id) DO UPDATE SET
+                     winner = EXCLUDED.winner, status = EXCLUDED.status, moves_count = EXCLUDED.moves_count,
+                     last_fen = EXCLUDED.last_fen, last_move_ms = EXCLUDED.last_move_ms""",
+                (g['id'], t[0], white, black, g.get('winner'), g.get('status'), g.get('speed'),
+                 len((g.get('moves') or '').split()), g.get('lastFen'), g.get('createdAt'), g.get('lastMoveAt'))
+            )
+        cur.execute(
+            """INSERT INTO lila_tournament_sync (tournament_id, synced_at, is_finished) VALUES (%s, now(), %s)
+               ON CONFLICT (tournament_id) DO UPDATE SET synced_at = now(), is_finished = EXCLUDED.is_finished""",
+            (t[0], finished)
+        )
+    conn.commit()
+
+
+def build_lila_items(cur, conn, user_id: int, username: str) -> list:
     cur.execute(
         "SELECT id, title, rating_type, lila_tournament_id, COALESCE(lila_tournament_kind, 'swiss') FROM tournaments WHERE lila_tournament_id IS NOT NULL ORDER BY id DESC LIMIT 20"
     )
@@ -71,27 +129,24 @@ def build_lila_items(cur, user_id: int, username: str) -> list:
     if not tournaments:
         return []
 
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        fetched = list(pool.map(lambda t: fetch_lila_games(t[4], str(t[3]), username), tournaments))
+    sync_tournaments(cur, conn, tournaments)
 
     me = username.lower()
-    raw = []
-    opponent_names = set()
-    for t, games in zip(tournaments, fetched):
-        for index, g in enumerate(reversed(games), start=1):
-            players = g.get('players') or {}
-            white = (players.get('white') or {}).get('user') or {}
-            black = (players.get('black') or {}).get('user') or {}
-            if (white.get('id') or '').lower() == me:
-                my_color, opp = 'white', black
-            elif (black.get('id') or '').lower() == me:
-                my_color, opp = 'black', white
-            else:
-                continue
-            if opp.get('name'):
-                opponent_names.add(opp['name'].lower())
-            raw.append((t, index, g, my_color, opp))
+    by_id = {t[0]: t for t in tournaments}
+    cur.execute(
+        """SELECT game_id, tournament_id, white_username, black_username, winner, status, speed, moves_count, last_fen, created_at_ms, last_move_ms
+           FROM lila_games
+           WHERE tournament_id = ANY(%s) AND (lower(white_username) = %s OR lower(black_username) = %s)
+           ORDER BY tournament_id, created_at_ms""",
+        (list(by_id.keys()), me, me)
+    )
+    rows = cur.fetchall()
 
+    opponent_names = set()
+    for r in rows:
+        opp = r[3] if (r[2] or '').lower() == me else r[2]
+        if opp:
+            opponent_names.add(opp.lower())
     fio_by_name = {}
     if opponent_names:
         cur.execute(
@@ -102,41 +157,34 @@ def build_lila_items(cur, user_id: int, username: str) -> list:
             fio_by_name[uname] = f"{last_name or ''} {first_name or ''}".strip()
 
     items = []
-    for t, index, g, my_color, opp in raw:
-        winner = g.get('winner')
-        if winner == 'white':
-            result = '1-0'
-        elif winner == 'black':
-            result = '0-1'
-        else:
-            result = '1/2-1/2'
-        if result == '1-0':
-            outcome = 'win' if my_color == 'white' else 'loss'
-        elif result == '0-1':
-            outcome = 'win' if my_color == 'black' else 'loss'
-        else:
+    round_counter = {}
+    for game_id, tournament_id, white, black, winner, status, speed, moves_count, last_fen, created_ms, last_ms in rows:
+        t = by_id[tournament_id]
+        round_counter[tournament_id] = round_counter.get(tournament_id, 0) + 1
+        my_color = 'white' if (white or '').lower() == me else 'black'
+        opp_name = black if my_color == 'white' else white
+        result = '1-0' if winner == 'white' else '0-1' if winner == 'black' else '1/2-1/2'
+        if result == '1/2-1/2':
             outcome = 'draw'
-        moves = (g.get('moves') or '').split()
-        opp_name = (opp.get('name') or '')
-        finished_ms = g.get('lastMoveAt') or g.get('createdAt')
-        started_ms = g.get('createdAt')
+        else:
+            outcome = 'win' if (result == '1-0') == (my_color == 'white') else 'loss'
         items.append({
-            'id': f"lila-{g['id']}",
+            'id': f"lila-{game_id}",
             'source': 'lila',
-            'lila_url': f"{LILA}/{g['id']}",
-            'tournament_id': t[0],
+            'lila_url': f"{LILA}/{game_id}",
+            'tournament_id': tournament_id,
             'tournament_title': t[1],
-            'round_number': index,
-            'rating_type': t[2] or ('blitz' if g.get('speed') in ('blitz', 'bullet') else 'rapid'),
+            'round_number': round_counter[tournament_id],
+            'rating_type': t[2] or ('blitz' if speed in ('blitz', 'bullet') else 'rapid'),
             'my_color': my_color,
-            'opponent_fio': fio_by_name.get(opp_name.lower()) or opp_name or None,
+            'opponent_fio': fio_by_name.get((opp_name or '').lower()) or opp_name or None,
             'result': result,
-            'result_reason': REASON_MAP.get(g.get('status') or ''),
+            'result_reason': REASON_MAP.get(status or ''),
             'outcome': outcome,
-            'fen': g.get('lastFen') or 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-            'moves_count': len(moves),
-            'finished_at': datetime_from_ms(finished_ms),
-            'started_at': datetime_from_ms(started_ms),
+            'fen': last_fen or 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            'moves_count': moves_count,
+            'finished_at': datetime_from_ms(last_ms or created_ms),
+            'started_at': datetime_from_ms(created_ms),
         })
     return items
 
@@ -170,7 +218,7 @@ def handler(event: dict, context) -> dict:
     cur.execute("SELECT lila_username FROM users WHERE id = %s", (user_id,))
     row = cur.fetchone()
     lila_username = row[0] if row else None
-    lila_items = build_lila_items(cur, user_id, lila_username) if lila_username else []
+    lila_items = build_lila_items(cur, conn, user_id, lila_username) if lila_username else []
 
     cur.execute("SELECT id FROM tournament_players WHERE user_id = %s", (user_id,))
     player_ids = [r[0] for r in cur.fetchall()]
