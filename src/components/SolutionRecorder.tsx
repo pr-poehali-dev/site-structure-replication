@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import PuzzleBoard from '@/components/PuzzleBoard';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function SolutionRecorder({ fen, solution, onChange }: Props) {
+  const [flip, setFlip] = useState(false);
   const cleanFen = fen.trim().replace(/\s+/g, ' ');
   if (!isValidFen(cleanFen)) {
     return <p className="text-sm text-gray-400">Вставьте позицию (FEN), и здесь появится доска для записи решения.</p>;
@@ -32,12 +34,15 @@ export default function SolutionRecorder({ fen, solution, onChange }: Props) {
       <div className="max-w-[420px] w-full">
         <PuzzleBoard
           fen={current}
-          flipped={startsBlack}
+          flipped={startsBlack !== flip}
           lastMove={last ? { from: last.slice(0, 2), to: last.slice(2, 4) } : null}
           onMove={add}
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setFlip(f => !f)}>
+          <Icon name="ArrowUpDown" size={14} className="mr-1" />Перевернуть доску
+        </Button>
         <Button type="button" variant="outline" size="sm" disabled={!moves.length} onClick={() => onChange(moves.slice(0, -1).join(' '))}>
           <Icon name="Undo2" size={14} className="mr-1" />Отменить ход
         </Button>
