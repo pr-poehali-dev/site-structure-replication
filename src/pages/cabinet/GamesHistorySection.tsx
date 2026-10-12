@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MiniChessBoard from '@/components/MiniChessBoard';
 import { useAuth } from '@/contexts/AuthContext';
 import { shortFio } from '@/lib/fio';
@@ -47,10 +48,18 @@ function resultLabel(g: GameHistoryItem): string {
   return reason ? `${reason} · Победа: ${winnerColor.toLowerCase()}` : `Победа: ${winnerColor.toLowerCase()}`;
 }
 
+function embedUrl(g: GameHistoryItem): string {
+  const url = new URL(g.lila_url || '');
+  const gameId = String(g.id).replace(/^lila-/, '');
+  const side = g.my_color === 'black' ? '/black' : '';
+  return `${url.origin}/embed/game/${gameId}${side}?theme=auto&bg=auto`;
+}
+
 export default function GamesHistorySection() {
   const { token } = useAuth();
   const [games, setGames] = useState<GameHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openedGame, setOpenedGame] = useState<GameHistoryItem | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -110,12 +119,12 @@ export default function GamesHistorySection() {
                     <p className="text-xs text-gray-400 mt-0.5">{resultLabel(g)} · {g.moves_count} {g.moves_count === 1 ? 'ход' : 'ходов'}</p>
                   </div>
 
-                  <Icon name={g.source === 'lila' ? 'ExternalLink' : 'ChevronRight'} size={18} className="text-gray-300 shrink-0" />
+                  <Icon name={g.source === 'lila' ? 'Eye' : 'ChevronRight'} size={18} className="text-gray-300 shrink-0" />
                 </>
               );
 
               return g.source === 'lila' && g.lila_url ? (
-                <a key={g.id} href={g.lila_url} target="_blank" rel="noopener noreferrer" className={rowClass}>{content}</a>
+                <button key={g.id} type="button" onClick={() => setOpenedGame(g)} className={`${rowClass} w-full text-left`}>{content}</button>
               ) : (
                 <Link key={g.id} to={`/game/${g.id}?from=cabinet`} className={rowClass}>{content}</Link>
               );
@@ -123,6 +132,33 @@ export default function GamesHistorySection() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!openedGame} onOpenChange={open => { if (!open) setOpenedGame(null); }}>
+        <DialogContent className="max-w-3xl w-[96vw] p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>
+              {openedGame ? `${openedGame.my_color === 'white' ? 'Белыми' : 'Чёрными'} против ${shortFio(openedGame.opponent_fio) || 'соперника'}` : ''}
+            </DialogTitle>
+            <DialogDescription>
+              {openedGame ? `${openedGame.tournament_title} · ${resultLabel(openedGame)}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {openedGame?.lila_url && (
+            <>
+              <iframe
+                key={String(openedGame.id)}
+                title="Партия в Lila"
+                src={embedUrl(openedGame)}
+                className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
+                allowFullScreen
+              />
+              <a href={openedGame.lila_url} target="_blank" rel="noopener noreferrer" className="text-xs text-secondary hover:underline inline-flex items-center gap-1">
+                <Icon name="ExternalLink" size={12} /> Открыть на Lila
+              </a>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
