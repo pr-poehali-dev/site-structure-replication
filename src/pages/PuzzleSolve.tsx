@@ -65,19 +65,18 @@ export default function PuzzleSolve() {
     let nextPlayed = [...played, data.move];
     setFen(nextFen);
     setLastMove({ from, to });
+    if (data.reply) {
+      await new Promise(r => setTimeout(r, 450));
+      nextFen = applyUci(nextFen, data.reply);
+      nextPlayed = [...nextPlayed, data.reply];
+      setFen(nextFen);
+      setLastMove({ from: data.reply.slice(0, 2), to: data.reply.slice(2, 4) });
+    }
+    setPlayed(nextPlayed);
     if (data.solved) {
-      setPlayed(nextPlayed);
       setStatus('solved');
       setNewlySolved(!!data.newly_solved);
-      setBusy(false);
-      return;
     }
-    await new Promise(r => setTimeout(r, 450));
-    nextFen = applyUci(nextFen, data.reply);
-    nextPlayed = [...nextPlayed, data.reply];
-    setFen(nextFen);
-    setPlayed(nextPlayed);
-    setLastMove({ from: data.reply.slice(0, 2), to: data.reply.slice(2, 4) });
     setBusy(false);
   }
 

@@ -288,7 +288,7 @@ def handler(event: dict, context) -> dict:
                 return resp(200, {'correct': False})
 
             reply = solution[step + 1] if step + 1 < len(solution) else None
-            solved = reply is None
+            solved = step + 2 >= len(solution)
             newly = False
             if solved:
                 uid = user_id_by_token(cur, event)
