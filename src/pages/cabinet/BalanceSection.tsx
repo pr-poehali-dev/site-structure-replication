@@ -193,8 +193,8 @@ export default function BalanceSection() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-4 sm:p-5 w-full min-w-0">
             <h3 className="font-heading font-bold text-base text-primary mb-3">Пополнить баланс</h3>
             <form onSubmit={handleTopup} className="flex flex-col gap-3">
               <div className="grid grid-cols-4 gap-2">
@@ -228,17 +228,17 @@ export default function BalanceSection() {
             </form>
           </div>
 
-          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-5">
+          <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-4 sm:p-5 w-full min-w-0">
             <h3 className="font-heading font-bold text-base text-primary mb-3">Активировать промокод</h3>
-            <form onSubmit={handleActivatePromo} className="flex gap-2">
+            <form onSubmit={handleActivatePromo} className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={promoCode}
                 onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm uppercase tracking-wider font-mono focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2.5 text-sm uppercase tracking-wider font-mono focus:outline-none focus:ring-2 focus:ring-secondary"
                 placeholder="Введите промокод"
               />
-              <Button type="submit" disabled={promoActivating || !promoCode.trim()} variant="outline" className="shrink-0">
+              <Button type="submit" disabled={promoActivating || !promoCode.trim()} variant="outline" className="w-full sm:w-auto shrink-0">
                 {promoActivating ? <Icon name="Loader2" size={16} className="animate-spin" /> : <><Icon name="Gift" size={16} className="mr-2" />Активировать</>}
               </Button>
             </form>
