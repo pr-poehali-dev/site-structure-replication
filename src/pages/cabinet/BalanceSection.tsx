@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from './utils';
 import func2url from '../../../backend/func2url.json';
@@ -36,6 +37,7 @@ export default function BalanceSection() {
   const { user, token } = useAuth();
   const [balance, setBalance] = useState(0);
   const [bonusBalance, setBonusBalance] = useState(0);
+  const [referralCode, setReferralCode] = useState('');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'money' | 'bonus'>('all');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,26 @@ export default function BalanceSection() {
     }
   }
 
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${BALANCE_URL}?scope=referrals`, { headers: { 'X-Auth-Token': token } })
+      .then(r => r.json())
+      .then(data => setReferralCode(data.referral_code || ''))
+      .catch(() => {});
+  }, [token]);
+
   const visibleTransactions = transactions.filter(t => historyFilter === 'all' || (t.account || 'money') === historyFilter);
+
+  const referralLink = referralCode ? `${window.location.origin}/register?ref=${referralCode}` : '';
+
+  async function copyReferralLink() {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      toast.success('Ссылка скопирована');
+    } catch {
+      toast.error('Не удалось скопировать ссылку');
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -173,6 +194,34 @@ export default function BalanceSection() {
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-3">Бонусами можно оплатить участие в турнирах. Они списываются первыми, остаток доплачивается с баланса.</p>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-purple-50 to-white rounded-2xl border border-purple-100 shadow-sm p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+            <Icon name="Users" size={20} className="text-purple-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-heading font-bold text-primary">Приглашайте друзей и получайте бонусы</h3>
+            <p className="text-sm text-gray-500 mt-0.5 mb-3">
+              За каждое пополнение баланса приглашённым участником вы получаете 25% от суммы на бонусный счёт. Бонусами можно оплачивать участие в турнирах.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                readOnly
+                value={referralLink || 'Загрузка...'}
+                onFocus={e => e.currentTarget.select()}
+                className="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
+              />
+              <Button onClick={copyReferralLink} disabled={!referralLink} className="shrink-0">
+                <Icon name="Copy" size={15} className="mr-2" /> Скопировать
+              </Button>
+            </div>
+            <a href="/cabinet?tab=referrals" className="inline-block mt-2 text-xs text-purple-700 hover:underline font-medium">
+              Список приглашённых мною →
+            </a>
+          </div>
         </div>
       </div>
 
