@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
+import { Link } from 'react-router-dom';
+import { ELECTRONIC_RESULTS_URL } from '@/lib/electronicResults';
 
 const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 const PAGE_SIZE = 20;
@@ -32,6 +34,7 @@ export default function Result() {
   const [olympiads, setOlympiads] = useState<OlympiadResult[]>([]);
   const [tournaments, setTournaments] = useState<TournamentResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [electronic, setElectronic] = useState<{ tournament_id: number; title: string; date: string | null }[]>([]);
 
   const [filterTitle, setFilterTitle] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -46,6 +49,10 @@ export default function Result() {
         setTournaments(data.tournaments || []);
       })
       .finally(() => setLoading(false));
+    fetch(ELECTRONIC_RESULTS_URL)
+      .then(r => r.json())
+      .then(d => setElectronic(d.items || []))
+      .catch(() => {});
   }, []);
 
   // Уникальные значения рейтинга для select
@@ -134,6 +141,27 @@ export default function Result() {
             </div>
           )}
         </section>
+
+        {electronic.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-secondary rounded-full" />
+              <h2 className="font-heading font-bold text-2xl text-primary">Электронные результаты</h2>
+            </div>
+            <div className="flex flex-col gap-3">
+              {electronic.map(e => (
+                <Link key={e.tournament_id} to={`/result/${e.tournament_id}`}
+                  className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-white hover:border-secondary hover:shadow-md transition-all group">
+                  <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
+                    <Icon name="Trophy" size={20} className="text-secondary" />
+                  </div>
+                  <span className="flex-1 font-medium text-primary group-hover:text-secondary transition-colors">{e.title}</span>
+                  <Icon name="ChevronRight" size={16} className="text-muted-foreground group-hover:text-secondary shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Секция: Результаты Турниров */}
         <section>

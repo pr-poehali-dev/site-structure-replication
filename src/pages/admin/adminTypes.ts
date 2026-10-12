@@ -68,7 +68,7 @@ export interface Subscription {
 
 export interface UserAccount {
   id: number; last_name: string; first_name: string; middle_name: string | null;
-  birth_date: string | null; fsr_id: string | null; coach_fio: string | null;
+  birth_date: string | null; gender?: string | null; fsr_id: string | null; coach_fio: string | null;
   institution: string | null; country_city: string | null; email: string; phone: string | null;
   created_at: string; avatar_url: string | null; rating_blitz: number | null; rating_rapid: number | null;
   fsr_rating_blitz: number | null; fsr_rating_rapid: number | null;
@@ -101,7 +101,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings' | 'logs';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'electronic-results' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings' | 'logs';
 
 export interface ActivityLog {
   id: number; user_id: number; fio: string; email: string;

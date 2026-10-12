@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 
 const EMPTY_FORM = {
-  last_name: '', first_name: '', middle_name: '', birth_date: '',
+  last_name: '', first_name: '', middle_name: '', birth_date: '', gender: '',
   fsr_id: '', coach_fio: '', institution: '', country_city: '',
   login: '', email: '', phone: '', password: '', password2: '',
 };
@@ -51,6 +51,7 @@ export default function Register() {
       first_name: form.first_name,
       middle_name: form.middle_name || undefined,
       birth_date: form.birth_date || undefined,
+      gender: (form.gender as 'M' | 'F' | '') || undefined,
       fsr_id: form.fsr_id || undefined,
       coach_fio: form.coach_fio || undefined,
       institution: form.institution || undefined,
@@ -113,6 +114,14 @@ export default function Register() {
               <div>
                 <Label>Дата рождения</Label>
                 <Input type="date" className="mt-1" value={form.birth_date} onChange={e => set('birth_date', e.target.value)} />
+              </div>
+              <div>
+                <Label>Пол</Label>
+                <select className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={form.gender} onChange={e => set('gender', e.target.value)}>
+  <option value="">Не указан</option>
+  <option value="M">Мужской</option>
+  <option value="F">Женский</option>
+</select>
               </div>
               <div>
                 <Label>ID ФШР</Label>

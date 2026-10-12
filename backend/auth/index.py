@@ -50,7 +50,7 @@ LOGIN_RE = re.compile(r'^(?=.{2,20}$)[A-Za-z](?:[A-Za-z0-9]|[_-](?=[A-Za-z0-9]))
 
 USER_COLS = ['login', 'id', 'last_name', 'first_name', 'middle_name', 'birth_date', 'fsr_id',
              'coach_fio', 'institution', 'country_city', 'email', 'phone', 'created_at',
-             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid', 'bonus_balance', 'referral_code']
+             'avatar_url', 'rating_blitz', 'rating_rapid', 'fsr_rating_blitz', 'fsr_rating_rapid', 'bonus_balance', 'referral_code', 'gender']
 
 USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
 
@@ -168,9 +168,9 @@ def handler(event: dict, context) -> dict:
                 referred_by = ref_row[0]
 
         cur.execute(
-            """INSERT INTO users (last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, login, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid, referred_by)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
-            (last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
+            """INSERT INTO users (gender, last_name, first_name, middle_name, birth_date, fsr_id, coach_fio, institution, country_city, email, phone, password_hash, password_salt, login, fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid, referred_by)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            (body.get('gender') if body.get('gender') in ('M', 'F') else None, last_name, first_name, body.get('middle_name') or None, body.get('birth_date') or None,
              fsr_id, body.get('coach_fio') or None, body.get('institution') or None,
              body.get('country_city') or None, email, body.get('phone') or None, pwd_hash, salt, login_name,
              fsr_rating_blitz, fsr_rating_rapid, rating_blitz, rating_rapid, referred_by)
@@ -230,6 +230,33 @@ def handler(event: dict, context) -> dict:
             conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
+    if method == 'POST' and action == 'update_profile':
+        user = get_user_by_token(cur, token)
+        if not user:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+
+        def clean(key):
+            return (body.get(key) or '').strip() or None
+
+        gender = body.get('gender') if body.get('gender') in ('M', 'F') else None
+        cur.execute(
+            """UPDATE users SET
+               last_name = COALESCE(last_name, %s), first_name = COALESCE(first_name, %s),
+               middle_name = COALESCE(middle_name, %s), birth_date = COALESCE(birth_date, %s),
+               fsr_id = COALESCE(fsr_id, %s), coach_fio = %s, institution = %s, country_city = %s,
+               phone = %s, gender = COALESCE(%s, gender)
+               WHERE id = %s""",
+            (clean('last_name'), clean('first_name'), clean('middle_name'), body.get('birth_date') or None,
+             clean('fsr_id'), clean('coach_fio'), clean('institution'), clean('country_city'),
+             clean('phone'), gender, user['id'])
+        )
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user['id'],))
+        row = cur.fetchone()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
 
     # Heartbeat: периодический сигнал "пользователь на сайте" от открытой вкладки —
     # используется для точного статуса "онлайн сейчас" в разделе "Логи" админки.
@@ -358,7 +385,7 @@ def handler(event: dict, context) -> dict:
             """UPDATE users SET
                last_name=%s, first_name=%s, middle_name=%s, birth_date=%s, fsr_id=%s,
                coach_fio=%s, institution=%s, country_city=%s, email=%s, phone=%s,
-               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s
+               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s, gender=%s
                WHERE id=%s""",
             (last_name, first_name, (body.get('middle_name') or '').strip() or None,
              body.get('birth_date') or None, (body.get('fsr_id') or '').strip() or None,
@@ -366,6 +393,7 @@ def handler(event: dict, context) -> dict:
              (body.get('country_city') or '').strip() or None, email, (body.get('phone') or '').strip() or None,
              num(body.get('rating_blitz')), num(body.get('rating_rapid')),
              num(body.get('fsr_rating_blitz')), num(body.get('fsr_rating_rapid')),
+             body.get('gender') if body.get('gender') in ('M', 'F') else None,
              user_id)
         )
         conn.commit()

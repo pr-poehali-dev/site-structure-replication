@@ -16,6 +16,7 @@ import ApplicationsSection from './admin/ApplicationsSection';
 import UsersSection from './admin/UsersSection';
 import AwardsSection, { AwardOrdersSection } from './admin/AwardsSection';
 import ResultsSection from './admin/ResultsSection';
+import ElectronicResultsSection from './admin/ElectronicResultsSection';
 import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
@@ -277,6 +278,7 @@ export default function Admin() {
             ['awards', 'Award', 'Каталог наград'],
             ['award-orders', 'ShoppingCart', 'Заказы наград'],
             ['results', 'ListChecks', 'Результаты'],
+            ['electronic-results', 'FileCheck', 'Эл. результаты'],
             ['subscriptions', 'Bell', 'Подписки'],
             ['promo-codes', 'Gift', 'Промокоды'],
             ['subscription-plans', 'Ticket', 'Абонементы'],
@@ -426,6 +428,8 @@ export default function Admin() {
             fetchTrResults={fetchTrResults}
           />
         )}
+
+        {section === 'electronic-results' && <ElectronicResultsSection password={password} />}
 
         {/* === ПОДПИСКИ === */}
         {section === 'subscriptions' && (

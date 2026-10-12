@@ -23,6 +23,7 @@ export default function ProfileSection() {
     first_name: user?.first_name || '',
     middle_name: user?.middle_name || '',
     birth_date: user?.birth_date || '',
+    gender: (user?.gender || '') as 'M' | 'F' | '',
     fsr_id: user?.fsr_id || '',
     coach_fio: user?.coach_fio || '',
     institution: user?.institution || '',
@@ -37,6 +38,7 @@ export default function ProfileSection() {
       first_name: user.first_name || '',
       middle_name: user.middle_name || '',
       birth_date: user.birth_date || '',
+      gender: (user.gender || '') as 'M' | 'F' | '',
       fsr_id: user.fsr_id || '',
       coach_fio: user.coach_fio || '',
       institution: user.institution || '',
@@ -87,6 +89,7 @@ export default function ProfileSection() {
         <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <div><dt className="text-gray-400">ID ФШР</dt><dd className="font-medium text-gray-800 mt-0.5">{user.fsr_id || '—'}</dd></div>
           <div><dt className="text-gray-400">Дата рождения</dt><dd className="font-medium text-gray-800 mt-0.5">{user.birth_date ? formatDate(user.birth_date) : '—'}</dd></div>
+          <div><dt className="text-gray-400">Пол</dt><dd className="font-medium text-gray-800 mt-0.5">{user.gender === 'M' ? 'Мужской' : user.gender === 'F' ? 'Женский' : '—'}</dd></div>
           <div><dt className="text-gray-400">ФИО тренера</dt><dd className="font-medium text-gray-800 mt-0.5">{user.coach_fio || '—'}</dd></div>
           <div><dt className="text-gray-400">Телефон</dt><dd className="font-medium text-gray-800 mt-0.5">{user.phone || '—'}</dd></div>
           <div><dt className="text-gray-400">Учреждение</dt><dd className="font-medium text-gray-800 mt-0.5">{user.institution || '—'}</dd></div>
@@ -101,9 +104,10 @@ export default function ProfileSection() {
         <div><Label>Имя *</Label><Input required disabled={!!user.first_name} className="mt-1 disabled:bg-gray-50" value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} /></div>
         <div><Label>Отчество</Label><Input disabled={!!user.middle_name} className="mt-1 disabled:bg-gray-50" value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })} /></div>
       </div>
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-4 gap-3">
         <div><Label>Дата рождения</Label><Input type="date" disabled={!!user.birth_date} className="mt-1 disabled:bg-gray-50" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
         <div><Label>Возраст</Label><Input disabled className="mt-1 bg-gray-50" value={calcAge(form.birth_date) !== null ? `${calcAge(form.birth_date)} лет` : '—'} /></div>
+        <div><Label>Пол</Label><select className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value as 'M' | 'F' | '' })}>  <option value="">Не указан</option>  <option value="M">Мужской</option>  <option value="F">Женский</option></select></div>
         <div><Label>ID ФШР</Label><Input disabled={!!user.fsr_id} className="mt-1 disabled:bg-gray-50" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
       </div>
       <div><Label>ФИО тренера</Label><Input className="mt-1" value={form.coach_fio} onChange={e => setForm({ ...form, coach_fio: e.target.value })} /></div>

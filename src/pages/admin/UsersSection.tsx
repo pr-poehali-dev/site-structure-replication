@@ -15,7 +15,7 @@ interface UsersSectionProps {
 }
 
 const EMPTY_FORM = {
-  last_name: '', first_name: '', middle_name: '', birth_date: '', fsr_id: '',
+  last_name: '', first_name: '', middle_name: '', birth_date: '', gender: '', fsr_id: '',
   coach_fio: '', institution: '', country_city: '', email: '', phone: '',
   rating_blitz: '', rating_rapid: '', fsr_rating_blitz: '', fsr_rating_rapid: '',
 };
@@ -127,6 +127,7 @@ export default function UsersSection({ password }: UsersSectionProps) {
       first_name: u.first_name || '',
       middle_name: u.middle_name || '',
       birth_date: u.birth_date ? u.birth_date.slice(0, 10) : '',
+      gender: u.gender || '',
       fsr_id: u.fsr_id || '',
       coach_fio: u.coach_fio || '',
       institution: u.institution || '',
@@ -155,6 +156,7 @@ export default function UsersSection({ password }: UsersSectionProps) {
         first_name: form.first_name.trim(),
         middle_name: form.middle_name.trim() || null,
         birth_date: form.birth_date || null,
+        gender: form.gender || null,
         fsr_id: form.fsr_id.trim() || null,
         coach_fio: form.coach_fio.trim() || null,
         institution: form.institution.trim() || null,
@@ -317,6 +319,14 @@ export default function UsersSection({ password }: UsersSectionProps) {
                   <div>
                     <Label>Дата рождения</Label>
                     <Input type="date" className="mt-1" value={form.birth_date} onChange={e => setForm(f => ({ ...f, birth_date: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Пол</Label>
+                    <select className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
+                      <option value="">Не указан</option>
+                      <option value="M">Мужской</option>
+                      <option value="F">Женский</option>
+                    </select>
                   </div>
                   <div>
                     <Label>ID ФШР</Label>

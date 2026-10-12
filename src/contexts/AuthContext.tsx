@@ -35,6 +35,7 @@ export interface UserProfile {
   first_name: string;
   middle_name: string | null;
   birth_date: string | null;
+  gender?: 'M' | 'F' | null;
   fsr_id: string | null;
   coach_fio: string | null;
   institution: string | null;
@@ -57,6 +58,7 @@ export interface RegisterPayload {
   first_name: string;
   middle_name?: string;
   birth_date?: string;
+  gender?: 'M' | 'F' | '';
   fsr_id?: string;
   coach_fio?: string;
   institution?: string;
