@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Icon from '@/components/ui/icon';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
@@ -28,6 +28,8 @@ interface ChartPoint {
   label: string;
   blitz?: number;
   rapid?: number;
+  tournament_id?: number;
+  rating_type?: 'blitz' | 'rapid';
 }
 
 const RATING_TYPE_LABELS: Record<string, string> = { blitz: 'Блиц', rapid: 'Рапид' };
@@ -43,6 +45,7 @@ function shortDate(dateStr: string) {
 
 export default function RatingHistorySection() {
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [history, setHistory] = useState<RatingHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,10 +84,27 @@ export default function RatingHistorySection() {
         label: shortDate(h.created_at),
         blitz: lastBlitz,
         rapid: lastRapid,
+        tournament_id: h.tournament_id,
+        rating_type: h.rating_type,
       });
     }
     return points;
   }, [history, user]);
+
+  function renderDot(kind: 'blitz' | 'rapid', color: string) {
+    return (props: { cx?: number; cy?: number; value?: number; payload?: ChartPoint; index?: number }) => {
+      const { cx, cy, value, payload, index } = props;
+      if (cx === undefined || cy === undefined || value === undefined || value === null) return <g key={`${kind}-${index}`} />;
+      const linkId = payload?.rating_type === kind ? payload.tournament_id : undefined;
+      if (!linkId) return <circle key={`${kind}-${index}`} cx={cx} cy={cy} r={3} fill={color} />;
+      return (
+        <g key={`${kind}-${index}`} style={{ cursor: 'pointer' }} onClick={() => navigate(`/hall/${linkId}`)}>
+          <circle cx={cx} cy={cy} r={10} fill="transparent" />
+          <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
+        </g>
+      );
+    };
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,8 +127,8 @@ export default function RatingHistorySection() {
                   <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} tickFormatter={(v: string) => (v === 'Стартовый рейтинг' ? 'Старт' : v)} />
                   <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} domain={['dataMin - 20', 'dataMax + 20']} />
                   <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
-                  <Line type="monotone" dataKey="blitz" stroke="var(--color-blitz)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls name="Блиц" />
-                  <Line type="monotone" dataKey="rapid" stroke="var(--color-rapid)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls name="Рапид" />
+                  <Line type="monotone" dataKey="blitz" stroke="var(--color-blitz)" strokeWidth={2.5} dot={renderDot('blitz', 'hsl(44 90% 52%)')} activeDot={false} connectNulls name="Блиц" />
+                  <Line type="monotone" dataKey="rapid" stroke="var(--color-rapid)" strokeWidth={2.5} dot={renderDot('rapid', 'hsl(217 91% 60%)')} activeDot={false} connectNulls name="Рапид" />
                 </LineChart>
               </ChartContainer>
             </div>
