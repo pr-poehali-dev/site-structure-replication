@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Icon from '@/components/ui/icon';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from './utils';
 import func2url from '../../../backend/func2url.json';
@@ -30,6 +30,9 @@ interface ChartPoint {
   rapid?: number;
   tournament_id?: number;
   rating_type?: 'blitz' | 'rapid';
+  tournament_title?: string;
+  before?: number;
+  after?: number;
 }
 
 const RATING_TYPE_LABELS: Record<string, string> = { blitz: 'Блиц', rapid: 'Рапид' };
@@ -86,6 +89,9 @@ export default function RatingHistorySection() {
         rapid: lastRapid,
         tournament_id: h.tournament_id,
         rating_type: h.rating_type,
+        tournament_title: h.tournament_title,
+        before: h.rating_before,
+        after: h.rating_after,
       });
     }
     return points;
@@ -104,6 +110,31 @@ export default function RatingHistorySection() {
         </g>
       );
     };
+  }
+
+  function renderTooltip({ active, payload }: { active?: boolean; payload?: { payload?: ChartPoint }[] }) {
+    if (!active || !payload?.length) return null;
+    const p = payload[0].payload;
+    if (!p) return null;
+    return (
+      <div className="rounded-lg border bg-white px-3 py-2 text-xs shadow-xl min-w-[160px] max-w-[240px]">
+        {p.tournament_title ? (
+          <>
+            <p className="font-semibold text-gray-800 mb-0.5">{p.tournament_title}</p>
+            <p className="text-gray-400 mb-1.5">{p.label} · {p.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}</p>
+            <p className="text-gray-500">
+              Рейтинг: {p.before} → <span className="font-bold text-primary">{p.after}</span>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-gray-800 mb-1.5">Стартовый рейтинг</p>
+            {p.blitz !== undefined && <p className="text-gray-500">Блиц: <span className="font-bold text-primary">{p.blitz}</span></p>}
+            {p.rapid !== undefined && <p className="text-gray-500">Рапид: <span className="font-bold text-primary">{p.rapid}</span></p>}
+          </>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -126,7 +157,7 @@ export default function RatingHistorySection() {
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} tickFormatter={(v: string) => (v === 'Стартовый рейтинг' ? 'Старт' : v)} />
                   <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} domain={['dataMin - 20', 'dataMax + 20']} />
-                  <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
+                  <ChartTooltip content={renderTooltip} />
                   <Line type="monotone" dataKey="blitz" stroke="var(--color-blitz)" strokeWidth={2.5} dot={renderDot('blitz', 'hsl(44 90% 52%)')} activeDot={false} connectNulls name="Блиц" />
                   <Line type="monotone" dataKey="rapid" stroke="var(--color-rapid)" strokeWidth={2.5} dot={renderDot('rapid', 'hsl(217 91% 60%)')} activeDot={false} connectNulls name="Рапид" />
                 </LineChart>
