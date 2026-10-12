@@ -56,9 +56,23 @@ export default function RatingHistorySection() {
 
   const chartData = useMemo<ChartPoint[]>(() => {
     const chronological = [...history].reverse();
+    const firstBlitz = chronological.find(h => h.rating_type === 'blitz');
+    const firstRapid = chronological.find(h => h.rating_type === 'rapid');
+    const startBlitz = firstBlitz ? firstBlitz.rating_before : user?.rating_blitz ?? undefined;
+    const startRapid = firstRapid ? firstRapid.rating_before : user?.rating_rapid ?? undefined;
+
     const points: ChartPoint[] = [];
-    let lastBlitz: number | undefined;
-    let lastRapid: number | undefined;
+    if (startBlitz !== undefined || startRapid !== undefined) {
+      points.push({
+        date: user?.created_at || '',
+        label: 'Стартовый рейтинг',
+        blitz: startBlitz,
+        rapid: startRapid,
+      });
+    }
+
+    let lastBlitz = startBlitz;
+    let lastRapid = startRapid;
     for (const h of chronological) {
       if (h.rating_type === 'blitz') lastBlitz = h.rating_after;
       else lastRapid = h.rating_after;
@@ -70,7 +84,7 @@ export default function RatingHistorySection() {
       });
     }
     return points;
-  }, [history]);
+  }, [history, user]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,7 +93,7 @@ export default function RatingHistorySection() {
           <Icon name="TrendingUp" size={20} className="text-secondary" /> История рейтинга
         </h3>
         <p className="text-sm text-gray-400">
-          Рейтинг МШ пересчитывается по итогам каждого завершённого турнира: сравнивается фактический результат с ожидаемым по силе соперников.
+          Рейтинг МШ обновляется по итогам каждого завершённого турнира. График начинается со стартового рейтинга при регистрации.
         </p>
       </div>
 
@@ -90,7 +104,7 @@ export default function RatingHistorySection() {
               <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full">
                 <LineChart data={chartData} margin={{ left: 4, right: 12, top: 8, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} tickFormatter={(v: string) => (v === 'Стартовый рейтинг' ? 'Старт' : v)} />
                   <YAxis tickLine={false} axisLine={false} fontSize={11} width={44} domain={['dataMin - 20', 'dataMax + 20']} />
                   <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
                   <Line type="monotone" dataKey="blitz" stroke="var(--color-blitz)" strokeWidth={2.5} dot={{ r: 3 }} connectNulls name="Блиц" />
