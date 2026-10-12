@@ -12,6 +12,7 @@ import RatingHistorySection from './cabinet/RatingHistorySection';
 import GamesHistorySection from './cabinet/GamesHistorySection';
 import ReferralsSection from './cabinet/ReferralsSection';
 import ComingSoon from './cabinet/ComingSoon';
+import PuzzlesSection from './cabinet/PuzzlesSection';
 import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
 import { formatDate } from './cabinet/utils';
 import func2url from '../../backend/func2url.json';
@@ -43,7 +44,7 @@ interface MyApplication {
   lila_ready?: boolean;
 }
 
-const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders', 'referrals'];
+const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders', 'referrals', 'puzzles'];
 
 export default function Cabinet() {
   const { user, token, loading } = useAuth();
@@ -181,6 +182,7 @@ export default function Cabinet() {
             {tab === 'rating' && <RatingHistorySection />}
             {tab === 'games' && <GamesHistorySection />}
             {tab === 'referrals' && <ReferralsSection />}
+            {tab === 'puzzles' && <PuzzlesSection />}
             {tab === 'orders' && (
               <ComingSoon icon="Package" title="Заказы атрибутики" description="Здесь появится история ваших заказов кубков, медалей и другой турнирной атрибутики." />
             )}

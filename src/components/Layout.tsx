@@ -21,6 +21,7 @@ const NAV = [
   { label: 'Турниры', href: '/turnir' },
   { label: 'Олимпиады', href: '/olimpiady' },
   { label: 'Результаты', href: '/result' },
+  { label: 'Задачи', href: '/puzzles' },
   { label: 'Заказать награды', href: '/kubki' },
   { label: 'Контакты', href: '/contacts' },
 ];

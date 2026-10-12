@@ -13,6 +13,8 @@ import Turnir from "./pages/Turnir";
 import Subscriptions from "./pages/Subscriptions";
 import OlimpiadPage from "./pages/OlimpiadPage";
 import Result from "./pages/Result";
+import Puzzles from "./pages/Puzzles";
+import PuzzleSolve from "./pages/PuzzleSolve";
 import ElectronicResult from "./pages/ElectronicResult";
 import Kubki from "./pages/Kubki";
 import OrderStatus from "./pages/OrderStatus";
@@ -50,6 +52,8 @@ const App = () => (
             <Route path="/turnir" element={<Turnir />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/olimpiad/:slug" element={<OlimpiadPage />} />
+            <Route path="/puzzles" element={<Puzzles />} />
+            <Route path="/puzzles/:puzzleId" element={<PuzzleSolve />} />
             <Route path="/result" element={<Result />} />
             <Route path="/result/:tournamentId" element={<ElectronicResult />} />
             <Route path="/kubki" element={<Kubki />} />

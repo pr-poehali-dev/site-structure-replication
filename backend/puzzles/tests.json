@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "Public puzzles list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"puzzles": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Leaderboard",
+      "method": "GET",
+      "path": "/?leaderboard=1",
+      "expectedStatus": 200,
+      "expectedBody": {"leaders": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
