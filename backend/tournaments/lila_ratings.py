@@ -46,7 +46,17 @@ def recalc_from_lila(cur, tournament_id, title, rating_type, lila_id, kind):
         after = new_blitz if rating_type == 'blitz' else new_rapid
         if after is None:
             continue
-        before = old if old is not None else after
+        cur.execute(
+            """SELECT rating_after FROM rating_history
+               WHERE user_id = %s AND rating_type = %s AND tournament_id != %s
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (user_id, rating_type, tournament_id),
+        )
+        prev = cur.fetchone()
+        if prev:
+            before = prev[0]
+        else:
+            before = old if old is not None else after
         cur.execute(
             """INSERT INTO rating_history
                (user_id, tournament_id, tournament_title, rating_type, rating_before, rating_after, delta, points, expected_points, games_count)
