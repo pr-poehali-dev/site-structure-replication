@@ -53,6 +53,7 @@ export function applyUci(fen: string, uci: string): string {
   const tF = FILES.indexOf(uci[2]), tR = 8 - parseInt(uci[3], 10);
   let piece = board[fR][fF];
   if (!piece) return fen;
+  const movedPiece = piece;
   const white = piece === piece.toUpperCase();
   if (piece.toUpperCase() === 'P' && fF !== tF && !board[tR][tF]) board[fR][tF] = null;
   if (piece.toUpperCase() === 'K' && Math.abs(tF - fF) === 2) {
@@ -70,9 +71,44 @@ export function applyUci(fen: string, uci: string): string {
     }
     return s + (empty || '');
   }).join('/');
+  let castling = (parts[2] || '-').replace('-', '');
+  const drop = (chars: string) => { castling = castling.split('').filter(c => !chars.includes(c)).join(''); };
+  if (movedPiece === 'K') drop('KQ');
+  if (movedPiece === 'k') drop('kq');
+  for (const s of [uci.slice(0, 2), uci.slice(2, 4)]) {
+    if (s === 'a1') drop('Q');
+    if (s === 'h1') drop('K');
+    if (s === 'a8') drop('q');
+    if (s === 'h8') drop('k');
+  }
+  parts[2] = castling || '-';
+  parts[3] = movedPiece.toUpperCase() === 'P' && Math.abs(tR - fR) === 2 ? FILES[fF] + String((8 - fR + 8 - tR) / 2) : '-';
   parts[1] = parts[1] === 'w' ? 'b' : 'w';
-  parts[3] = '-';
   return parts.join(' ');
 }
 
 export const DIFFICULTY_LABELS = ['', 'Очень лёгкая', 'Лёгкая', 'Средняя', 'Сложная', 'Очень сложная'];
+
+export function isValidFen(fen: string): boolean {
+  const parts = fen.trim().split(/\s+/);
+  if (parts.length < 2 || !['w', 'b'].includes(parts[1])) return false;
+  const rows = parts[0].split('/');
+  if (rows.length !== 8) return false;
+  let kings = 0;
+  for (const row of rows) {
+    let n = 0;
+    for (const ch of row) {
+      if (/[1-8]/.test(ch)) n += parseInt(ch, 10);
+      else if (/[pnbrqkPNBRQK]/.test(ch)) { n += 1; if (ch === 'k' || ch === 'K') kings++; }
+      else return false;
+    }
+    if (n !== 8) return false;
+  }
+  return kings === 2;
+}
+
+export function replaySolution(fen: string, solution: string[]): string {
+  let cur = fen;
+  for (const m of solution) cur = applyUci(cur, m);
+  return cur;
+}

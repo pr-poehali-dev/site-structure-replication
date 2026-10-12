@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 import MiniChessBoard from '@/components/MiniChessBoard';
+import SolutionRecorder from '@/components/SolutionRecorder';
 import { PUZZLES_URL, AdminPuzzle, DIFFICULTY_LABELS } from '@/lib/puzzles';
 
 interface Props { password: string }
@@ -39,6 +40,7 @@ export default function PuzzlesAdminSection({ password }: Props) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form) return;
+    if (!form.solution.trim()) { toast.error('Сыграйте верный ответ на доске'); return; }
     setSaving(true);
     const { ok, data } = await post({ _action: form.id ? 'update' : 'create', ...form });
     setSaving(false);
@@ -73,13 +75,11 @@ export default function PuzzlesAdminSection({ password }: Props) {
         <div><Label>Название *</Label><Input required className="mt-1" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
         <div>
           <Label>Позиция (FEN) *</Label>
-          <Input required className="mt-1 font-mono text-xs" placeholder="6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1" value={form.fen} onChange={e => setForm({ ...form, fen: e.target.value })} />
-          {form.fen.split(' ').length >= 2 && <div className="mt-3"><MiniChessBoard fen={form.fen} size={180} /></div>}
-        </div>
+          <Input required className="mt-1 font-mono text-xs" placeholder="6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1" value={form.fen} onChange={e => setForm({ ...form, fen: e.target.value, solution: '' })} />
+                  </div>
         <div>
-          <Label>Решение *</Label>
-          <Input required className="mt-1 font-mono text-xs" placeholder="d1d8 d8d... (ходы по очереди: ваш, ответ соперника, ваш)" value={form.solution} onChange={e => setForm({ ...form, solution: e.target.value })} />
-          <p className="text-xs text-gray-400 mt-1">Ходы через пробел в виде «откуда-куда», например e2e4. Превращение пешки: e7e8q. Ходы можно ввести и в обычной записи (Rd8+) при загрузке PGN-файла.</p>
+          <Label>Верный ответ *</Label>
+          <div className="mt-2"><SolutionRecorder fen={form.fen} solution={form.solution} onChange={solution => setForm({ ...form, solution })} /></div>
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <div>
