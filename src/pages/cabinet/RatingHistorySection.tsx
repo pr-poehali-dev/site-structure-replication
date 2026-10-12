@@ -133,14 +133,9 @@ export default function RatingHistorySection() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {(loading || history.length > 0) && <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="text-gray-400 py-10 text-center"><Icon name="Loader2" size={20} className="animate-spin inline mr-2" />Загрузка...</div>
-        ) : history.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">
-            <Icon name="TrendingUp" size={32} className="mx-auto mb-2 opacity-30" />
-            <p>Пока нет изменений рейтинга — сыграйте турнир до конца</p>
-          </div>
         ) : (
           <div className="flex flex-col divide-y divide-gray-50">
             {history.map(h => {
@@ -170,7 +165,7 @@ export default function RatingHistorySection() {
             })}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
