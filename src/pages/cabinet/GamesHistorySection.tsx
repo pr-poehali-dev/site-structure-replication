@@ -10,7 +10,9 @@ import func2url from '../../../backend/func2url.json';
 const GAME_HISTORY_URL = func2url['game-history'];
 
 interface GameHistoryItem {
-  id: number;
+  id: number | string;
+  source?: 'lila';
+  lila_url?: string;
   tournament_id: number;
   tournament_title: string;
   round_number: number;
@@ -65,7 +67,7 @@ export default function GamesHistorySection() {
           <Icon name="History" size={20} className="text-secondary" /> История партий
         </h3>
         <p className="text-sm text-gray-400">
-          Все ваши завершённые партии на турнирах. Нажмите на партию, чтобы пересмотреть ходы.
+          Все ваши завершённые партии на турнирах, включая партии из Lila. Нажмите на партию, чтобы пересмотреть ходы.
         </p>
       </div>
 
@@ -87,12 +89,9 @@ export default function GamesHistorySection() {
               const badgeLabel = g.outcome === 'win' ? 'Победа' : g.outcome === 'loss' ? 'Поражение' : 'Ничья';
               const badgeIcon = g.outcome === 'win' ? 'Trophy' : g.outcome === 'loss' ? 'X' : 'Minus';
 
-              return (
-                <Link
-                  key={g.id}
-                  to={`/game/${g.id}?from=cabinet`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
-                >
+              const rowClass = 'flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors';
+              const content = (
+                <>
                   <MiniChessBoard fen={g.fen} size={96} />
 
                   <div className="min-w-0 flex-1">
@@ -111,8 +110,14 @@ export default function GamesHistorySection() {
                     <p className="text-xs text-gray-400 mt-0.5">{resultLabel(g)} · {g.moves_count} {g.moves_count === 1 ? 'ход' : 'ходов'}</p>
                   </div>
 
-                  <Icon name="ChevronRight" size={18} className="text-gray-300 shrink-0" />
-                </Link>
+                  <Icon name={g.source === 'lila' ? 'ExternalLink' : 'ChevronRight'} size={18} className="text-gray-300 shrink-0" />
+                </>
+              );
+
+              return g.source === 'lila' && g.lila_url ? (
+                <a key={g.id} href={g.lila_url} target="_blank" rel="noopener noreferrer" className={rowClass}>{content}</a>
+              ) : (
+                <Link key={g.id} to={`/game/${g.id}?from=cabinet`} className={rowClass}>{content}</Link>
               );
             })}
           </div>
