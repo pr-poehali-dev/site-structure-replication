@@ -121,14 +121,16 @@ export default function RatingHistorySection() {
         {p.tournament_title ? (
           <>
             <p className="font-semibold text-gray-800 mb-0.5">{p.tournament_title}</p>
-            <p className="text-gray-400 mb-1.5">{p.label} · {p.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}</p>
+            <p className="text-gray-400">{p.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}</p>
+            <p className="text-gray-400 mb-1.5">Зафиксирован: {formatDateTime(p.date)}</p>
             <p className="text-gray-500">
               Рейтинг: {p.before} → <span className="font-bold text-primary">{p.after}</span>
             </p>
           </>
         ) : (
           <>
-            <p className="font-semibold text-gray-800 mb-1.5">Стартовый рейтинг</p>
+            <p className="font-semibold text-gray-800">Стартовый рейтинг</p>
+            {p.date && <p className="text-gray-400 mb-1.5">Регистрация: {formatDateTime(p.date)}</p>}
             {p.blitz !== undefined && <p className="text-gray-500">Блиц: <span className="font-bold text-primary">{p.blitz}</span></p>}
             {p.rapid !== undefined && <p className="text-gray-500">Рапид: <span className="font-bold text-primary">{p.rapid}</span></p>}
           </>
