@@ -61,27 +61,29 @@ const safeParse = (text: string): LilaGame[] => {
 
 const ONGOING = ['created', 'started'];
 
+const ROUND_GAP_MS = 5000;
+
 function buildRounds(games: LilaGame[], rows: LilaRow[], roundsCount: number) {
   const rankById = new Map(rows.map(r => [r.username.toLowerCase(), r.rank]));
-  const lastRound = new Map<string, number>();
   const cells = new Map<string, Record<number, RoundCell>>();
   const sorted = [...games].sort((a, b) => a.createdAt - b.createdAt);
   let maxRound = 0;
+  let round = 0;
+  let prev = 0;
 
-  const put = (player: string, round: number, cell: RoundCell) => {
+  const put = (player: string, r: number, cell: RoundCell) => {
     const row = cells.get(player) || {};
-    row[round] = cell;
+    row[r] = cell;
     cells.set(player, row);
   };
 
   sorted.forEach(g => {
+    if (round === 0 || g.createdAt - prev > ROUND_GAP_MS) round += 1;
+    prev = g.createdAt;
+    maxRound = Math.max(maxRound, round);
     const w = g.players.white.user?.id;
     const b = g.players.black.user?.id;
     if (!w || !b) return;
-    const round = Math.max(lastRound.get(w) || 0, lastRound.get(b) || 0) + 1;
-    lastRound.set(w, round);
-    lastRound.set(b, round);
-    maxRound = Math.max(maxRound, round);
     const ongoing = ONGOING.includes(g.status);
     const wScore = ongoing ? '•' : g.winner === 'white' ? '1' : g.winner === 'black' ? '0' : '½';
     const bScore = ongoing ? '•' : g.winner === 'black' ? '1' : g.winner === 'white' ? '0' : '½';
@@ -125,10 +127,13 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           const names = parsed.map(r => r.username).join(',');
           fetch(`${PLAYERS_URL}?usernames=${encodeURIComponent(names)}&tournament=${encodeURIComponent(tournamentId)}`)
             .then(r => (r.ok ? r.json() : { players: {} }))
-            .then(d => setPlayers(d.players || {}))
-            .catch(() => setPlayers({}));
+            .then(d => { if (!cancelled && d.players) setPlayers(d.players); })
+            .catch(() => {});
         }
-        setGames(gm.ok ? safeParse(await gm.text()) : []);
+        if (gm.ok) {
+          const parsedGames = safeParse(await gm.text());
+          if (parsedGames.length || !parsed.length) setGames(parsedGames);
+        }
         if (info.ok) {
           const data = await info.json();
           setRoundsCount(data.nbRounds || 0);
