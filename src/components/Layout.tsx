@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
@@ -94,6 +95,8 @@ function LoginPopover({ trigger }: { trigger: React.ReactNode }) {
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, token, loading, logout } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => { logout(); navigate('/'); };
   const [balance, setBalance] = useState<number | null>(null);
 
   const fetchBalance = useCallback(() => {
@@ -163,7 +166,7 @@ export function Header() {
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500">
+                    <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500">
                       <Icon name="LogOut" size={16} /> Выйти
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -219,7 +222,7 @@ export function Header() {
                 </a>
                 <button
                   type="button"
-                  onClick={() => { setMenuOpen(false); logout(); }}
+                  onClick={() => { setMenuOpen(false); handleLogout(); }}
                   className="py-2 text-red-600 hover:text-red-700 flex items-center gap-2 text-left"
                 >
                   <Icon name="LogOut" size={16} /> Выйти
