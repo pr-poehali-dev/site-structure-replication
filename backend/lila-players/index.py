@@ -4,7 +4,7 @@ import re
 import urllib.request
 import psycopg2
 
-LILA_ORIGIN = 'https://play.мир-шахмат.рф'
+LILA_ORIGIN = 'https://play.' + 'мир-шахмат.рф'.encode('idna').decode()
 
 
 def get_conn():
