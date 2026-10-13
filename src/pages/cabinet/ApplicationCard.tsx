@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
-import LilaTournamentButton from './LilaTournamentButton';
 
 interface MyApplication {
   id: number;
@@ -82,10 +81,6 @@ export default function ApplicationCard({ a }: { a: MyApplication }) {
           {hasDetails && <Icon name={expanded ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-gray-400" />}
         </div>
       </button>
-
-      {a.lila_ready && (a.status === 'paid' || a.status === 'confirmed') && a.hall_status !== 'finished' && a.tournament_status !== 'archived' && (
-        <LilaTournamentButton tournamentId={a.tournament_id} />
-      )}
 
       {expanded && hasDetails && (
         <div className="px-5 pb-5 pt-1 border-t border-gray-100 flex flex-col gap-4">
