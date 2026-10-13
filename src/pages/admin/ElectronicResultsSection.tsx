@@ -263,6 +263,34 @@ export default function ElectronicResultsSection({ password }: Props) {
               </div>
             </div>
           )}
+
+          {preview && groups.filter(g => g.name.trim()).map(g => {
+            const rows = preview.overall.filter(r => r.age !== null && r.age >= g.min && r.age <= g.max);
+            return (
+              <div key={g.name} className="bg-white rounded-2xl border border-gray-200 p-5">
+                <h3 className="font-heading font-bold text-base text-primary mb-3">{g.name} ({rows.length})</h3>
+                {rows.length === 0 ? (
+                  <p className="text-sm text-gray-400">В этой категории нет участников</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-left text-gray-400 border-b"><th className="py-2 pr-3">№</th><th className="pr-3">Участник</th><th className="pr-3">Возраст</th><th>Очки</th></tr></thead>
+                      <tbody>
+                        {rows.map((r, i) => (
+                          <tr key={r.username} className="border-b border-gray-50">
+                            <td className="py-1.5 pr-3">{i + 1}</td>
+                            <td className="pr-3">{r.fio}</td>
+                            <td className="pr-3">{r.age}</td>
+                            <td>{r.points}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </>
       )}
     </div>
