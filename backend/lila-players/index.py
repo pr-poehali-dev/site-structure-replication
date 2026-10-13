@@ -1,6 +1,10 @@
 import json
 import os
+import re
+import urllib.request
 import psycopg2
+
+LILA_ORIGIN = 'https://play.мир-шахмат.рф'
 
 
 def get_conn():
@@ -30,6 +34,29 @@ def handler(event: dict, context) -> dict:
         }
 
     params = event.get('queryStringParameters') or {}
+    sheets_ref = (params.get('sheets') or '').strip()
+    if sheets_ref:
+        if not re.fullmatch(r'[A-Za-z0-9]{8}', sheets_ref):
+            return resp(400, {'error': 'bad tournament id'})
+        sheets = {}
+        for page in range(1, 31):
+            req = urllib.request.Request(
+                f'{LILA_ORIGIN}/swiss/{sheets_ref}/standing/{page}',
+                headers={'Accept': 'application/json'},
+            )
+            with urllib.request.urlopen(req, timeout=4) as r:
+                data = json.loads(r.read().decode('utf-8'))
+            batch = data.get('players') or []
+            if not batch:
+                break
+            for pl in batch:
+                name = ((pl.get('user') or {}).get('name') or '').lower()
+                if name:
+                    sheets[name] = (pl.get('sheetMin') or '').split('|')
+            if len(batch) < 10:
+                break
+        return resp(200, {'sheets': sheets})
+
     raw = params.get('usernames') or ''
     names = sorted({n.strip().lower() for n in raw.split(',') if n.strip()})[:200]
     if not names:

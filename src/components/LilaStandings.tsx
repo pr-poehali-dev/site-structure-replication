@@ -120,6 +120,40 @@ const scoreColor = (c: RoundCell) => {
   return c.score === '1' ? 'text-emerald-600' : 'text-red-500';
 };
 
+function buildFromSheets(sheets: Record<string, string[]>, games: LilaGame[], rows: LilaRow[]) {
+  const rankById = new Map(rows.map(r => [r.username.toLowerCase(), r.rank]));
+  const byGame = new Map(games.map(g => [g.id, g]));
+  const cells = new Map<string, Record<number, RoundCell>>();
+  let count = 0;
+  Object.entries(sheets).forEach(([player, tokens]) => {
+    const row: Record<number, RoundCell> = {};
+    count = Math.max(count, tokens.length);
+    tokens.forEach((tok, i) => {
+      const n = i + 1;
+      if (tok === 'bye') {
+        row[n] = { gameId: '', score: '1', opponent: '', ongoing: false, bye: true };
+        return;
+      }
+      if (tok === 'absent' || tok === 'late' || !tok) return;
+      const gameId = tok.slice(0, 8);
+      const res = tok.length > 8 ? tok[8] : '';
+      const g = byGame.get(gameId);
+      const w = g?.players.white.user?.id;
+      const b = g?.players.black.user?.id;
+      const oppId = w === player ? b : w;
+      const ongoing = res === '' || res === 'o';
+      row[n] = {
+        gameId,
+        score: ongoing ? '•' : res === 'w' ? '1' : res === 'l' ? '0' : '½',
+        opponent: oppId ? String(rankById.get(oppId) ?? '') : '',
+        ongoing,
+      };
+    });
+    cells.set(player, row);
+  });
+  return { cells, count };
+}
+
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
@@ -127,6 +161,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [games, setGames] = useState<LilaGame[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
   const [roundsCount, setRoundsCount] = useState(0);
+  const [sheets, setSheets] = useState<Record<string, string[]> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileId, setProfileId] = useState<number | null>(null);
@@ -149,6 +184,10 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
         if (cancelled) return;
         setError('');
         setRows(parsed);
+        if (kind === 'swiss') fetch(`${PLAYERS_URL}?sheets=${encodeURIComponent(tournamentId)}`)
+          .then(r => (r.ok ? r.json() : null))
+          .then(d => { if (!cancelled && d && d.sheets && Object.keys(d.sheets).length) setSheets(d.sheets); })
+          .catch(() => {});
         if (parsed.length) {
           const names = parsed.map(r => r.username).join(',');
           fetch(`${PLAYERS_URL}?usernames=${encodeURIComponent(names)}&tournament=${encodeURIComponent(tournamentId)}`)
@@ -184,7 +223,10 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
     };
   }, [tournamentId, kind]);
 
-  const { cells, count } = buildRounds(games, rows, roundsCount);
+  const fallback = buildRounds(games, rows, roundsCount);
+  const fromSheets = sheets ? buildFromSheets(sheets, games, rows) : null;
+  const cells = fromSheets ? fromSheets.cells : fallback.cells;
+  const count = fromSheets ? Math.max(fromSheets.count, roundsCount) : fallback.count;
   const roundNumbers = Array.from({ length: count }, (_, i) => i + 1);
 
   if (loading) {
