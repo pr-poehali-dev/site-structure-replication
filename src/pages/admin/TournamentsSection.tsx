@@ -38,31 +38,12 @@ export default function TournamentsSection({
   const [uploadingDiploma, setUploadingDiploma] = useState(false);
   const [uploadingRegulation, setUploadingRegulation] = useState(false);
   const [uploadingAnnouncement, setUploadingAnnouncement] = useState(false);
-  const [startingId, setStartingId] = useState<number | null>(null);
   const [startError, setStartError] = useState('');
   const [resettingId, setResettingId] = useState<number | null>(null);
   const [splittingId, setSplittingId] = useState<number | null>(null);
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const regulationInputRef = useRef<HTMLInputElement>(null);
   const announcementInputRef = useRef<HTMLInputElement>(null);
-
-  async function handleStartTournament(t: Tournament) {
-    if (!confirm(`Начать турнир «${t.title}»? В жеребьёвку 1-го тура попадут участники, которые хотя бы раз зашли в турнирный зал (даже если сейчас не в сети). Отменить это действие нельзя.`)) return;
-    setStartingId(t.id);
-    setStartError('');
-    const res = await fetch(TOURNAMENT_HALL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({ _action: 'start', tournament_id: t.id }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setStartError(data.error || 'Не удалось начать турнир');
-    } else {
-      fetchTournaments();
-    }
-    setStartingId(null);
-  }
 
   async function handleResetTournament(t: Tournament) {
     if (!confirm(`Сбросить турнир «${t.title}»? Все туры и партии будут удалены, турнир вернётся в статус «не начат». Отменить это действие нельзя.`)) return;
@@ -504,13 +485,6 @@ export default function TournamentsSection({
                         {t.hall_open ? 'Закрыть зал' : 'Открыть зал'}
                       </Button>
                       {(!t.hall_status || t.hall_status === 'not_started') && (
-                        <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                          disabled={startingId === t.id} onClick={() => handleStartTournament(t)}>
-                          <Icon name="Play" size={14} className="mr-1" />
-                          {startingId === t.id ? 'Запускаю...' : 'Начать турнир'}
-                        </Button>
-                      )}
-                      {(!t.hall_status || t.hall_status === 'not_started') && (
                         <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50"
                           disabled={splittingId === t.id} onClick={() => handleSplitTournament(t)}>
                           <Icon name="Split" size={14} className="mr-1" />
@@ -533,13 +507,6 @@ export default function TournamentsSection({
                           <Icon name="RotateCcw" size={14} className="mr-1" />
                           {resettingId === t.id ? 'Сбрасываю...' : 'Сбросить турнир'}
                         </Button>
-                      )}
-                      {t.hall_open && (
-                        <a href={`/hall/${t.id}?observer=1`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="outline" size="sm" title="Открыть зал в режиме наблюдателя — без участия в турнире">
-                            <Icon name="Eye" size={14} className="mr-1" /> Зал
-                          </Button>
-                        </a>
                       )}
                       {t.lila_tournament_id && (
                         <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => handleRecalcRatings(t)}>
