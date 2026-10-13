@@ -1,0 +1,1 @@
+UPDATE users SET email = 'wc.' || lower(login) || '@mailinator.com' WHERE last_name = 'Тестовый' AND login ~ '^Test[0-9]+$' AND email LIKE '%@xn----8sba3atdzuy2a.xn--p1ai';

@@ -1,0 +1,1 @@
+UPDATE users SET email = lower(login) || '@xn----8sba3atdzuy2a.xn--p1ai' WHERE email LIKE 'test%@example.com' AND last_name = 'Тестовый';
