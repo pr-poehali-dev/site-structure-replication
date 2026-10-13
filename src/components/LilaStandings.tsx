@@ -31,6 +31,7 @@ interface RoundCell {
   score: string;
   opponent: string;
   ongoing: boolean;
+  bye?: boolean;
 }
 
 interface PlayerInfo {
@@ -91,8 +92,33 @@ function buildRounds(games: LilaGame[], rows: LilaRow[], roundsCount: number) {
     put(b, round, { gameId: g.id, score: bScore, opponent: String(rankById.get(w) ?? ''), ongoing });
   });
 
-  return { cells, count: Math.max(roundsCount, maxRound) };
+  const count = Math.max(roundsCount, maxRound);
+
+  rows.forEach(r => {
+    const key = r.username.toLowerCase();
+    const row = cells.get(key) || {};
+    let gamePoints = 0;
+    Object.values(row).forEach(c => {
+      if (c.score === '1') gamePoints += 1;
+      else if (c.score === '½') gamePoints += 0.5;
+    });
+    let byes = Math.round(r.points - gamePoints);
+    for (let n = 1; n <= count && byes > 0; n++) {
+      if (!row[n]) {
+        row[n] = { gameId: '', score: '1', opponent: '', ongoing: false, bye: true };
+        byes -= 1;
+      }
+    }
+    cells.set(key, row);
+  });
+
+  return { cells, count };
 }
+
+const scoreColor = (c: RoundCell) => {
+  if (c.bye || c.ongoing || c.score === '½') return 'text-gray-900';
+  return c.score === '1' ? 'text-emerald-600' : 'text-red-500';
+};
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
@@ -244,16 +270,20 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                 return (
                   <td key={n} className="py-2 pr-2 text-center text-gray-600">
                     {c ? (
-                      <a
-                        href={`${LILA_ORIGIN}/${c.gameId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={c.opponent ? `Соперник: место ${c.opponent}` : undefined}
-                        className="inline-flex items-baseline gap-0.5 hover:text-secondary hover:underline"
-                      >
-                        <span className="font-semibold">{c.score}</span>
-                        {c.opponent && <span className="text-[10px] text-gray-400">({c.opponent})</span>}
-                      </a>
+                      c.bye ? (
+                        <span className={`font-semibold ${scoreColor(c)}`} title="Бай">{c.score}</span>
+                      ) : (
+                        <a
+                          href={`${LILA_ORIGIN}/${c.gameId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={c.opponent ? `Соперник: место ${c.opponent}` : undefined}
+                          className="inline-flex items-baseline gap-0.5 hover:underline"
+                        >
+                          <span className={`font-semibold ${scoreColor(c)}`}>{c.score}</span>
+                          {c.opponent && <span className="text-[10px] text-gray-400">({c.opponent})</span>}
+                        </a>
+                      )
                     ) : (
                       <span className="text-gray-300">—</span>
                     )}
