@@ -32,6 +32,22 @@ def _get_pool():
 
 
 def get_conn():
+    global _pool
+    for _ in range(3):
+        conn = _get_pool().getconn()
+        try:
+            if conn.closed:
+                raise psycopg2.OperationalError('closed')
+            with conn.cursor() as c:
+                c.execute('SELECT 1')
+            conn.rollback()
+            return conn
+        except Exception:
+            try:
+                _get_pool().putconn(conn, close=True)
+            except Exception:
+                pass
+    _pool = None
     return _get_pool().getconn()
 
 

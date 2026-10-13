@@ -183,25 +183,39 @@ export default function TournamentsSection({
     e.preventDefault();
     setTSaving(true); setTError('');
     const isEdit = tEditId !== null;
-    const res = await fetch(TOURNAMENTS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
-      body: JSON.stringify({
-        ...tForm,
-        price: tForm.price ? parseFloat(tForm.price) : null,
-        rounds_count: tForm.rounds_count ? parseInt(tForm.rounds_count, 10) : 5,
-        max_participants: tForm.max_participants ? parseInt(tForm.max_participants, 10) : null,
-        ...(isEdit ? { _action: 'update', id: tEditId } : {}),
-      }),
-    });
-    if (res.ok) {
-      setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments();
-      if (diplomaInputRef.current) diplomaInputRef.current.value = '';
-      if (regulationInputRef.current) regulationInputRef.current.value = '';
-      if (announcementInputRef.current) announcementInputRef.current.value = '';
+    try {
+      let res: Response | null = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          res = await fetch(TOURNAMENTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+            body: JSON.stringify({
+              ...tForm,
+              price: tForm.price ? parseFloat(tForm.price) : null,
+              rounds_count: tForm.rounds_count ? parseInt(tForm.rounds_count, 10) : 5,
+              max_participants: tForm.max_participants ? parseInt(tForm.max_participants, 10) : null,
+              ...(isEdit ? { _action: 'update', id: tEditId } : {}),
+            }),
+          });
+        } catch {
+          res = null;
+        }
+        if (res && res.ok) break;
+        if (res && res.status < 500) break;
+        if (isEdit === false && attempt === 0 && res && res.status >= 500) break;
+      }
+      if (res && res.ok) {
+        setTForm(EMPTY_T_FORM); setTShowForm(false); setTEditId(null); fetchTournaments();
+        if (diplomaInputRef.current) diplomaInputRef.current.value = '';
+        if (regulationInputRef.current) regulationInputRef.current.value = '';
+        if (announcementInputRef.current) announcementInputRef.current.value = '';
+      } else {
+        setTError('Ошибка при сохранении. Нажмите «Сохранить» ещё раз.');
+      }
+    } finally {
+      setTSaving(false);
     }
-    else setTError('Ошибка при сохранении');
-    setTSaving(false);
   }
 
   function handleEditTournament(t: Tournament) {
