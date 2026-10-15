@@ -26,7 +26,7 @@
   }, true);
   document.addEventListener('click', function (e) {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var el = e.target && e.target.closest ? e.target.closest('a.glpt, tr.glpt, .swiss a[href], .swiss [data-href]') : null;
+    var el = e.target && e.target.closest ? e.target.closest('a.glpt, tr.glpt, a.mini-game, #powerTip a[href], .swiss a[href], .swiss [data-href]') : null;
     if (!el) return;
     var href = el.getAttribute('href') || el.getAttribute('data-href') || '';
     var m = href.match(/^\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(?:white|black))?\/?$/);
