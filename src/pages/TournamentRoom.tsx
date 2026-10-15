@@ -30,12 +30,14 @@ export default function TournamentRoom() {
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== new URL(LILA_ORIGIN).origin) return;
+      if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
       const d = e.data;
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
         const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
@@ -149,6 +151,7 @@ export default function TournamentRoom() {
         {lilaId && joined && (
           <>
             <iframe
+              ref={frameRef}
               src={`${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
               title="Турнир"
               className="w-full bg-white"
