@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import PlayerProfileModal from '@/components/PlayerProfileModal';
 import PlayerAvatar from '@/components/PlayerAvatar';
@@ -169,7 +170,25 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileId, setProfileId] = useState<number | null>(null);
-  const [openedGame, setOpenedGame] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const gameParam = searchParams.get('game');
+  const openedGame = gameParam && /^[A-Za-z0-9]{8}$/.test(gameParam) ? gameParam : null;
+  const [copied, setCopied] = useState(false);
+  const setOpenedGame = (id: string | null) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (id) next.set('game', id);
+      else next.delete('game');
+      return next;
+    }, { replace: true });
+  };
+  const copyGameLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}?game=${openedGame}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -374,7 +393,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
       <Dialog open={!!openedGame} onOpenChange={open => { if (!open) setOpenedGame(null); }}>
         <DialogContent className="max-w-3xl w-[96vw] p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-lg">
+            <DialogTitle className="text-base sm:text-lg pr-6">
               {(() => {
                 const g = games.find(x => x.id === openedGame);
                 if (!g) return 'Партия';
@@ -400,6 +419,16 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
               })()}
             </DialogTitle>
           </DialogHeader>
+          {openedGame && (
+            <button
+              type="button"
+              onClick={copyGameLink}
+              className="self-start inline-flex items-center gap-1.5 text-sm font-medium text-secondary hover:underline"
+            >
+              <Icon name={copied ? 'Check' : 'Link'} size={14} />
+              {copied ? 'Ссылка скопирована' : 'Копировать ссылку на партию'}
+            </button>
+          )}
           {openedGame && (
             <iframe
               key={openedGame}
