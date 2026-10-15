@@ -374,18 +374,13 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
             <DialogTitle>Партия</DialogTitle>
           </DialogHeader>
           {openedGame && (
-            <>
-              <iframe
-                key={openedGame}
-                title="Партия в Lila"
-                src={`${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
-                className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
-                allowFullScreen
-              />
-              <a href={`${LILA_ORIGIN}/${openedGame}`} target="_blank" rel="noopener noreferrer" className="text-xs text-secondary hover:underline inline-flex items-center gap-1">
-                <Icon name="ExternalLink" size={12} /> Открыть на Lila
-              </a>
-            </>
+            <iframe
+              key={openedGame}
+              title="Партия в Lila"
+              src={`${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
+              className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
+              allowFullScreen
+            />
           )}
         </DialogContent>
       </Dialog>
