@@ -1,7 +1,7 @@
 (function () {
   if (window.parent === window) return;
   var st0 = document.createElement('style');
-  st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}';
+  st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}.swiss{grid-template-rows:auto auto!important;height:auto!important}.swiss__main,.swiss__main .box,.swiss__side,.swiss__table,.swiss__standing{height:auto!important;max-height:none!important;min-height:0!important}.swiss__main .box{overflow:visible!important}';
   (document.head || document.documentElement).appendChild(st0);
   var last = 0;
   var timer = null;
