@@ -66,8 +66,6 @@
     var root = document.getElementById('main-wrap') || document.body;
     var shift = window.pageYOffset || 0;
     var max = 0;
-    var inside = 0;
-    var swEl = document.querySelector('.swiss');
     var range = document.createRange();
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, null);
     var n;
@@ -89,15 +87,11 @@
         if (r.height > 0) bottom = r.bottom;
       }
       if (bottom + shift > max) max = bottom + shift;
-      if (swEl && bottom > 0) {
-        var nn = n.nodeType === 3 ? n.parentElement : n;
-        if (nn && swEl.contains(nn) && bottom + shift > inside) inside = bottom + shift;
-      }
     }
     var sw = document.querySelector('.swiss');
     if (sw && sw.offsetParent !== null) {
       var sb = sw.getBoundingClientRect().bottom + shift;
-      if (sb > 0 && (max === 0 || sb < max)) max = Math.max(sb, inside);
+      if (sb > 0 && (max === 0 || sb < max)) max = sb;
     }
     var h = Math.ceil(max) + 24;
     if (max > 0 && Math.abs(h - last) > 3) {
