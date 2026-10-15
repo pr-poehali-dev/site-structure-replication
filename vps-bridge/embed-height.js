@@ -17,6 +17,13 @@
   var stT = document.createElement('style');
   stT.textContent = '.podium .first .trophy{background-image:url(' + TR + 'gold.png)!important}.podium .second .trophy{background-image:url(' + TR + 'silver.png)!important}.podium .third .trophy{background-image:url(' + TR + 'bronze.png)!important}';
   (document.head || document.documentElement).appendChild(stT);
+  var stU = document.createElement('style');
+  stU.textContent = '.swiss a.user-link,.swiss .user-link a,.podium a.user-link{pointer-events:none!important;cursor:default!important;text-decoration:none!important;color:inherit!important}';
+  (document.head || document.documentElement).appendChild(stU);
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest ? e.target.closest('.swiss a.user-link, .podium a.user-link') : null;
+    if (t) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
   var last = 0;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };
