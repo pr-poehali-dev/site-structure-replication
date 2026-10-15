@@ -1,5 +1,8 @@
 (function () {
   if (window.parent === window) return;
+  var st0 = document.createElement('style');
+  st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}';
+  (document.head || document.documentElement).appendChild(st0);
   var last = 0;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };
