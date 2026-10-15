@@ -18,10 +18,10 @@
   stT.textContent = '.podium .first .trophy{background-image:url(' + TR + 'gold.png)!important}.podium .second .trophy{background-image:url(' + TR + 'silver.png)!important}.podium .third .trophy{background-image:url(' + TR + 'bronze.png)!important}';
   (document.head || document.documentElement).appendChild(stT);
   var stU = document.createElement('style');
-  stU.textContent = '.swiss a.user-link,.swiss .user-link a,.podium a.user-link{pointer-events:none!important;cursor:default!important;text-decoration:none!important;color:inherit!important}';
+  stU.textContent = 'a[href^="/@/"],a.user-link,.user-link a,.swiss a.user-link,.swiss .user-link a,.podium a.user-link{pointer-events:none!important;cursor:default!important;text-decoration:none!important;color:inherit!important}';
   (document.head || document.documentElement).appendChild(stU);
   document.addEventListener('click', function (e) {
-    var t = e.target && e.target.closest ? e.target.closest('.swiss a.user-link, .podium a.user-link') : null;
+    var t = e.target && e.target.closest ? e.target.closest('a[href^="/@/"], a.user-link, .user-link a') : null;
     if (t) { e.preventDefault(); e.stopPropagation(); }
   }, true);
   var last = 0;
