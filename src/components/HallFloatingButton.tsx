@@ -6,6 +6,15 @@ import func2url from '../../backend/func2url.json';
 
 const APPS_URL = func2url['applications'];
 const REFRESH_MS = 30000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const isOver = (a: MyApp) => {
+  if (a.results_published) return true;
+  if (!a.date) return false;
+  const t = new Date(a.date).getTime();
+  return !isNaN(t) && Date.now() - t > 2 * DAY_MS;
+};
+
 const HIDDEN_PREFIXES = ['/room/', '/hall/', '/game/', '/admin'];
 
 interface MyApp {
@@ -15,6 +24,8 @@ interface MyApp {
   hall_open: boolean;
   hall_status: string;
   tournament_status: string;
+  results_published?: boolean;
+  date?: string | null;
 }
 
 export default function HallFloatingButton() {
@@ -39,7 +50,8 @@ export default function HallFloatingButton() {
               a.status === 'paid' &&
               a.hall_open &&
               a.hall_status !== 'finished' &&
-              a.tournament_status !== 'archived',
+              a.tournament_status !== 'archived' &&
+              !isOver(a),
           );
           setHalls(list);
         })
