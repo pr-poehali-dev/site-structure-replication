@@ -74,6 +74,11 @@
       }
       if (bottom + shift > max) max = bottom + shift;
     }
+    var sw = document.querySelector('.swiss');
+    if (sw && sw.offsetParent !== null) {
+      var sb = sw.getBoundingClientRect().bottom + shift;
+      if (sb > 0 && (max === 0 || sb < max)) max = sb;
+    }
     var h = Math.ceil(max) + 24;
     if (max > 0 && Math.abs(h - last) > 3) {
       last = h;
