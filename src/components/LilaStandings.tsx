@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import PlayerProfileModal from '@/components/PlayerProfileModal';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import MiniChessBoard from '@/components/MiniChessBoard';
 import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
 
@@ -22,6 +23,7 @@ interface LilaGame {
   id: string;
   createdAt: number;
   status: string;
+  lastFen?: string;
   winner?: 'white' | 'black';
   players: { white: { user?: { id: string } }; black: { user?: { id: string } } };
 }
@@ -165,6 +167,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileId, setProfileId] = useState<number | null>(null);
+  const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,7 +178,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
 
     const load = () => Promise.all([
       fetch(`${base}/results`, { headers: { Accept: 'application/x-ndjson' } }),
-      fetch(`${base}/games?moves=false`, { headers: { Accept: 'application/x-ndjson' } }),
+      fetch(`${base}/games?moves=false&lastFen=true`, { headers: { Accept: 'application/x-ndjson' } }),
       fetch(base, { headers: { Accept: 'application/json' } }),
     ])
       .then(async ([res, gm, info]) => {
@@ -227,6 +230,16 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const fromSheets = sheets ? buildFromSheets(sheets, games, rows) : null;
   const cells = fromSheets ? fromSheets.cells : fallback.cells;
   const count = fromSheets ? Math.max(fromSheets.count, roundsCount) : fallback.count;
+  const fenById = new Map(games.filter(g => g.lastFen).map(g => [g.id, g.lastFen as string]));
+  const showPreview = (e: React.MouseEvent<HTMLElement>, gameId: string) => {
+    const fen = fenById.get(gameId);
+    if (!fen) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const size = 180;
+    const x = Math.min(Math.max(8, r.left + r.width / 2 - size / 2), window.innerWidth - size - 8);
+    const below = r.bottom + size + 16 < window.innerHeight;
+    setPreview({ fen, x, y: below ? r.bottom + 6 : r.top - size - 14 });
+  };
   const roundNumbers = Array.from({ length: count }, (_, i) => i + 1);
 
   if (loading) {
@@ -320,6 +333,8 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                           target="_blank"
                           rel="noopener noreferrer"
                           title={c.opponent ? `Соперник: место ${c.opponent}` : undefined}
+                          onMouseEnter={e => showPreview(e, c.gameId)}
+                          onMouseLeave={() => setPreview(null)}
                           className="inline-flex items-baseline gap-0.5 hover:underline"
                         >
                           <span className={`font-semibold ${scoreColor(c)}`}>{c.score}</span>
@@ -339,6 +354,14 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           ))}
         </tbody>
       </table>
+      {preview && (
+        <div
+          className="fixed z-50 pointer-events-none bg-white rounded-xl border border-gray-100 shadow-xl p-2"
+          style={{ left: preview.x, top: preview.y }}
+        >
+          <MiniChessBoard fen={preview.fen} size={180} />
+        </div>
+      )}
       <PlayerProfileModal userId={profileId} onClose={() => setProfileId(null)} />
     </div>
   );
