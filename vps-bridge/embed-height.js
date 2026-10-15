@@ -15,6 +15,7 @@
   }
 
   function unclip() {
+    if (!document.querySelector('.swiss')) return;
     var root = document.getElementById('main-wrap') || document.body;
     var all = root.querySelectorAll('*');
     for (var i = 0; i < all.length; i++) {
