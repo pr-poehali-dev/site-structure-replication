@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
@@ -9,6 +9,8 @@ import func2url from '../../backend/func2url.json';
 
 const PUBLIC_URL = func2url['tournaments-public'];
 const LILA_SYNC_URL = func2url['lila-sync'];
+const MIN_FRAME_HEIGHT = 400;
+const MAX_FRAME_HEIGHT = 5000;
 const LILA_ORIGIN = 'https://play.мир-шахмат.рф';
 
 interface RoomTournament {
@@ -28,13 +30,26 @@ export default function TournamentRoom() {
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  const currentHeight = useRef<number | null>(null);
+  const pendingHeight = useRef<number | null>(null);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== new URL(LILA_ORIGIN).origin) return;
       const d = e.data;
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
-        setFrameHeight(Math.ceil(d.height));
+        const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
+        const current = currentHeight.current;
+        if (current !== null && (next > current * 2 || next < current / 2)) {
+          const pending = pendingHeight.current;
+          if (pending === null || Math.abs(pending - next) > 2) {
+            pendingHeight.current = next;
+            return;
+          }
+        }
+        pendingHeight.current = null;
+        currentHeight.current = next;
+        setFrameHeight(next);
       }
     };
     window.addEventListener('message', onMessage);
