@@ -10,6 +10,10 @@ def handler(event: dict, context) -> dict:
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400'}, 'body': ''}
 
+    params = event.get('queryStringParameters') or {}
+    raw_id = (params.get('id') or '').strip()
+    include_id = int(raw_id) if raw_id.isdigit() else 0
+
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
@@ -18,9 +22,10 @@ def handler(event: dict, context) -> dict:
                   COUNT(a.id) FILTER (WHERE a.status NOT IN ('cancelled'))
            FROM tournaments t
            LEFT JOIN applications a ON a.tournament_id = t.id
-           WHERE t.status != 'archived'
+           WHERE t.status != 'archived' OR t.id = %s
            GROUP BY t.id
-           ORDER BY t.date ASC NULLS LAST, t.created_at DESC"""
+           ORDER BY t.date ASC NULLS LAST, t.created_at DESC""",
+        (include_id,)
     )
     rows = cur.fetchall()
     conn.close()

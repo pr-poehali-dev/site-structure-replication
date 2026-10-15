@@ -73,7 +73,7 @@ export default function TournamentRoom() {
     }
     let cancelled = false;
     const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
-    const post = (body: { _action: string }) =>
+    const post = (body: { _action: string; tournament_id?: number }) =>
       fetch(LILA_SYNC_URL, { method: 'POST', headers, body: JSON.stringify(body) }).then(async r => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) {
@@ -95,7 +95,7 @@ export default function TournamentRoom() {
   }, [token, authLoading, tournamentId]);
 
   useEffect(() => {
-    fetch(PUBLIC_URL)
+    fetch(`${PUBLIC_URL}?id=${encodeURIComponent(tournamentId || '')}`)
       .then(r => r.json())
       .then(d => setTournament((d.tournaments || []).find((t: RoomTournament) => String(t.id) === tournamentId) || null))
       .catch(() => setTournament(null))
