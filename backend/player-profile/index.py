@@ -3,6 +3,13 @@ import os
 
 import psycopg2
 
+LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
+
+REASON_MAP = {
+    'mate': 'checkmate', 'resign': 'resignation', 'stalemate': 'stalemate',
+    'timeout': 'timeout', 'outoftime': 'timeout', 'draw': 'draw_agreed',
+}
+
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
@@ -114,6 +121,52 @@ def handler(event: dict, context) -> dict:
             })
     else:
         games = []
+
+    cur.execute("SELECT lila_username FROM users WHERE id = %s", (user_id,))
+    lu = cur.fetchone()
+    me = (lu[0] or '').lower() if lu else ''
+    if me:
+        cur.execute(
+            """SELECT lg.game_id, lg.tournament_id, t.title, t.rating_type, lg.white_username, lg.black_username,
+                      lg.winner, lg.status, lg.moves_count, lg.last_fen, lg.last_move_ms
+               FROM lila_games lg JOIN tournaments t ON t.id = lg.tournament_id
+               WHERE lower(lg.white_username) = %s OR lower(lg.black_username) = %s
+               ORDER BY lg.created_at_ms DESC LIMIT 50""",
+            (me, me)
+        )
+        rows = cur.fetchall()
+        opp_names = set()
+        for r in rows:
+            o = r[5] if (r[4] or '').lower() == me else r[4]
+            if o:
+                opp_names.add(o.lower())
+        fio_by = {}
+        if opp_names:
+            cur.execute(
+                "SELECT lower(lila_username), last_name, first_name FROM users WHERE lower(lila_username) = ANY(%s)",
+                (list(opp_names),)
+            )
+            for un, ln, fn in cur.fetchall():
+                fio_by[un] = f"{ln or ''} {fn or ''}".strip()
+        lila_games = []
+        for gid, tid, ttitle, rtype, white, black, winner, status, mc, lfen, lms in rows:
+            my_color = 'white' if (white or '').lower() == me else 'black'
+            opp = black if my_color == 'white' else white
+            result = '1-0' if winner == 'white' else '0-1' if winner == 'black' else '1/2-1/2'
+            if winner is None:
+                outcome = 'draw'
+            else:
+                outcome = 'win' if winner == my_color else 'loss'
+            lila_games.append({
+                'id': f'lila-{gid}', 'source': 'lila', 'lila_url': f'{LILA}/{gid}',
+                'tournament_id': tid, 'tournament_title': ttitle, 'round_number': 0,
+                'rating_type': rtype or 'rapid', 'my_color': my_color,
+                'opponent_fio': fio_by.get((opp or '').lower()) or opp, 'result': result,
+                'result_reason': REASON_MAP.get(status or ''), 'outcome': outcome,
+                'fen': lfen or 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+                'moves_count': mc or 0, 'finished_at': None,
+            })
+        games = lila_games + games
 
     conn.close()
     return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({

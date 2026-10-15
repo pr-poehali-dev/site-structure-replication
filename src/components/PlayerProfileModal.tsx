@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
+import LilaGameDialog from '@/components/LilaGameDialog';
 import { shortFio } from '@/lib/fio';
 import { calcAge, formatDate, initials } from '@/pages/cabinet/utils';
 import func2url from '../../backend/func2url.json';
@@ -36,7 +37,8 @@ interface TournamentItem {
 }
 
 interface GameItem {
-  id: number;
+  id: number | string;
+  source?: string;
   round_number: number;
   my_color: 'white' | 'black';
   opponent_fio: string | null;
@@ -62,6 +64,7 @@ export default function PlayerProfileModal({ userId, onClose }: Props) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [games, setGames] = useState<GameItem[]>([]);
+  const [openedGame, setOpenedGame] = useState<GameItem | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -105,6 +108,7 @@ export default function PlayerProfileModal({ userId, onClose }: Props) {
     : [];
 
   return (
+    <>
     <Dialog open={userId !== null} onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -187,7 +191,11 @@ export default function PlayerProfileModal({ userId, onClose }: Props) {
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Последние партии</p>
                 <div className="flex flex-col divide-y divide-gray-50 border border-gray-100 rounded-lg">
                   {games.map(g => (
-                    <div key={g.id} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                    <div
+                      key={g.id}
+                      onClick={g.source === 'lila' ? () => setOpenedGame(g) : undefined}
+                      className={`px-3 py-2 flex items-center justify-between gap-3 text-sm ${g.source === 'lila' ? 'cursor-pointer hover:bg-muted/40' : ''}`}
+                    >
                       <span className="truncate text-gray-800">
                         {g.my_color === 'white' ? 'Белыми' : 'Чёрными'} против {shortFio(g.opponent_fio) || 'соперника'}
                       </span>
@@ -215,5 +223,12 @@ export default function PlayerProfileModal({ userId, onClose }: Props) {
         )}
       </DialogContent>
     </Dialog>
+    <LilaGameDialog
+      gameId={openedGame ? String(openedGame.id).replace(/^lila-/, '') : null}
+      myColor={openedGame?.my_color}
+      opponentFio={openedGame?.opponent_fio}
+      onClose={() => setOpenedGame(null)}
+    />
+    </>
   );
 }

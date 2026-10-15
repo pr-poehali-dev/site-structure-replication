@@ -5,6 +5,7 @@ import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import MiniChessBoard from '@/components/MiniChessBoard';
+import LilaGameDialog from '@/components/LilaGameDialog';
 import { shortFio } from '@/lib/fio';
 import { calcAge, formatDate, formatDateTime, initials } from '@/pages/cabinet/utils';
 import func2url from '../../backend/func2url.json';
@@ -39,7 +40,9 @@ interface TournamentItem {
 }
 
 interface GameItem {
-  id: number;
+  id: number | string;
+  source?: string;
+  lila_url?: string;
   tournament_id: number;
   tournament_title: string;
   round_number: number;
@@ -73,11 +76,20 @@ function resultLabel(g: GameItem): string {
   return reason ? `${reason} · Победа: ${winnerColor.toLowerCase()}` : `Победа: ${winnerColor.toLowerCase()}`;
 }
 
+function RowWrap({ isLila, game, className, onOpen, children }: { isLila: boolean; game: GameItem; className: string; onOpen: (g: GameItem) => void; children: React.ReactNode }) {
+  return isLila ? (
+    <button type="button" onClick={() => onOpen(game)} className={className}>{children}</button>
+  ) : (
+    <Link to={`/game/${game.id}`} className={className}>{children}</Link>
+  );
+}
+
 export default function PlayerProfile() {
   const { userId } = useParams();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
   const [games, setGames] = useState<GameItem[]>([]);
+  const [openedGame, setOpenedGame] = useState<GameItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
 
@@ -117,7 +129,14 @@ export default function PlayerProfile() {
             <Link to="/turnir" className="text-secondary font-semibold hover:underline">К турнирам →</Link>
           </div>
         </main>
-        <Footer />
+        <LilaGameDialog
+        gameId={openedGame ? String(openedGame.id).replace(/^lila-/, '') : null}
+        myColor={openedGame?.my_color}
+        opponentFio={openedGame?.opponent_fio}
+        onClose={() => setOpenedGame(null)}
+      />
+
+      <Footer />
       </div>
     );
   }
@@ -260,12 +279,10 @@ export default function PlayerProfile() {
                     const badgeLabel = g.outcome === 'win' ? 'Победа' : g.outcome === 'loss' ? 'Поражение' : 'Ничья';
                     const badgeIcon = g.outcome === 'win' ? 'Trophy' : g.outcome === 'loss' ? 'X' : 'Minus';
 
+                    const isLila = g.source === 'lila' && !!g.lila_url;
+                    const rowClass = 'flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors w-full text-left';
                     return (
-                      <Link
-                        key={g.id}
-                        to={`/game/${g.id}`}
-                        className="flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
-                      >
+                      <RowWrap key={g.id} isLila={isLila} game={g} className={rowClass} onOpen={setOpenedGame}>
                         <MiniChessBoard fen={g.fen} size={72} />
 
                         <div className="min-w-0 flex-1">
@@ -285,7 +302,7 @@ export default function PlayerProfile() {
                         </div>
 
                         <Icon name="ChevronRight" size={18} className="text-gray-300 shrink-0" />
-                      </Link>
+                      </RowWrap>
                     );
                   })}
                 </div>
