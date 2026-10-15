@@ -9,7 +9,7 @@ import func2url from '../../backend/func2url.json';
 
 const PUBLIC_URL = func2url['tournaments-public'];
 const LILA_SYNC_URL = func2url['lila-sync'];
-const MIN_FRAME_HEIGHT = 1000;
+const MIN_FRAME_HEIGHT = 400;
 const MAX_FRAME_HEIGHT = 5000;
 const LILA_ORIGIN = 'https://play.мир-шахмат.рф';
 
@@ -155,7 +155,7 @@ export default function TournamentRoom() {
               scrolling="no"
               style={{
                 height: frameHeight ?? '113vh',
-                minHeight: 1000,
+                minHeight: frameHeight ? undefined : 800,
                 border: '1px solid #E5E2DC',
                 borderRadius: 12,
                 overflow: 'hidden',
