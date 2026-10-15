@@ -66,15 +66,28 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
     placeholders = ','.join(['%s'] * len(names))
     cur.execute(
-        f"""SELECT id, lower(lila_username), last_name, first_name, avatar_url
+        f"""SELECT id, lower(lila_username), last_name, first_name, avatar_url, birth_date
             FROM users WHERE lower(lila_username) IN ({placeholders})""",
         names,
     )
     players = {}
-    for uid, uname, last_name, first_name, avatar in cur.fetchall():
+    births = {}
+    for uid, uname, last_name, first_name, avatar, birth in cur.fetchall():
         fio = ' '.join(p for p in [last_name, first_name] if p)
-        players[uname] = {'user_id': uid, 'fio': fio or None, 'avatar_url': avatar}
+        players[uname] = {'user_id': uid, 'fio': fio or None, 'avatar_url': avatar, 'age': None}
+        births[uname] = birth
     tournament_ref = (params.get('tournament') or '').strip()
+    if tournament_ref and players:
+        cur.execute(
+            "SELECT date FROM tournaments WHERE lila_tournament_id = %s",
+            (tournament_ref,),
+        )
+        row = cur.fetchone()
+        t_date = row[0] if row else None
+        if t_date:
+            for uname, birth in births.items():
+                if birth:
+                    players[uname]['age'] = t_date.year - birth.year - ((t_date.month, t_date.day) < (birth.month, birth.day))
     if tournament_ref and players:
         cur.execute(
             """SELECT rh.user_id, rh.delta FROM rating_history rh

@@ -42,6 +42,7 @@ interface PlayerInfo {
   fio: string | null;
   avatar_url: string | null;
   rating_delta?: number | null;
+  age?: number | null;
 }
 
 interface Props {
@@ -264,6 +265,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           <tr className="text-left text-gray-400 text-xs uppercase">
             <th className="pb-2 pr-2 font-medium">Место</th>
             <th className="pb-2 pr-2 font-medium">Участник</th>
+            <th className="pb-2 pr-2 font-medium text-right">Возраст</th>
             <th className="pb-2 pr-2 font-medium text-right">Рейтинг</th>
             {roundNumbers.map(n => (
               <th key={n} className="pb-2 pr-2 font-medium text-center">Т{n}</th>
@@ -310,6 +312,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                 })()}
                 {p.absent && <span className="ml-1.5 text-xs text-gray-400 font-normal">выбыл(а)</span>}
               </td>
+              <td className="py-2 pr-2 text-right text-gray-500">{players[p.username.toLowerCase()]?.age ?? '—'}</td>
               <td className="py-2 pr-2 text-right text-gray-500">
                 {p.rating}
                 {(() => {
