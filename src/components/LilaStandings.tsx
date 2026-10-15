@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import PlayerProfileModal from '@/components/PlayerProfileModal';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import MiniChessBoard from '@/components/MiniChessBoard';
 import { shortFio } from '@/lib/fio';
 import func2url from '../../backend/func2url.json';
@@ -167,6 +168,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileId, setProfileId] = useState<number | null>(null);
+  const [openedGame, setOpenedGame] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -330,8 +332,12 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
                       ) : (
                         <a
                           href={`${LILA_ORIGIN}/${c.gameId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          onClick={e => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                            e.preventDefault();
+                            setPreview(null);
+                            setOpenedGame(c.gameId);
+                          }}
                           title={c.opponent ? `Соперник: место ${c.opponent}` : undefined}
                           onMouseEnter={e => showPreview(e, c.gameId)}
                           onMouseLeave={() => setPreview(null)}
@@ -362,6 +368,27 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           <MiniChessBoard fen={preview.fen} size={180} />
         </div>
       )}
+      <Dialog open={!!openedGame} onOpenChange={open => { if (!open) setOpenedGame(null); }}>
+        <DialogContent className="max-w-3xl w-[96vw] p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Партия</DialogTitle>
+          </DialogHeader>
+          {openedGame && (
+            <>
+              <iframe
+                key={openedGame}
+                title="Партия в Lila"
+                src={`${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
+                className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
+                allowFullScreen
+              />
+              <a href={`${LILA_ORIGIN}/${openedGame}`} target="_blank" rel="noopener noreferrer" className="text-xs text-secondary hover:underline inline-flex items-center gap-1">
+                <Icon name="ExternalLink" size={12} /> Открыть на Lila
+              </a>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <PlayerProfileModal userId={profileId} onClose={() => setProfileId(null)} />
     </div>
   );
