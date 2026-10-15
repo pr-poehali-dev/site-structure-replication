@@ -1,7 +1,7 @@
 (function () {
   if (window.parent === window) return;
   var st0 = document.createElement('style');
-  st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask,.pull-quote,blockquote.pull-quote,#friend_box{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}.swiss{grid-template-rows:auto 1fr!important;height:auto!important}.swiss__side,.swiss__stats,.swiss__underchat,.swiss__player-info{align-self:start!important;margin-top:0!important}.swiss__main,.swiss__main .box,.swiss__side,.swiss__table,.swiss__standing{height:auto!important;max-height:none!important;min-height:0!important}.swiss__main .box{overflow:visible!important}';
+  st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask,.pull-quote,blockquote.pull-quote,#friend_box{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}.swiss{grid-template-rows:auto 1fr!important;height:auto!important}.swiss__side,.swiss__stats,.swiss__underchat,.swiss__player-info{align-self:start!important;margin-top:0!important}.swiss__stats__links{display:none!important}.swiss__main,.swiss__main .box,.swiss__side,.swiss__table,.swiss__standing{height:auto!important;max-height:none!important;min-height:0!important}.swiss__main .box{overflow:visible!important}';
   (document.head || document.documentElement).appendChild(st0);
   var st2 = document.createElement('style');
   st2.textContent = 'main.round .mchat,.round__app .mchat,main.round .chat__members,.round__app .chat__members,.round__side .mchat{display:none!important}';
