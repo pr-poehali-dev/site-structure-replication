@@ -235,7 +235,7 @@ export default function PlayerProfile() {
                   {tournaments.map(t => (
                     <Link
                       key={t.tournament_id}
-                      to={`/hall/${t.tournament_id}`}
+                      to={`/room/${t.tournament_id}`}
                       className="px-5 py-3.5 flex items-center justify-between gap-3 flex-wrap hover:bg-muted/40 transition-colors"
                     >
                       <div>
