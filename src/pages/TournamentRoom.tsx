@@ -4,6 +4,7 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import LilaStandings from '@/components/LilaStandings';
+import AgeGroupTables from '@/components/AgeGroupTables';
 import { useAuth } from '@/contexts/AuthContext';
 import func2url from '../../backend/func2url.json';
 
@@ -175,6 +176,7 @@ export default function TournamentRoom() {
               allow="fullscreen"
             />
             <LilaStandings tournamentId={lilaId} kind={kind} />
+            <AgeGroupTables tournamentId={tournamentId || ''} />
           </>
         )}
       </main>

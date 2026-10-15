@@ -3,43 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
+import ResultTable from '@/components/ResultTable';
 import {
-  ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultRow, ResultsSnapshot,
+  ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultsSnapshot,
 } from '@/lib/electronicResults';
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
-function Table({ rows, grouped }: { rows: ResultRow[]; grouped?: boolean }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-white">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-muted-foreground border-b bg-gray-50">
-            <th className="py-2.5 px-3 w-12">М</th>
-            <th className="px-3">Участник</th>
-            <th className="px-3">Возраст</th>
-            <th className="px-3 text-right">Очки</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const place = grouped ? r.place ?? i + 1 : r.rank ?? i + 1;
-            return (
-              <tr key={r.username} className="border-b border-gray-50 last:border-0">
-                <td className="py-2 px-3 font-semibold">{MEDALS[place] || place}</td>
-                <td className="px-3">
-                  {r.user_id ? <Link to={`/player/${r.user_id}`} className="hover:text-secondary">{r.fio}</Link> : r.fio}
-                </td>
-                <td className="px-3">{r.age ?? '—'}</td>
-                <td className="px-3 text-right font-semibold">{r.points}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default function ElectronicResult() {
   const { tournamentId } = useParams();
@@ -90,11 +59,11 @@ export default function ElectronicResult() {
               ))}
             </div>
 
-            {tab === 'overall' && <Table rows={data.overall} />}
+            {tab === 'overall' && <ResultTable rows={data.overall} />}
 
             {group && (
               <div className="flex flex-col gap-6">
-                <Table rows={group.table} grouped />
+                <ResultTable rows={group.table} grouped />
                 <div className="grid sm:grid-cols-3 gap-4">
                   {NOMINATIONS.map(nom => {
                     const winners = group.nominations[nom.kind] || [];
