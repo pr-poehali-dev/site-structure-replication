@@ -2,10 +2,19 @@
   if (window.parent === window) return;
   var last = 0;
   function measure() {
-    var el = document.getElementById('main-wrap') || document.body;
-    var h = Math.max(el.scrollHeight, el.getBoundingClientRect().height);
-    h = Math.ceil(h);
-    if (h && Math.abs(h - last) > 1) {
+    var wrap = document.getElementById('main-wrap') || document.body;
+    var shift = window.pageYOffset || 0;
+    var max = 0;
+    var kids = wrap.children;
+    for (var i = 0; i < kids.length; i++) {
+      var c = kids[i];
+      var st = window.getComputedStyle(c);
+      if (st.display === 'none' || st.position === 'fixed') continue;
+      var b = c.getBoundingClientRect().bottom + shift;
+      if (b > max) max = b;
+    }
+    var h = Math.ceil(max);
+    if (h && Math.abs(h - last) > 2) {
       last = h;
       window.parent.postMessage({ type: 'lila-embed-height', height: h }, '*');
     }
@@ -14,9 +23,10 @@
   window.addEventListener('resize', measure);
   if (window.ResizeObserver) {
     var ro = new ResizeObserver(measure);
-    ro.observe(document.body);
     var w = document.getElementById('main-wrap');
-    if (w) ro.observe(w);
+    if (w) {
+      for (var i = 0; i < w.children.length; i++) ro.observe(w.children[i]);
+    }
   }
   if (window.MutationObserver) {
     new MutationObserver(measure).observe(document.body, { childList: true, subtree: true });
