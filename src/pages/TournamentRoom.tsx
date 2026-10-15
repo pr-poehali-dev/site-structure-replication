@@ -31,7 +31,7 @@ export default function TournamentRoom() {
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.origin !== LILA_ORIGIN) return;
+      if (e.origin !== new URL(LILA_ORIGIN).origin) return;
       const d = e.data;
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
         setFrameHeight(Math.ceil(d.height));
