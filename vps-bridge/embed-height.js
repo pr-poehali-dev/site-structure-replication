@@ -3,6 +3,13 @@
   var st0 = document.createElement('style');
   st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask,.pull-quote,blockquote.pull-quote,#friend_box{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}.swiss{grid-template-rows:auto auto!important;height:auto!important}.swiss__main,.swiss__main .box,.swiss__side,.swiss__table,.swiss__standing{height:auto!important;max-height:none!important;min-height:0!important}.swiss__main .box{overflow:visible!important}';
   (document.head || document.documentElement).appendChild(st0);
+  var fl = document.createElement('link');
+  fl.rel = 'stylesheet';
+  fl.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Golos+Text:wght@400;500;600;700&display=swap';
+  (document.head || document.documentElement).appendChild(fl);
+  var st1 = document.createElement('style');
+  st1.textContent = 'html,html.light,html.transp,html.transp.light{--c-bg-page:#f7f6f3!important;--c-body-gradient:#f7f6f3!important;--c-bg:#fff!important;--c-bg-box:#fff!important;--c-bg-zebra:#f7f6f3!important;--c-bg-zebra2:#f1f0ec!important;--c-border:#e6e3dc!important;--c-font:#141414!important;--c-font-dim:#6b6b6b!important;--c-primary:#141414!important;--c-link:#141414!important;--c-accent:#f2b61e!important;--c-secondary:#629924!important}body,button:not([data-icon]),input,select,textarea{font-family:"Golos Text",Roboto,sans-serif!important}h1,h2,h3,.swiss h1,.swiss h2,.swiss__table th{font-family:Oswald,"Golos Text",sans-serif!important;letter-spacing:.02em}body,html{background:#f7f6f3!important}.swiss__main .box,.swiss__side .box,.swiss .box{border-radius:12px!important}';
+  (document.head || document.documentElement).appendChild(st1);
   var last = 0;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };
