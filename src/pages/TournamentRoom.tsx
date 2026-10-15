@@ -31,7 +31,7 @@ export default function TournamentRoom() {
   const [joined, setJoined] = useState(false);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
   const currentHeight = useRef<number | null>(null);
-  const pendingHeight = useRef<number | null>(null);
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -40,20 +40,27 @@ export default function TournamentRoom() {
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
         const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
         const current = currentHeight.current;
-        if (current !== null && (next > current * 2 || next < current / 2)) {
-          const pending = pendingHeight.current;
-          if (pending === null || Math.abs(pending - next) > 2) {
-            pendingHeight.current = next;
-            return;
-          }
+        if (pendingTimer.current) {
+          clearTimeout(pendingTimer.current);
+          pendingTimer.current = null;
         }
-        pendingHeight.current = null;
+        if (current !== null && (next > current * 2 || next < current / 2)) {
+          pendingTimer.current = setTimeout(() => {
+            pendingTimer.current = null;
+            currentHeight.current = next;
+            setFrameHeight(next);
+          }, 1500);
+          return;
+        }
         currentHeight.current = next;
         setFrameHeight(next);
       }
     };
     window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      if (pendingTimer.current) clearTimeout(pendingTimer.current);
+    };
   }, []);
 
   useEffect(() => {
