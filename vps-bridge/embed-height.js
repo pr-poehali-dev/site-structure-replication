@@ -91,13 +91,16 @@
         if (r.height > 0) bottom = r.bottom;
       }
       if (bottom + shift > max) max = bottom + shift;
-      if (swEl && bottom > 0) {
-        var nn = n.nodeType === 3 ? n.parentElement : n;
-        if (nn && swEl.contains(nn) && bottom + shift > inside) inside = bottom + shift;
-      }
     }
     var sw = document.querySelector('.swiss');
     if (sw && sw.offsetParent !== null) {
+      var els = sw.querySelectorAll('*');
+      for (var k = 0; k < els.length; k++) {
+        var e2 = els[k];
+        if (e2.offsetParent === null || pinned(e2, cache)) continue;
+        var rr = e2.getBoundingClientRect();
+        if (rr.height > 0 && rr.width > 0 && rr.bottom + shift > inside) inside = rr.bottom + shift;
+      }
       var sb = sw.getBoundingClientRect().bottom + shift;
       if (sb > 0 && (max === 0 || sb < max)) max = Math.max(sb, inside);
     }
