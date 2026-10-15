@@ -14,7 +14,25 @@
     return st.visibility !== 'hidden' && st.display !== 'none';
   }
 
+  function unclip() {
+    var root = document.getElementById('main-wrap') || document.body;
+    var all = root.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (el.scrollHeight <= el.clientHeight + 2) continue;
+      var cs = window.getComputedStyle(el);
+      var oy = cs.overflowY;
+      if (oy !== 'hidden' && oy !== 'auto' && oy !== 'scroll') continue;
+      if (cs.display === 'inline') continue;
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('height', 'auto', 'important');
+      el.style.setProperty('max-height', 'none', 'important');
+      el.style.setProperty('min-height', '0', 'important');
+    }
+  }
+
   function measure() {
+    unclip();
     var root = document.getElementById('main-wrap') || document.body;
     var shift = window.pageYOffset || 0;
     var max = 0;
