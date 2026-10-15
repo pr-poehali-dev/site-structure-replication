@@ -31,8 +31,24 @@
     }
   }
 
+  function pinned(el, cache) {
+    var chain = [];
+    var cur = el;
+    var res = false;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      if (cache.has(cur)) { res = cache.get(cur); break; }
+      chain.push(cur);
+      var pos = window.getComputedStyle(cur).position;
+      if (pos === 'fixed' || pos === 'sticky') { res = true; break; }
+      cur = cur.parentElement;
+    }
+    for (var i = 0; i < chain.length; i++) cache.set(chain[i], res);
+    return res;
+  }
+
   function measure() {
     unclip();
+    var cache = new Map();
     var root = document.getElementById('main-wrap') || document.body;
     var shift = window.pageYOffset || 0;
     var max = 0;
@@ -44,6 +60,7 @@
       if (n.nodeType === 3) {
         if (!n.nodeValue || !n.nodeValue.trim()) continue;
         if (!visible(n.parentElement)) continue;
+        if (pinned(n.parentElement, cache)) continue;
         range.selectNodeContents(n);
         var rects = range.getClientRects();
         for (var i = 0; i < rects.length; i++) {
@@ -51,6 +68,7 @@
         }
       } else if (REPLACED[n.tagName.toUpperCase()]) {
         if (!visible(n)) continue;
+        if (pinned(n, cache)) continue;
         var r = n.getBoundingClientRect();
         if (r.height > 0) bottom = r.bottom;
       }
