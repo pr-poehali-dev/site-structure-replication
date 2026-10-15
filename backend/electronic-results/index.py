@@ -128,7 +128,7 @@ def build_snapshot(t, rows, cfg):
             noms['best_woman'] = [{'place': i + 1, 'username': m['username'], 'fio': m['fio'], 'game_url': None} for i, m in enumerate(girls)]
         out_groups.append({'name': g['name'], 'min': g['min'], 'max': g['max'], 'table': table, 'nominations': noms})
     return {
-        'tournament': {'id': t['id'], 'title': t['title'], 'date': t['date']},
+        'tournament': {'id': t['id'], 'title': t['title'], 'date': t['date'], 'has_hall': bool(t['lila_id'])},
         'overall': rows,
         'groups': out_groups,
     }
@@ -200,10 +200,15 @@ def handler(event: dict, context) -> dict:
         if tid:
             cur.execute("SELECT snapshot FROM electronic_results WHERE tournament_id = %s AND status = 'published'", (int(tid),))
             row = cur.fetchone()
-            conn.close()
             if not row or not row[0]:
+                conn.close()
                 return resp(404, {'error': 'Результаты не опубликованы'})
-            return resp(200, json.loads(row[0]))
+            cur.execute("SELECT lila_tournament_id FROM tournaments WHERE id = %s", (int(tid),))
+            trow = cur.fetchone()
+            conn.close()
+            snap = json.loads(row[0])
+            snap.setdefault('tournament', {})['has_hall'] = bool(trow and trow[0])
+            return resp(200, snap)
 
         cur.execute(
             """SELECT er.tournament_id, t.title, t.date, er.published_at FROM electronic_results er

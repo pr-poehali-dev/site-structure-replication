@@ -44,7 +44,7 @@ export interface GroupSnapshot {
 }
 
 export interface ResultsSnapshot {
-  tournament: { id: number; title: string; date: string | null };
+  tournament: { id: number; title: string; date: string | null; has_hall?: boolean };
   overall: ResultRow[];
   groups: GroupSnapshot[];
 }

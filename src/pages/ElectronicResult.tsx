@@ -72,7 +72,15 @@ export default function ElectronicResult() {
           <p className="text-muted-foreground py-10">Результаты этого турнира пока не опубликованы</p>
         ) : (
           <>
-            <h1 className="font-heading font-bold text-3xl text-primary mb-6">{data.tournament.title}</h1>
+            <h1 className="font-heading font-bold text-3xl text-primary mb-3">{data.tournament.title}</h1>
+            {data.tournament.has_hall && (
+              <Link
+                to={`/room/${data.tournament.id}`}
+                className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:underline mb-6"
+              >
+                <Icon name="Trophy" size={16} /> Открыть турнирный зал
+              </Link>
+            )}
             <div className="flex flex-wrap gap-2 mb-6">
               {[{ name: 'overall', label: 'Общий зачёт' }, ...data.groups.map(g => ({ name: g.name, label: g.name }))].map(t => (
                 <button key={t.name} onClick={() => setTab(t.name)}

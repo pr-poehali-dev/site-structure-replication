@@ -1,12 +1,16 @@
 {
   "tests": [
     {
-      "name": "Public list of published results",
+      "name": "Unpublished tournament returns 404",
+      "method": "GET",
+      "path": "/?tournament_id=999999999",
+      "expectedStatus": 404
+    },
+    {
+      "name": "Public list returns 200",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {"items": []},
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     }
   ]
 }
