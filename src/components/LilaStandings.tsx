@@ -371,7 +371,31 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
       <Dialog open={!!openedGame} onOpenChange={open => { if (!open) setOpenedGame(null); }}>
         <DialogContent className="max-w-3xl w-[96vw] p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Партия</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">
+              {(() => {
+                const g = games.find(x => x.id === openedGame);
+                if (!g) return 'Партия';
+                const nameOf = (id?: string) => {
+                  if (!id) return '—';
+                  const info = players[id.toLowerCase()];
+                  return info?.fio ? shortFio(info.fio) : id;
+                };
+                const res = ONGOING.includes(g.status) ? 'идёт' : g.winner === 'white' ? '1 : 0' : g.winner === 'black' ? '0 : 1' : '½ : ½';
+                return (
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full bg-white border border-gray-400 inline-block" />
+                      {nameOf(g.players.white.user?.id)}
+                    </span>
+                    <span className="text-gray-400 font-normal">{res}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-3.5 h-3.5 rounded-full bg-gray-900 border border-gray-900 inline-block" />
+                      {nameOf(g.players.black.user?.id)}
+                    </span>
+                  </span>
+                );
+              })()}
+            </DialogTitle>
           </DialogHeader>
           {openedGame && (
             <iframe
