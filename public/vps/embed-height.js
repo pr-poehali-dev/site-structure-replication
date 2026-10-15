@@ -24,6 +24,17 @@
     var t = e.target && e.target.closest ? e.target.closest('a[href^="/@/"], a.user-link, .user-link a') : null;
     if (t) { e.preventDefault(); e.stopPropagation(); }
   }, true);
+  document.addEventListener('click', function (e) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var el = e.target && e.target.closest ? e.target.closest('a.glpt, tr.glpt, .swiss a[href], .swiss [data-href]') : null;
+    if (!el) return;
+    var href = el.getAttribute('href') || el.getAttribute('data-href') || '';
+    var m = href.match(/^\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(?:white|black))?\/?$/);
+    if (!m) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.parent.postMessage({ type: 'lila-open-game', gameId: m[1] }, '*');
+  }, true);
   var last = 0;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };

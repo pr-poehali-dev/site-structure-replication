@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
@@ -30,6 +30,7 @@ export default function TournamentRoom() {
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  const [, setSearchParams] = useSearchParams();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,6 +40,14 @@ export default function TournamentRoom() {
       if (e.origin !== new URL(LILA_ORIGIN).origin) return;
       if (!frameRef.current || e.source !== frameRef.current.contentWindow) return;
       const d = e.data;
+      if (d && d.type === 'lila-open-game' && typeof d.gameId === 'string' && /^[A-Za-z0-9]{8}$/.test(d.gameId)) {
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.set('game', d.gameId);
+          return next;
+        }, { replace: true });
+        return;
+      }
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
         const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
         const current = currentHeight.current;
