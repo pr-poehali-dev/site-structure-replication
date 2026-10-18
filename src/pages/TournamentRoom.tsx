@@ -117,20 +117,24 @@ export default function TournamentRoom() {
   const isArena = tournament?.lila_tournament_kind === 'arena';
   const kind = isArena ? 'tournament' : 'swiss';
 
+  const headerBlock = (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h1 className="font-heading font-bold text-2xl text-primary">{tournament?.title || 'Турнирный зал'}</h1>
+        {tournament?.time_control && <p className="text-sm text-muted-foreground">{tournament.time_control}</p>}
+      </div>
+      <Link to="/cabinet" className="text-sm text-primary hover:underline flex items-center gap-1">
+        <Icon name="ArrowLeft" size={14} /> В кабинет
+      </Link>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-muted flex flex-col">
       <Seo title={tournament ? `${tournament.title} — турнирный зал` : 'Турнирный зал'} description="Турнирный зал" noindex />
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="font-heading font-bold text-2xl text-primary">{tournament?.title || 'Турнирный зал'}</h1>
-            {tournament?.time_control && <p className="text-sm text-muted-foreground">{tournament.time_control}</p>}
-          </div>
-          <Link to="/cabinet" className="text-sm text-primary hover:underline flex items-center gap-1">
-            <Icon name="ArrowLeft" size={14} /> В кабинет
-          </Link>
-        </div>
+        {!(lilaId && joined) && headerBlock}
 
         {loading && (
           <div className="flex items-center gap-2 text-muted-foreground py-6">
@@ -186,6 +190,7 @@ export default function TournamentRoom() {
               }}
               allow="fullscreen"
             />
+            {headerBlock}
             <LilaStandings tournamentId={lilaId} kind={kind} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
             <AgeGroupTables tournamentId={tournamentId || ''} />
           </>
