@@ -50,6 +50,7 @@ interface PlayerInfo {
 interface Props {
   tournamentId: string;
   kind?: 'swiss' | 'tournament';
+  onLiveGame?: (gameId: string) => void;
 }
 
 const parseNdjson = (text: string) =>
@@ -162,7 +163,7 @@ function buildFromSheets(sheets: Record<string, string[]>, games: LilaGame[], ro
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
+export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame }: Props) {
   const [rows, setRows] = useState<LilaRow[]>([]);
   const [games, setGames] = useState<LilaGame[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
@@ -176,11 +177,18 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const openedGame = gameParam && /^[A-Za-z0-9]{8}$/.test(gameParam) ? gameParam : null;
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
-  const openedGameData = openedGame ? games.find(x => x.id === openedGame) : undefined;
-  const myLogin = user?.login?.toLowerCase() || null;
-  const openedLive = !!openedGameData && !!myLogin && ONGOING.includes(openedGameData.status) &&
-    (openedGameData.players.white.user?.id?.toLowerCase() === myLogin || openedGameData.players.black.user?.id?.toLowerCase() === myLogin);
+  const isMyLive = (id: string) => {
+    const g = games.find(x => x.id === id);
+    const me = user?.login?.toLowerCase();
+    return !!g && !!me && ONGOING.includes(g.status) &&
+      (g.players.white.user?.id?.toLowerCase() === me || g.players.black.user?.id?.toLowerCase() === me);
+  };
   const setOpenedGame = (id: string | null) => {
+    if (id && onLiveGame && isMyLive(id)) {
+      onLiveGame(id);
+      setSearchParams(prev => { const n = new URLSearchParams(prev); n.delete('game'); return n; }, { replace: true });
+      return;
+    }
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       if (id) next.set('game', id);
@@ -195,6 +203,9 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+  useEffect(() => {
+    if (openedGame && onLiveGame && isMyLive(openedGame)) setOpenedGame(openedGame);
+  }, [openedGame, games, user]);
   const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -437,9 +448,9 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           )}
           {openedGame && (
             <iframe
-              key={`${openedGame}-${openedLive ? 'live' : 'view'}-${openedLive ? '' : (openedGameData?.status || '')}-${openedLive ? '' : (openedGameData?.lastFen || '')}`}
+              key={openedGame}
               title="Партия в Lila"
-              src={openedLive ? `${LILA_ORIGIN}/${openedGame}` : `${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
+              src={`${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
               className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
               allowFullScreen
             />

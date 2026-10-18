@@ -30,6 +30,7 @@ export default function TournamentRoom() {
   const { token, loading: authLoading } = useAuth();
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
+  const [liveGame, setLiveGame] = useState<string | null>(null);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
   const [, setSearchParams] = useSearchParams();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
@@ -160,9 +161,19 @@ export default function TournamentRoom() {
 
         {lilaId && joined && (
           <>
+            {liveGame && (
+              <button
+                type="button"
+                onClick={() => setLiveGame(null)}
+                className="self-start inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                <Icon name="ArrowLeft" size={14} /> Вернуться к турниру
+              </button>
+            )}
             <iframe
+              key={liveGame || 'tour'}
               ref={frameRef}
-              src={`${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
+              src={liveGame ? `${LILA_ORIGIN}/${liveGame}?embed=1` : `${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
               title="Турнир"
               className="w-full bg-white"
               scrolling="no"
@@ -175,7 +186,7 @@ export default function TournamentRoom() {
               }}
               allow="fullscreen"
             />
-            <LilaStandings tournamentId={lilaId} kind={kind} />
+            <LilaStandings tournamentId={lilaId} kind={kind} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
             <AgeGroupTables tournamentId={tournamentId || ''} />
           </>
         )}
