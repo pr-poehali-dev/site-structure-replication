@@ -211,6 +211,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
   useEffect(() => {
     let cancelled = false;
     let first = true;
+    let attempts = 0;
     setLoading(true);
     setError('');
     const base = `${LILA_ORIGIN}/api/${kind}/${tournamentId}`;
@@ -221,7 +222,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
       fetch(base, { headers: { Accept: 'application/json' } }),
     ])
       .then(async ([res, gm, info]) => {
-        if (!res.ok) throw new Error('Турнир не найден');
+        if (!res.ok) throw new Error(res.status === 404 ? 'Турнир не найден' : 'Не удалось загрузить таблицу');
         const parsed: LilaRow[] = parseNdjson(await res.text());
         if (cancelled) return;
         setError('');
@@ -246,14 +247,20 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
           setRoundsCount(data.nbRounds || 0);
         }
       })
+      .then(() => { attempts = 0; first = false; if (!cancelled) setLoading(false); })
       .catch(e => {
-        if (first && !cancelled) setError(e.message || 'Не удалось загрузить таблицу');
-      })
-      .finally(() => {
+        if (cancelled) return;
+        attempts += 1;
+        if (first && attempts < 4) {
+          retryTimer = setTimeout(load, 2000);
+          return;
+        }
+        if (first) setError(e.message || 'Не удалось загрузить таблицу');
         first = false;
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
 
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     load();
     const timer = setInterval(() => {
       if (!document.hidden) load();
@@ -262,6 +269,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
     return () => {
       cancelled = true;
       clearInterval(timer);
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [tournamentId, kind]);
 
