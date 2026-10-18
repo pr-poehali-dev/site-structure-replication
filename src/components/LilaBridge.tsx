@@ -18,8 +18,8 @@ const LILA_BRIDGE_ORIGIN = 'https://play.мир-шахмат.рф';
  *
  * Рендерить один раз в корне приложения (см. App.tsx), рядом с AuthProvider.
  */
-const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
-const MIN_GAP_MS = 10 * 60 * 1000;
+const REFRESH_INTERVAL_MS = 60 * 1000;
+const MIN_GAP_MS = 30 * 1000;
 
 export default function LilaBridge() {
   const { token } = useAuth();
