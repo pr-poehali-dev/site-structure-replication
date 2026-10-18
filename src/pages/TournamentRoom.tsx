@@ -32,6 +32,7 @@ export default function TournamentRoom() {
   const [joined, setJoined] = useState(false);
   const [liveGame, setLiveGame] = useState<string | null>(null);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  const [frameIsGame, setFrameIsGame] = useState(false);
   const [, setSearchParams] = useSearchParams();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
@@ -48,6 +49,10 @@ export default function TournamentRoom() {
           next.set('game', d.gameId);
           return next;
         }, { replace: true });
+        return;
+      }
+      if (d && d.type === 'lila-embed-page') {
+        setFrameIsGame(!!d.game);
         return;
       }
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
@@ -182,8 +187,8 @@ export default function TournamentRoom() {
               className="w-full bg-white"
               scrolling="no"
               style={{
-                height: liveGame ? '70vh' : (frameHeight ?? '113vh'),
-                minHeight: liveGame ? 480 : (frameHeight ? undefined : 800),
+                height: (liveGame || frameIsGame) ? '70vh' : (frameHeight ?? '113vh'),
+                minHeight: (liveGame || frameIsGame) ? 480 : (frameHeight ? undefined : 800),
                 border: '1px solid #E5E2DC',
                 borderRadius: 12,
                 overflow: 'hidden',

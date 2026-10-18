@@ -38,6 +38,7 @@
     window.parent.postMessage({ type: 'lila-open-game', gameId: m[1] }, '*');
   }, true);
   var last = 0;
+  var lastGame = null;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };
 
@@ -82,6 +83,11 @@
   }
 
   function measure() {
+    var isGame = !!document.querySelector('main.round');
+    if (isGame !== lastGame) {
+      lastGame = isGame;
+      window.parent.postMessage({ type: 'lila-embed-page', game: isGame }, '*');
+    }
     unclip();
     var cache = new Map();
     var root = document.getElementById('main-wrap') || document.body;
