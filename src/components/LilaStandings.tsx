@@ -6,6 +6,7 @@ import PlayerAvatar from '@/components/PlayerAvatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import MiniChessBoard from '@/components/MiniChessBoard';
 import { shortFio } from '@/lib/fio';
+import { useAuth } from '@/contexts/AuthContext';
 import func2url from '../../backend/func2url.json';
 
 const PLAYERS_URL = func2url['lila-players'];
@@ -173,9 +174,12 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   const gameParam = searchParams.get('game');
   const openedGame = gameParam && /^[A-Za-z0-9]{8}$/.test(gameParam) ? gameParam : null;
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const openedGameData = openedGame ? games.find(x => x.id === openedGame) : undefined;
-  const openedLive = !!openedGameData && ONGOING.includes(openedGameData.status);
+  const myLogin = user?.login?.toLowerCase() || null;
+  const openedLive = !!openedGameData && !!myLogin && ONGOING.includes(openedGameData.status) &&
+    (openedGameData.players.white.user?.id?.toLowerCase() === myLogin || openedGameData.players.black.user?.id?.toLowerCase() === myLogin);
   const setOpenedGame = (id: string | null) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -433,7 +437,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           )}
           {openedGame && (
             <iframe
-              key={`${openedGame}-${openedLive ? 'live' : 'end'}`}
+              key={`${openedGame}-${openedLive ? 'live' : 'view'}-${openedLive ? '' : (openedGameData?.status || '')}-${openedLive ? '' : (openedGameData?.lastFen || '')}`}
               title="Партия в Lila"
               src={openedLive ? `${LILA_ORIGIN}/${openedGame}` : `${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
               className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
