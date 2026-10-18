@@ -18,21 +18,22 @@ const LILA_BRIDGE_ORIGIN = 'https://play.мир-шахмат.рф';
  *
  * Рендерить один раз в корне приложения (см. App.tsx), рядом с AuthProvider.
  */
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+const MIN_GAP_MS = 10 * 60 * 1000;
+
 export default function LilaBridge() {
   const { token } = useAuth();
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
-  const lastSyncedToken = useRef<string | null>(null);
+  const lastSyncAt = useRef(0);
 
   useEffect(() => {
-    if (!token || token === lastSyncedToken.current) return;
-    lastSyncedToken.current = token;
+    if (!token) {
+      lastSyncAt.current = 0;
+      return;
+    }
 
-    // Небольшая задержка: AuthContext параллельно вызывает ensure_account (создание
-    // зеркального Lila-аккаунта) сразу после входа — issue_bridge_token требует, чтобы
-    // аккаунт уже существовал, поэтому даём первому запросу время отработать. Если
-    // аккаунт ещё не готов (400 от backend), просто не показываем мост в этот раз —
-    // при следующем входе/обновлении страницы попытка повторится.
-    const timer = setTimeout(() => {
+    const sync = () => {
+      lastSyncAt.current = Date.now();
       fetch(LILA_SYNC_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
@@ -44,10 +45,23 @@ export default function LilaBridge() {
             setIframeSrc(`${LILA_BRIDGE_ORIGIN}/bridge/login?token=${data.bridge_token}`);
           }
         })
-        .catch(() => {});
-    }, 2500);
+        .catch(() => { lastSyncAt.current = 0; });
+    };
 
-    return () => clearTimeout(timer);
+    const first = setTimeout(sync, 2500);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') sync();
+    }, REFRESH_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastSyncAt.current > MIN_GAP_MS) sync();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearTimeout(first);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [token]);
 
   if (!iframeSrc) return null;
