@@ -118,7 +118,7 @@ export default function TournamentRoom() {
   const kind = isArena ? 'tournament' : 'swiss';
 
   const headerBlock = (
-    <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="flex items-center justify-between gap-3 flex-wrap pt-6">
       <div>
         <h1 className="font-heading font-bold text-2xl text-primary">{tournament?.title || 'Турнирный зал'}</h1>
         {tournament?.time_control && <p className="text-sm text-muted-foreground">{tournament.time_control}</p>}
@@ -133,7 +133,7 @@ export default function TournamentRoom() {
     <div className="min-h-screen bg-muted flex flex-col">
       <Seo title={tournament ? `${tournament.title} — турнирный зал` : 'Турнирный зал'} description="Турнирный зал" noindex />
       <Header />
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 flex flex-col gap-5">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 pb-6 pt-0 flex flex-col gap-5">
         {!(lilaId && joined) && headerBlock}
 
         {loading && (
