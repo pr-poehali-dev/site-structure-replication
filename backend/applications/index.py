@@ -186,7 +186,7 @@ def handler(event: dict, context) -> dict:
             bonus_part = 0
             money_part = 0
 
-        initial_status = 'paid' if price > 0 else 'new'
+        initial_status = 'paid'
         cur.execute(
             """INSERT INTO applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, school, email, phone, status, user_id, price, paid_from_balance, bonus_paid)
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
