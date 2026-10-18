@@ -174,6 +174,8 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
   const gameParam = searchParams.get('game');
   const openedGame = gameParam && /^[A-Za-z0-9]{8}$/.test(gameParam) ? gameParam : null;
   const [copied, setCopied] = useState(false);
+  const openedGameData = openedGame ? games.find(x => x.id === openedGame) : undefined;
+  const openedLive = !!openedGameData && ONGOING.includes(openedGameData.status);
   const setOpenedGame = (id: string | null) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -431,9 +433,9 @@ export default function LilaStandings({ tournamentId, kind = 'swiss' }: Props) {
           )}
           {openedGame && (
             <iframe
-              key={openedGame}
+              key={`${openedGame}-${openedLive ? 'live' : 'end'}`}
               title="Партия в Lila"
-              src={`${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
+              src={openedLive ? `${LILA_ORIGIN}/${openedGame}` : `${LILA_ORIGIN}/embed/game/${openedGame}?theme=auto&bg=auto`}
               className="w-full h-[70vh] min-h-[420px] rounded-lg border border-gray-100 bg-white"
               allowFullScreen
             />
