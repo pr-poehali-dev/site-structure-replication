@@ -191,7 +191,7 @@ export default function TournamentRoom() {
               allow="fullscreen"
             />
             {headerBlock}
-            <LilaStandings tournamentId={lilaId} kind={kind} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+            <LilaStandings tournamentId={lilaId} kind={kind} liveGame={liveGame} onLeaveGame={() => setLiveGame(null)} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
             <AgeGroupTables tournamentId={tournamentId || ''} />
           </>
         )}

@@ -51,6 +51,8 @@ interface Props {
   tournamentId: string;
   kind?: 'swiss' | 'tournament';
   onLiveGame?: (gameId: string) => void;
+  liveGame?: string | null;
+  onLeaveGame?: () => void;
 }
 
 const parseNdjson = (text: string) =>
@@ -163,7 +165,7 @@ function buildFromSheets(sheets: Record<string, string[]>, games: LilaGame[], ro
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame }: Props) {
+export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame, liveGame, onLeaveGame }: Props) {
   const [rows, setRows] = useState<LilaRow[]>([]);
   const [games, setGames] = useState<LilaGame[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
@@ -206,6 +208,17 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
   useEffect(() => {
     if (openedGame && onLiveGame && isMyLive(openedGame)) setOpenedGame(openedGame);
   }, [openedGame, games, user]);
+  useEffect(() => {
+    if (!liveGame || !onLiveGame) return;
+    const cur = games.find(x => x.id === liveGame);
+    if (!cur || ONGOING.includes(cur.status)) return;
+    const next = games.find(x => x.id !== liveGame && isMyLive(x.id));
+    const timer = setTimeout(() => {
+      if (next) onLiveGame(next.id);
+      else if (onLeaveGame) onLeaveGame();
+    }, next ? 1500 : 6000);
+    return () => clearTimeout(timer);
+  }, [liveGame, games, user]);
   const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
