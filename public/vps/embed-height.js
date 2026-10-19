@@ -19,6 +19,9 @@
   var stT = document.createElement('style');
   stT.textContent = '.podium .first .trophy{background-image:url(' + MG + ')!important;background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important}.podium .second .trophy{background-image:url(' + MS + ')!important;background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important}.podium .third .trophy{background-image:url(' + MB + ')!important;background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important}';
   (document.head || document.documentElement).appendChild(stT);
+  var stP = document.createElement('style');
+  stP.textContent = '.podium{display:block!important}.podium .trophy{display:block!important}@media (max-width:499.29px){.podium .first{font-size:1.1em!important}.podium .second{font-size:.95em!important}.podium .third{font-size:.9em!important}.podium .first .trophy{width:6em!important;height:6em!important}.podium .second .trophy{width:5em!important;height:6em!important}.podium .third .trophy{width:5em!important;height:5em!important}.podium .user-link{letter-spacing:0!important}.podium .stats{display:none!important}}';
+  (document.head || document.documentElement).appendChild(stP);
   var stU = document.createElement('style');
   stU.textContent = 'a[href^="/team/"],a[href^="/@/"],a.user-link,.user-link a,.swiss a.user-link,.swiss .user-link a,.podium a.user-link{pointer-events:none!important;cursor:default!important;text-decoration:none!important;color:inherit!important}';
   (document.head || document.documentElement).appendChild(stU);
