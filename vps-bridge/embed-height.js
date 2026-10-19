@@ -4,7 +4,7 @@
   st0.textContent = '#top,#topnav,.site-title-nav,.fullscreen-mask,.pull-quote,blockquote.pull-quote,#friend_box{display:none!important}body,#main-wrap{margin-top:0!important;padding-top:0!important}.swiss{grid-template-rows:auto 1fr!important;height:auto!important}.swiss__side,.swiss__stats,.swiss__underchat,.swiss__player-info{align-self:start!important;margin-top:0!important}.swiss__stats__links{display:none!important}.swiss__meta section[data-icon]:first-child:before{content:""!important;display:block!important;flex:0 0 60px!important;width:60px!important;height:60px!important;margin-inline-end:4%!important;background:url(https://xn----8sba3atdzuy2a.xn--p1ai/brand/tournament-icon-v1.png) center/contain no-repeat!important;font-size:0!important}@media (min-width:799.3px) and (max-width:1259px){.swiss__player-info.swiss__table{grid-area:2/2/3/3!important;width:auto!important;min-width:0!important}}.swiss__main,.swiss__main .box,.swiss__side,.swiss__table,.swiss__standing{height:auto!important;max-height:none!important;min-height:0!important}.swiss__main .box{overflow:visible!important}';
   (document.head || document.documentElement).appendChild(st0);
   var st2 = document.createElement('style');
-  st2.textContent = '.mchat,.chat__members,.swiss__chat,.tour__chat,main.round .mchat,.round__app .mchat,main.round .chat__members,.round__app .chat__members,.round__side .mchat,main.round .game__meta,main.round .round__underboard,main.round .crosstable,.round__underboard .crosstable,main.round .game__tournament,main.round .game__tournament-link{display:none!important}.rclock .time{z-index:auto!important}a.glpt,.swiss a[href^="/"],a.mini-game,.mini-game a,.tour__featured a,.swiss__board a{pointer-events:none!important;cursor:default!important}body{---board-scale:1!important;---site-header-height:0px!important;---sticky-gap:0px!important}';
+  st2.textContent = '.mchat,.chat__members,.swiss__chat,.tour__chat,main.round .mchat,.round__app .mchat,main.round .chat__members,.round__app .chat__members,.round__side .mchat,main.round .game__meta,main.round .round__underboard,main.round .crosstable,.round__underboard .crosstable,main.round .game__tournament,main.round .game__tournament-link{display:none!important}.rclock .time{z-index:auto!important}a.mini-game,.mini-game a,.tour__featured a,.swiss__board a{pointer-events:none!important;cursor:default!important}body{---board-scale:1!important;---site-header-height:0px!important;---sticky-gap:0px!important}';
   (document.head || document.documentElement).appendChild(st2);
   var fl = document.createElement('link');
   fl.rel = 'stylesheet';
@@ -26,7 +26,27 @@
     var t = e.target && e.target.closest ? e.target.closest('a[href^="/team/"], a[href^="/@/"], a.user-link, .user-link a') : null;
     if (t) { e.preventDefault(); e.stopPropagation(); }
   }, true);
-  document.addEventListener('click', function (e) {
+  var ownCache = {};
+  function me() {
+    var u = document.body && (document.body.getAttribute('data-user') || '');
+    return u ? u.toLowerCase() : '';
+  }
+  function isMine(id, cb) {
+    var u = me();
+    if (!u) return cb(false);
+    if (ownCache[id] !== undefined) return cb(ownCache[id]);
+    fetch('/game/export/' + id + '?moves=false&tags=false&clocks=false&evals=false', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (g) {
+        var w = g && g.players && g.players.white && g.players.white.user && g.players.white.user.id;
+        var b = g && g.players && g.players.black && g.players.black.user && g.players.black.user.id;
+        var ok = !!g && (String(w || '').toLowerCase() === u || String(b || '').toLowerCase() === u);
+        if (g) ownCache[id] = ok;
+        cb(ok);
+      })
+      .catch(function () { cb(false); });
+  }
+  function onGameClick(e) {
     if (e.target && e.target.closest && e.target.closest('a.mini-game, .mini-game a')) { e.preventDefault(); e.stopPropagation(); return; }
     var el = e.target && e.target.closest ? e.target.closest('a.glpt, tr.glpt, #powerTip a[href], .swiss a[href], .swiss [data-href]') : null;
     if (!el) return;
@@ -35,7 +55,14 @@
     if (!m) return;
     e.preventDefault();
     e.stopPropagation();
-  }, true);
+    if (e.type !== 'click' || e.button !== 0) return;
+    var id = m[1];
+    isMine(id, function (ok) {
+      if (ok) window.parent.postMessage({ type: 'lila-open-game', gameId: id }, '*');
+    });
+  }
+  document.addEventListener('click', onGameClick, true);
+  document.addEventListener('auxclick', onGameClick, true);
   var last = 0;
   var lastGame = null;
   var timer = null;
