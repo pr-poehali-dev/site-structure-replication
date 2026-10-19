@@ -210,13 +210,14 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
   }, [openedGame, games, user]);
   useEffect(() => {
     if (!liveGame || !onLiveGame) return;
+    const next = games.find(x => x.id !== liveGame && isMyLive(x.id));
+    if (next) {
+      const timer = setTimeout(() => onLiveGame(next.id), 1000);
+      return () => clearTimeout(timer);
+    }
     const cur = games.find(x => x.id === liveGame);
     if (!cur || ONGOING.includes(cur.status)) return;
-    const next = games.find(x => x.id !== liveGame && isMyLive(x.id));
-    const timer = setTimeout(() => {
-      if (next) onLiveGame(next.id);
-      else if (onLeaveGame) onLeaveGame();
-    }, next ? 1500 : 6000);
+    const timer = setTimeout(() => { if (onLeaveGame) onLeaveGame(); }, 6000);
     return () => clearTimeout(timer);
   }, [liveGame, games, user]);
   const [preview, setPreview] = useState<{ fen: string; x: number; y: number } | null>(null);

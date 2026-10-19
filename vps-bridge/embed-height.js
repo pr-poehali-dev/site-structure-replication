@@ -65,6 +65,7 @@
   document.addEventListener('auxclick', onGameClick, true);
   var last = 0;
   var lastGame = null;
+  var lastGid = null;
   var timer = null;
   var REPLACED = { IMG: 1, SVG: 1, CANVAS: 1, VIDEO: 1, IFRAME: 1, INPUT: 1, BUTTON: 1, SELECT: 1, TEXTAREA: 1 };
 
@@ -110,9 +111,11 @@
 
   function measure() {
     var isGame = /^\/[A-Za-z0-9]{8}([A-Za-z0-9]{4})?\/?$/.test(location.pathname);
-    if (isGame !== lastGame) {
+    var gid = isGame ? location.pathname.slice(1, 9) : '';
+    if (isGame !== lastGame || gid !== lastGid) {
       lastGame = isGame;
-      window.parent.postMessage({ type: 'lila-embed-page', game: isGame }, '*');
+      lastGid = gid;
+      window.parent.postMessage({ type: 'lila-embed-page', game: isGame, gameId: gid }, '*');
     }
     unclip();
     var cache = new Map();

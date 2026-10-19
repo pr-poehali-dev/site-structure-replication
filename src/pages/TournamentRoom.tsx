@@ -33,6 +33,8 @@ export default function TournamentRoom() {
   const [liveGame, setLiveGame] = useState<string | null>(null);
   const [frameHeight, setFrameHeight] = useState<number | null>(null);
   const [frameIsGame, setFrameIsGame] = useState(false);
+  const [frameGameId, setFrameGameId] = useState<string | null>(null);
+  const [frameKey, setFrameKey] = useState(0);
   const [, setSearchParams] = useSearchParams();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
@@ -55,6 +57,7 @@ export default function TournamentRoom() {
       }
       if (d && d.type === 'lila-embed-page') {
         setFrameIsGame(!!d.game);
+        setFrameGameId(d.game && typeof d.gameId === 'string' && /^[A-Za-z0-9]{8}$/.test(d.gameId) ? d.gameId : null);
         return;
       }
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
@@ -204,7 +207,7 @@ export default function TournamentRoom() {
               </button>
             )}
             <iframe
-              key={liveGame || 'tour'}
+              key={`${liveGame || 'tour'}-${frameKey}`}
               ref={frameRef}
               src={liveGame ? `${LILA_ORIGIN}/${liveGame}?embed=1` : `${LILA_ORIGIN}/${kind}/${lilaId}?embed=1`}
               title="Турнир"
@@ -220,7 +223,7 @@ export default function TournamentRoom() {
               allow="fullscreen"
             />
             {headerBlock}
-            <LilaStandings tournamentId={lilaId} kind={kind} liveGame={liveGame} onLeaveGame={() => setLiveGame(null)} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+            <LilaStandings tournamentId={lilaId} kind={kind} liveGame={liveGame || frameGameId} onLeaveGame={() => { setLiveGame(null); setFrameIsGame(false); setFrameGameId(null); setFrameKey(k => k + 1); }} onLiveGame={id => { setLiveGame(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
             <AgeGroupTables tournamentId={tournamentId || ''} />
           </>
         )}
