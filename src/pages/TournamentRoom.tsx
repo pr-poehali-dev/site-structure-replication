@@ -37,7 +37,6 @@ export default function TournamentRoom() {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
   const lockUntil = useRef(0);
-  const frameIsGameRef = useRef(false);
   const heightHistory = useRef<{ v: number; t: number }[]>([]);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -55,8 +54,6 @@ export default function TournamentRoom() {
         return;
       }
       if (d && d.type === 'lila-embed-page') {
-        console.log('[frame-debug] page', { game: !!d.game, t: new Date().toISOString().slice(14, 23) });
-        frameIsGameRef.current = !!d.game;
         setFrameIsGame(!!d.game);
         return;
       }
@@ -64,7 +61,6 @@ export default function TournamentRoom() {
         const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
         const current = currentHeight.current;
         const now = Date.now();
-        console.log('[frame-debug] height', { raw: d.height, next, current, locked: Date.now() < lockUntil.current, isGame: frameIsGameRef.current, t: new Date().toISOString().slice(14, 23) });
         if (now < lockUntil.current) {
           if (current !== null && next > current) {
             currentHeight.current = next;
