@@ -74,9 +74,9 @@ export default function TournamentRoom() {
         }
         if (current !== null && Math.abs(next - current) < 40) return;
         const hist = heightHistory.current.filter(h => now - h.t < 15000);
-        if (hist.some(h => h.v === next) && current !== null && next !== current) {
-          const flips = hist.filter(h => h.v === next || h.v === current).length;
-          if (flips >= 2) {
+        if (current !== null && hist.some(h => Math.abs(h.v - next) <= 15)) {
+          const flips = hist.filter(h => Math.abs(h.v - next) <= 15 || Math.abs(h.v - current) <= 15).length;
+          if (flips >= 2 && Math.abs(next - current) >= 40) {
             const top = Math.max(next, current);
             lockUntil.current = now + 60000;
             heightHistory.current = [];
