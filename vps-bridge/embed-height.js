@@ -83,7 +83,7 @@
   }
 
   function measure() {
-    var isGame = !!document.querySelector('main.round');
+    var isGame = /^\/[A-Za-z0-9]{8}([A-Za-z0-9]{4})?\/?$/.test(location.pathname);
     if (isGame !== lastGame) {
       lastGame = isGame;
       window.parent.postMessage({ type: 'lila-embed-page', game: isGame }, '*');
