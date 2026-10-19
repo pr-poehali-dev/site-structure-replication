@@ -36,6 +36,8 @@ export default function TournamentRoom() {
   const [, setSearchParams] = useSearchParams();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
+  const lockUntil = useRef(0);
+  const heightHistory = useRef<{ v: number; t: number }[]>([]);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -58,6 +60,28 @@ export default function TournamentRoom() {
       if (d && d.type === 'lila-embed-height' && typeof d.height === 'number' && d.height > 0) {
         const next = Math.min(Math.max(Math.ceil(d.height), MIN_FRAME_HEIGHT), MAX_FRAME_HEIGHT);
         const current = currentHeight.current;
+        const now = Date.now();
+        if (now < lockUntil.current) {
+          if (current !== null && next > current) {
+            currentHeight.current = next;
+            setFrameHeight(next);
+          }
+          return;
+        }
+        if (current !== null && Math.abs(next - current) < 40) return;
+        const hist = heightHistory.current.filter(h => now - h.t < 15000);
+        if (hist.some(h => h.v === next) && current !== null && next !== current) {
+          const flips = hist.filter(h => h.v === next || h.v === current).length;
+          if (flips >= 4) {
+            const top = Math.max(next, current);
+            lockUntil.current = now + 60000;
+            heightHistory.current = [];
+            currentHeight.current = top;
+            setFrameHeight(top);
+            return;
+          }
+        }
+        heightHistory.current = [...hist, { v: next, t: now }];
         if (pendingTimer.current) {
           clearTimeout(pendingTimer.current);
           pendingTimer.current = null;
