@@ -72,7 +72,7 @@ export default function TournamentRoom() {
         const hist = heightHistory.current.filter(h => now - h.t < 15000);
         if (hist.some(h => h.v === next) && current !== null && next !== current) {
           const flips = hist.filter(h => h.v === next || h.v === current).length;
-          if (flips >= 4) {
+          if (flips >= 2) {
             const top = Math.max(next, current);
             lockUntil.current = now + 60000;
             heightHistory.current = [];
