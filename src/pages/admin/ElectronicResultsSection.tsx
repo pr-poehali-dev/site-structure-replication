@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
-import DiplomasPanel from './DiplomasPanel';
+import FileSlot from './FileSlot';
 import { toast } from 'sonner';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
@@ -95,6 +95,12 @@ export default function ElectronicResultsSection({ password }: Props) {
     const name = groups[i].name;
     setGroups(gs => gs.filter((_, idx) => idx !== i));
     setNoms(ns => ns.filter(n => n.group_name !== name));
+  }
+
+  function slot(username: string, kind: string, label: string) {
+    return currentId ? (
+      <FileSlot tournamentId={currentId} password={password} username={username} kind={kind} label={label} files={files} onChanged={reloadFiles} />
+    ) : null;
   }
 
   function getNom(group: string, kind: NominationKind, place: number) {
@@ -236,6 +242,7 @@ export default function ElectronicResultsSection({ password }: Props) {
                                 <option key={p.username} value={p.username}>{p.fio}</option>
                               ))}
                             </select>
+                            {cur && slot(cur.username, `nom_${nom.kind}`, 'Диплом номинации')}
                             {nom.kind !== 'best_woman' && cur && (
                               <Input className="w-full sm:w-72" placeholder="Ссылка на партию (необязательно)" value={cur.game_url}
                                 onChange={e => setNom(g.name, nom.kind, place, { game_url: e.target.value })} />
@@ -250,37 +257,27 @@ export default function ElectronicResultsSection({ password }: Props) {
             </div>
           ))}
 
-          {currentId !== null && (
-            <DiplomasPanel
-              tournamentId={currentId}
-              password={password}
-              players={players}
-              files={files}
-              onChanged={reloadFiles}
-              nominees={NOMINATIONS.flatMap(nom =>
-                noms.filter(n => n.kind === nom.kind).map(n => ({
-                  username: n.username,
-                  fio: players.find(p => p.username === n.username)?.fio || n.username,
-                  kind: nom.kind,
-                  label: `${nom.label}${nom.places > 1 ? `, ${n.place} место` : ''} (${n.group_name})`,
-                }))
-              )}
-            />
-          )}
-
           {preview && (
             <div className="bg-white rounded-2xl border border-gray-200 p-5">
               <h3 className="font-heading font-bold text-base text-primary mb-3">Общая таблица ({preview.overall.length})</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-gray-400 border-b"><th className="py-2 pr-3">№</th><th className="pr-3">Участник</th><th className="pr-3">Возраст</th><th>Очки</th></tr></thead>
+                  <thead><tr className="text-left text-gray-400 border-b"><th className="py-2 pr-3">№</th><th className="pr-3">Участник</th><th className="pr-3">Возраст</th><th className="pr-3">Очки</th><th>Диплом и письмо</th></tr></thead>
                   <tbody>
                     {preview.overall.map(r => (
                       <tr key={r.username} className="border-b border-gray-50">
                         <td className="py-1.5 pr-3">{r.rank}</td>
                         <td className="pr-3">{r.fio}</td>
                         <td className="pr-3">{r.age ?? '—'}</td>
-                        <td>{r.points}</td>
+                        <td className="pr-3">{r.points}</td>
+                        <td>
+                          {r.user_id !== null ? (
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                              {slot(r.username, 'diploma', 'Диплом')}
+                              {slot(r.username, 'thanks', 'Письмо')}
+                            </div>
+                          ) : <span className="text-gray-300 text-xs">нет аккаунта</span>}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
