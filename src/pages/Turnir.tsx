@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMyApplications } from '@/hooks/useMyApplications';
 import TurnirHero from './turnir/TurnirHero';
 import TournamentsList from './turnir/TournamentsList';
 import TournamentRules from './turnir/TournamentRules';
@@ -39,7 +40,8 @@ export default function Turnir() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [myApplications, setMyApplications] = useState<{ tournament_id: number; status: string; hall_open: boolean; hall_status: string }[]>([]);
+  const { apps: allApps, reload: reloadApps } = useMyApplications();
+  const myApplications = useMemo(() => allApps.filter(a => a.status !== 'cancelled'), [allApps]);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [balance, setBalance] = useState(0);
   const [bonusBalance, setBonusBalance] = useState(0);
@@ -59,13 +61,7 @@ export default function Turnir() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchMyApplications = useCallback(() => {
-    if (!token) { setMyApplications([]); return; }
-    fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
-      .then(r => r.json())
-      .then(data => setMyApplications((data.applications || []).filter((a: { status: string }) => a.status !== 'cancelled')))
-      .catch(() => {});
-  }, [token]);
+  const fetchMyApplications = reloadApps;
 
   const fetchBalance = useCallback(() => {
     if (!token) { setBalance(0); setBonusBalance(0); return; }
@@ -75,7 +71,6 @@ export default function Turnir() {
       .catch(() => {});
   }, [token]);
 
-  useEffect(() => { fetchMyApplications(); }, [fetchMyApplications]);
   useEffect(() => { fetchBalance(); }, [fetchBalance]);
 
   async function handleCancelApplication(t: Tournament) {

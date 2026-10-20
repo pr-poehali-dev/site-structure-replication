@@ -253,7 +253,7 @@ export default function Hall() {
     // нескольких одновременных турнирах именно частый опрос зала каждым участником создавал
     // основную нагрузку на БД (интервал увеличен с 12 до 25 секунд 26.09 после разбора
     // нагрузки — push-события и так покрывают все ключевые изменения мгновенно).
-    const interval = setInterval(fetchHall, 25000);
+    const interval = setInterval(() => { if (!document.hidden) fetchHall(); }, 25000);
     return () => clearInterval(interval);
   }, [fetchHall]);
 

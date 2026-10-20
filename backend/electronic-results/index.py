@@ -40,10 +40,13 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
 
 
-def resp(status, body):
+def resp(status, body, cache=0):
+    headers = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+    if cache and status == 200:
+        headers['Cache-Control'] = f'public, max-age={cache}'
     return {
         'statusCode': status,
-        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+        'headers': headers,
         'body': json.dumps(body, ensure_ascii=False, default=str),
     }
 
@@ -254,7 +257,7 @@ def handler(event: dict, context) -> dict:
             prow = cur.fetchone()
             snap['tournament']['protocol_url'] = prow[0] if prow else None
             conn.close()
-            return resp(200, snap)
+            return resp(200, snap, 30)
 
         cur.execute(
             """SELECT er.tournament_id, t.title, t.date, er.published_at FROM electronic_results er
@@ -263,7 +266,7 @@ def handler(event: dict, context) -> dict:
         )
         items = [{'tournament_id': r[0], 'title': r[1], 'date': r[2], 'published_at': r[3]} for r in cur.fetchall()]
         conn.close()
-        return resp(200, {'items': items})
+        return resp(200, {'items': items}, 30)
 
     if method == 'POST':
         if not is_admin(event):

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
@@ -15,41 +15,13 @@ import ComingSoon from './cabinet/ComingSoon';
 import PuzzlesSection from './cabinet/PuzzlesSection';
 import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
 import { formatDate } from './cabinet/utils';
-import func2url from '../../backend/func2url.json';
-
-const APPS_URL = func2url['applications'];
-
-interface MyApplication {
-  id: number;
-  tournament_id: number;
-  tournament_title: string;
-  fio: string;
-  age: string;
-  status: string;
-  created_at: string;
-  hall_open: boolean;
-  tournament_status: string;
-  description: string | null;
-  date: string | null;
-  location: string | null;
-  age_category: string | null;
-  price: number | null;
-  time_control: string | null;
-  time_msk: string | null;
-  diploma_sample_url: string | null;
-  regulation_url: string | null;
-  announcement_url: string | null;
-  hall_status: string;
-  place: number | null;
-  lila_ready?: boolean;
-}
+import { useMyApplications } from '@/hooks/useMyApplications';
 
 const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders', 'referrals', 'puzzles'];
 
 export default function Cabinet() {
-  const { user, token, loading } = useAuth();
-  const [apps, setApps] = useState<MyApplication[]>([]);
-  const [appsLoading, setAppsLoading] = useState(true);
+  const { user, loading } = useAuth();
+  const { apps, loading: appsLoading } = useMyApplications();
   const [tab, setTab] = useState<CabinetTab>(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('tab');
@@ -64,19 +36,6 @@ export default function Cabinet() {
     url.searchParams.set('tab', t);
     window.history.replaceState({}, '', url);
   }
-
-  useEffect(() => {
-    if (!token) return;
-    const loadApps = () => {
-      fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
-        .then(r => r.json())
-        .then(d => setApps(d.applications || []))
-        .finally(() => setAppsLoading(false));
-    };
-    loadApps();
-    const interval = setInterval(loadApps, 20000);
-    return () => clearInterval(interval);
-  }, [token]);
 
   if (loading) {
     return (

@@ -1,14 +1,11 @@
-import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
-import func2url from '../../backend/func2url.json';
+import { useMyApplications } from '@/hooks/useMyApplications';
 
-const APPS_URL = func2url['applications'];
-const REFRESH_MS = 30000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const isOver = (a: MyApp) => {
+const isOver = (a: { results_published?: boolean; date?: string | null }) => {
   if (a.results_published) return true;
   if (!a.date) return false;
   const t = new Date(a.date).getTime();
@@ -17,56 +14,25 @@ const isOver = (a: MyApp) => {
 
 const HIDDEN_PREFIXES = ['/room/', '/hall/', '/game/', '/admin'];
 
-interface MyApp {
-  tournament_id: number;
-  tournament_title: string;
-  status: string;
-  hall_open: boolean;
-  hall_status: string;
-  tournament_status: string;
-  results_published?: boolean;
-  date?: string | null;
+export default function HallFloatingButton() {
+  const { user } = useAuth();
+  const { pathname } = useLocation();
+  const hidden = HIDDEN_PREFIXES.some(p => pathname.startsWith(p));
+  return user && !hidden ? <HallButtonInner /> : null;
 }
 
-export default function HallFloatingButton() {
-  const { token, user } = useAuth();
-  const { pathname } = useLocation();
-  const [halls, setHalls] = useState<MyApp[]>([]);
-
-  useEffect(() => {
-    if (!token || !user) {
-      setHalls([]);
-      return;
-    }
-    let cancelled = false;
-    const load = () => {
-      if (document.hidden) return;
-      fetch(`${APPS_URL}?scope=my`, { headers: { 'X-Auth-Token': token } })
-        .then(r => (r.ok ? r.json() : { applications: [] }))
-        .then(d => {
-          if (cancelled) return;
-          const list: MyApp[] = (d.applications || []).filter(
-            (a: MyApp) =>
-              a.status === 'paid' &&
-              a.hall_open &&
-              a.hall_status !== 'finished' &&
-              a.tournament_status !== 'archived' &&
-              !isOver(a),
-          );
-          setHalls(list);
-        })
-        .catch(() => {});
-    };
-    load();
-    const timer = setInterval(load, REFRESH_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [token, user]);
+function HallButtonInner() {
+  const { apps } = useMyApplications();
+  const halls = apps.filter(
+    a =>
+      a.status === 'paid' &&
+      a.hall_open &&
+      a.hall_status !== 'finished' &&
+      a.tournament_status !== 'archived' &&
+      !isOver(a),
+  );
 
   if (!halls.length) return null;
-  if (HIDDEN_PREFIXES.some(p => pathname.startsWith(p))) return null;
 
   const target = halls[0];
 

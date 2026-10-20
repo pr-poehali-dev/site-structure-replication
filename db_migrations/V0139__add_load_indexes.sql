@@ -1,0 +1,9 @@
+CREATE INDEX IF NOT EXISTS idx_tg_tournament_id ON tournament_games (tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tp_tournament_id ON tournament_players (tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tr_tournament_id ON tournament_rounds (tournament_id);
+CREATE INDEX IF NOT EXISTS idx_app_tournament_id ON applications (tournament_id);
+CREATE INDEX IF NOT EXISTS idx_app_user_id ON applications (user_id);
+CREATE INDEX IF NOT EXISTS idx_users_lila_username_lower ON users (lower(lila_username));
+CREATE INDEX IF NOT EXISTS idx_rating_history_tournament ON rating_history (tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournaments_lila_id ON tournaments (lila_tournament_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions (token);

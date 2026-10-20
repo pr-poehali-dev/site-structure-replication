@@ -278,11 +278,14 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
     load();
     const timer = setInterval(() => {
       if (!document.hidden) load();
-    }, 7000);
+    }, 10000);
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, [tournamentId, kind]);

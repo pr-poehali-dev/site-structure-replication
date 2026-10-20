@@ -47,4 +47,4 @@ def handler(event: dict, context) -> dict:
             'spots_left': (max(0, max_participants - applied_count) if max_participants else None),
         })
 
-    return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
+    return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=15'}, 'body': json.dumps({'tournaments': tournaments})}
