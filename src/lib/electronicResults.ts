@@ -48,3 +48,10 @@ export interface ResultsSnapshot {
   overall: ResultRow[];
   groups: GroupSnapshot[];
 }
+
+export interface ResultFile {
+  username: string;
+  kind: string;
+  file_url: string;
+  file_name: string | null;
+}

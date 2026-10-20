@@ -1,12 +1,38 @@
+import base64
 import json
 import os
+import re
+import uuid
 import urllib.request
 from datetime import date, datetime
 
+import boto3
 import psycopg2
 
 LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
 KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3}
+FILE_KINDS = ['diploma', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman']
+ALLOWED_TYPES = {'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg'}
+
+
+def get_s3():
+    return boto3.client(
+        's3',
+        endpoint_url='https://bucket.poehali.dev',
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    )
+
+
+def load_files(cur, tid, username=None):
+    if username:
+        cur.execute(
+            "SELECT username, kind, file_url, file_name FROM electronic_result_files WHERE tournament_id = %s AND lower(username) = lower(%s)",
+            (tid, username),
+        )
+    else:
+        cur.execute("SELECT username, kind, file_url, file_name FROM electronic_result_files WHERE tournament_id = %s", (tid,))
+    return [{'username': r[0], 'kind': r[1], 'file_url': r[2], 'file_name': r[3]} for r in cur.fetchall()]
 
 
 def get_conn():
@@ -155,7 +181,7 @@ def handler(event: dict, context) -> dict:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password, X-Auth-Token',
                 'Access-Control-Max-Age': '86400',
             },
             'body': '',
@@ -168,6 +194,21 @@ def handler(event: dict, context) -> dict:
 
     if method == 'GET':
         tid = params.get('tournament_id')
+        if params.get('my_files') == '1' and tid:
+            hdrs = event.get('headers') or {}
+            token = hdrs.get('X-Auth-Token') or hdrs.get('x-auth-token') or ''
+            cur.execute(
+                """SELECT u.lila_username FROM user_sessions s JOIN users u ON u.id = s.user_id
+                   WHERE s.token = %s AND s.expires_at > now()""",
+                (token,),
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.close()
+                return resp(401, {'error': 'Не авторизован'})
+            files = load_files(cur, int(tid), row[0]) if row[0] else []
+            conn.close()
+            return resp(200, {'files': files})
         admin = params.get('admin') == '1'
         if admin:
             if not is_admin(event):
@@ -194,8 +235,9 @@ def handler(event: dict, context) -> dict:
                 return resp(502, {'error': 'Не удалось получить таблицу из Lila'})
             cfg = load_config(cur, t['id'])
             snap = build_snapshot(t, rows, cfg)
+            files = load_files(cur, t['id'])
             conn.close()
-            return resp(200, {'tournament': snap['tournament'], 'config': cfg, 'players': snap['overall'], 'preview': snap})
+            return resp(200, {'tournament': snap['tournament'], 'config': cfg, 'players': snap['overall'], 'preview': snap, 'files': files})
 
         if tid:
             cur.execute("SELECT snapshot FROM electronic_results WHERE tournament_id = %s AND status = 'published'", (int(tid),))
@@ -262,6 +304,39 @@ def handler(event: dict, context) -> dict:
                     "UPDATE electronic_results SET status = 'published', snapshot = %s, published_at = now() WHERE tournament_id = %s",
                     (json.dumps(snap, ensure_ascii=False, default=str), t['id']),
                 )
+            conn.commit()
+            conn.close()
+            return resp(200, {'ok': True})
+
+        if action == 'upload_file':
+            kind = body.get('kind')
+            username = str(body.get('username') or '').strip()
+            ctype = body.get('content_type')
+            if kind not in FILE_KINDS or not username or ctype not in ALLOWED_TYPES or not body.get('file_b64'):
+                conn.close()
+                return resp(400, {'error': 'Неверные данные файла. Допустимы PDF, PNG, JPG'})
+            data = base64.b64decode(body['file_b64'])
+            if len(data) > 8 * 1024 * 1024:
+                conn.close()
+                return resp(400, {'error': 'Файл больше 8 МБ'})
+            key = f"diplomas/{t['id']}/{uuid.uuid4().hex}.{ALLOWED_TYPES[ctype]}"
+            get_s3().put_object(Bucket='files', Key=key, Body=data, ContentType=ctype)
+            url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+            name = re.sub(r'[^\w.\- ]', '', str(body.get('file_name') or ''))[:255] or None
+            cur.execute("DELETE FROM electronic_result_files WHERE tournament_id = %s AND lower(username) = lower(%s) AND kind = %s", (t['id'], username, kind))
+            cur.execute(
+                "INSERT INTO electronic_result_files (tournament_id, username, kind, file_url, file_name) VALUES (%s, %s, %s, %s, %s)",
+                (t['id'], username, kind, url, name),
+            )
+            conn.commit()
+            conn.close()
+            return resp(200, {'ok': True, 'file_url': url})
+
+        if action == 'delete_file':
+            cur.execute(
+                "DELETE FROM electronic_result_files WHERE tournament_id = %s AND lower(username) = lower(%s) AND kind = %s",
+                (t['id'], str(body.get('username') or ''), body.get('kind')),
+            )
             conn.commit()
             conn.close()
             return resp(200, {'ok': True})

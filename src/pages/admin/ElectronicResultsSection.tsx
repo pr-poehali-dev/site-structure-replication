@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import DiplomasPanel from './DiplomasPanel';
 import { toast } from 'sonner';
 import {
-  ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot,
+  ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
 } from '@/lib/electronicResults';
 
 interface Props {
@@ -29,6 +30,7 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [noms, setNoms] = useState<NominationDraft[]>([]);
   const [status, setStatus] = useState('draft');
   const [preview, setPreview] = useState<ResultsSnapshot | null>(null);
+  const [files, setFiles] = useState<ResultFile[]>([]);
 
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password };
 
@@ -59,6 +61,11 @@ export default function ElectronicResultsSection({ password }: Props) {
     setNoms((data.config.nominations || []).map((n: NominationDraft) => ({ ...n, game_url: n.game_url || '' })));
     setStatus(data.config.status || 'draft');
     setPreview(data.preview);
+    setFiles(data.files || []);
+  }
+
+  async function reloadFiles() {
+    if (currentId) await openTournament(currentId);
   }
 
   async function send(action: 'save' | 'publish' | 'unpublish') {
@@ -242,6 +249,24 @@ export default function ElectronicResultsSection({ password }: Props) {
               </div>
             </div>
           ))}
+
+          {currentId !== null && (
+            <DiplomasPanel
+              tournamentId={currentId}
+              password={password}
+              players={players}
+              files={files}
+              onChanged={reloadFiles}
+              nominees={NOMINATIONS.flatMap(nom =>
+                noms.filter(n => n.kind === nom.kind).map(n => ({
+                  username: n.username,
+                  fio: players.find(p => p.username === n.username)?.fio || n.username,
+                  kind: nom.kind,
+                  label: `${nom.label}${nom.places > 1 ? `, ${n.place} место` : ''} (${n.group_name})`,
+                }))
+              )}
+            />
+          )}
 
           {preview && (
             <div className="bg-white rounded-2xl border border-gray-200 p-5">

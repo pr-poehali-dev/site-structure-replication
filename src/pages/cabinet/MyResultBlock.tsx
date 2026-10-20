@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
-import { ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultsSnapshot } from '@/lib/electronicResults';
+import { ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultFile, ResultsSnapshot } from '@/lib/electronicResults';
 
 interface Props {
   tournamentId: number;
 }
 
 export default function MyResultBlock({ tournamentId }: Props) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const [files, setFiles] = useState<ResultFile[]>([]);
   const [snap, setSnap] = useState<ResultsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +22,14 @@ export default function MyResultBlock({ tournamentId }: Props) {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [tournamentId]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${ELECTRONIC_RESULTS_URL}?tournament_id=${tournamentId}&my_files=1`, { headers: { 'X-Auth-Token': token } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setFiles(d?.files || []))
+      .catch(() => {});
+  }, [tournamentId, token]);
 
   if (loading) {
     return <p className="text-xs text-gray-400 flex items-center gap-2"><Icon name="Loader2" size={14} className="animate-spin" /> Загружаем ваш результат...</p>;
@@ -36,7 +45,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
     ? NOMINATIONS.flatMap(n =>
         (group.nominations[n.kind] || [])
           .filter(e => e.username.toLowerCase() === me.username.toLowerCase())
-          .map(e => ({ label: n.label, place: e.place, places: n.places }))
+          .map(e => ({ label: n.label, place: e.place, places: n.places, kind: n.kind }))
       )
     : [];
 
@@ -56,6 +65,31 @@ export default function MyResultBlock({ tournamentId }: Props) {
           </span>
         )}
       </div>
+      {(files.some(f => f.kind === 'diploma' || f.kind === 'thanks') || noms.some(n => files.some(f => f.kind === `nom_${n.kind}`))) && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {files.filter(f => f.kind === 'diploma').map(f => (
+            <a key={f.kind} href={f.file_url} target="_blank" rel="noopener noreferrer" download
+              className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
+              <Icon name="Download" size={13} /> Скачать диплом
+            </a>
+          ))}
+          {files.filter(f => f.kind === 'thanks').map(f => (
+            <a key={f.kind} href={f.file_url} target="_blank" rel="noopener noreferrer" download
+              className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
+              <Icon name="Download" size={13} /> Скачать благодарственное письмо
+            </a>
+          ))}
+          {noms.map((n, i) => {
+            const f = files.find(x => x.kind === `nom_${n.kind}`);
+            return f ? (
+              <a key={i} href={f.file_url} target="_blank" rel="noopener noreferrer" download
+                className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
+                <Icon name="Download" size={13} /> Диплом: {n.label}
+              </a>
+            ) : null;
+          })}
+        </div>
+      )}
       {noms.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
           {noms.map((n, i) => (
