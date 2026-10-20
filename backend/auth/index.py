@@ -245,7 +245,7 @@ def handler(event: dict, context) -> dict:
             """UPDATE users SET
                last_name = COALESCE(last_name, %s), first_name = COALESCE(first_name, %s),
                middle_name = COALESCE(middle_name, %s), birth_date = COALESCE(birth_date, %s),
-               fsr_id = COALESCE(fsr_id, %s), coach_fio = %s, institution = %s, country_city = %s,
+               fsr_id = CASE WHEN fsr_id IS NULL OR fsr_id = '0' THEN %s ELSE fsr_id END, coach_fio = %s, institution = %s, country_city = %s,
                phone = %s, gender = COALESCE(%s, gender)
                WHERE id = %s""",
             (clean('last_name'), clean('first_name'), clean('middle_name'), body.get('birth_date') or None,

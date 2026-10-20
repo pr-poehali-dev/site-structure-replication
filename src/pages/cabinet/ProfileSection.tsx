@@ -108,7 +108,14 @@ export default function ProfileSection() {
         <div><Label>Дата рождения</Label><Input type="date" disabled={!!user.birth_date} className="mt-1 disabled:bg-gray-50" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
         <div><Label>Возраст</Label><Input disabled className="mt-1 bg-gray-50" value={calcAge(form.birth_date) !== null ? `${calcAge(form.birth_date)} лет` : '—'} /></div>
         <div><Label>Пол</Label><select className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value as 'M' | 'F' | '' })}>  <option value="">Не указан</option>  <option value="M">Мужской</option>  <option value="F">Женский</option></select></div>
-        <div><Label>ID ФШР</Label><Input disabled={!!user.fsr_id} className="mt-1 disabled:bg-gray-50" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value })} /></div>
+        <div>
+          <Label>ID ФШР</Label>
+          <Input disabled={!!user.fsr_id && user.fsr_id !== '0'} inputMode="numeric" className="mt-1 disabled:bg-gray-50" value={form.fsr_id} onChange={e => setForm({ ...form, fsr_id: e.target.value.replace(/\D/g, '') })} />
+          <p className="mt-1 text-xs text-gray-500">
+            Поле обязательное. Найти свой ID можно на{' '}
+            <a href="https://ratings.ruchess.ru/" target="_blank" rel="noopener noreferrer" className="font-semibold underline">ratings.ruchess.ru</a>. Если ID нет, оставьте 0.
+          </p>
+        </div>
       </div>
       <div><Label>ФИО тренера</Label><Input className="mt-1" value={form.coach_fio} onChange={e => setForm({ ...form, coach_fio: e.target.value })} /></div>
       <div className="grid sm:grid-cols-2 gap-3">
@@ -119,7 +126,7 @@ export default function ProfileSection() {
         <div><Label>Email</Label><Input disabled className="mt-1 bg-gray-50" value={user.email} /></div>
         <div><Label>Телефон представителя</Label><Input className="mt-1" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
       </div>
-      <p className="text-xs text-gray-400">ФИО, дату рождения и ID ФШР изменить нельзя. Если там ошибка, напишите нам в поддержку.</p>
+      <p className="text-xs text-gray-400">ФИО, дату рождения и указанный ID ФШР изменить нельзя. Если там ошибка, напишите нам в поддержку.</p>
       {saveMsg && <p className="text-sm text-red-500">{saveMsg}</p>}
       <div className="flex gap-2 mt-1">
         <Button type="submit" disabled={saving} className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
