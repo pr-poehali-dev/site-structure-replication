@@ -36,8 +36,16 @@ export default function MyResultBlock({ tournamentId }: Props) {
   }
   if (!snap || !user) return null;
 
+  const protocolUrl = snap.tournament.protocol_url;
+  const protocolLink = protocolUrl ? (
+    <a href={protocolUrl} target="_blank" rel="noopener noreferrer" download
+      className="text-xs px-3 py-1.5 rounded-full font-semibold bg-white border border-primary/30 text-primary hover:bg-primary/5 inline-flex items-center gap-1.5 self-start">
+      <Icon name="FileText" size={13} /> Протокол турнира
+    </a>
+  ) : null;
+
   const me = snap.overall.find(r => r.user_id === user.id);
-  if (!me) return null;
+  if (!me) return protocolLink;
 
   const group = snap.groups.find(g => g.name === me.group);
   const groupRow = group?.table.find(r => r.user_id === user.id);
@@ -90,6 +98,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
           })}
         </div>
       )}
+      {protocolLink}
       {noms.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
           {noms.map((n, i) => (

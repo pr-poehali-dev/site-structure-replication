@@ -191,6 +191,12 @@ export default function ElectronicResultsSection({ password }: Props) {
           )}
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-2">Протокол турнира</h3>
+            {slot('_tournament', 'protocol', 'Загрузить протокол')}
+            <p className="text-xs text-gray-400 mt-2">PDF, PNG или JPG до 8 МБ. Появится на странице результатов и в личном кабинете участников.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-heading font-bold text-base text-primary">Возрастные группы</h3>
               <Button variant="outline" size="sm" onClick={() => setGroups(gs => [...gs, { name: '', min: 0, max: 0 }])}>

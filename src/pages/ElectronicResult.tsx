@@ -50,6 +50,16 @@ export default function ElectronicResult() {
                 <Icon name="Trophy" size={16} /> Открыть турнирный зал
               </Link>
             )}
+            {data.tournament.protocol_url && (
+              <a
+                href={data.tournament.protocol_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-secondary hover:underline mb-6 mr-6"
+              >
+                <Icon name="FileText" size={16} /> Скачать протокол турнира
+              </a>
+            )}
             <div className="flex flex-wrap gap-2 mb-6">
               {[{ name: 'overall', label: 'Общий зачёт' }, ...data.groups.map(g => ({ name: g.name, label: g.name }))].map(t => (
                 <button key={t.name} onClick={() => setTab(t.name)}

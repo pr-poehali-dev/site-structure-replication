@@ -11,7 +11,8 @@ import psycopg2
 
 LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
 KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3}
-FILE_KINDS = ['diploma', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman']
+PROTOCOL_USER = '_tournament'
+FILE_KINDS = ['protocol', 'diploma', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman']
 ALLOWED_TYPES = {'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg'}
 
 
@@ -247,9 +248,12 @@ def handler(event: dict, context) -> dict:
                 return resp(404, {'error': 'Результаты не опубликованы'})
             cur.execute("SELECT lila_tournament_id FROM tournaments WHERE id = %s", (int(tid),))
             trow = cur.fetchone()
-            conn.close()
             snap = json.loads(row[0])
             snap.setdefault('tournament', {})['has_hall'] = bool(trow and trow[0])
+            cur.execute("SELECT file_url FROM electronic_result_files WHERE tournament_id = %s AND kind = 'protocol' AND username = %s", (int(tid), PROTOCOL_USER))
+            prow = cur.fetchone()
+            snap['tournament']['protocol_url'] = prow[0] if prow else None
+            conn.close()
             return resp(200, snap)
 
         cur.execute(
