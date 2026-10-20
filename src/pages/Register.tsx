@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const EMPTY_FORM = {
   last_name: '', first_name: '', middle_name: '', birth_date: '', gender: '',
-  fsr_id: '', coach_fio: '', institution: '', country_city: '',
+  fsr_id: '0', coach_fio: '', institution: '', country_city: '',
   login: '', email: '', phone: '', password: '', password2: '',
 };
 
@@ -52,7 +52,7 @@ export default function Register() {
       middle_name: form.middle_name || undefined,
       birth_date: form.birth_date || undefined,
       gender: (form.gender as 'M' | 'F' | '') || undefined,
-      fsr_id: form.fsr_id || undefined,
+      fsr_id: form.fsr_id.trim() || '0',
       coach_fio: form.coach_fio || undefined,
       institution: form.institution || undefined,
       country_city: form.country_city || undefined,
@@ -124,16 +124,16 @@ export default function Register() {
 </select>
               </div>
               <div>
-                <Label>ID ФШР</Label>
-                <Input className="mt-1" value={form.fsr_id} onChange={e => set('fsr_id', e.target.value)} placeholder="Номер в системе ФШР" />
+                <Label>ID ФШР <span className="text-destructive">*</span></Label>
+                <Input className="mt-1" required inputMode="numeric" value={form.fsr_id} onChange={e => set('fsr_id', e.target.value.replace(/\D/g, ''))} placeholder="Номер в системе ФШР" />
                 <div className="mt-2 flex items-start gap-2 rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2 text-sm text-primary">
                   <Icon name="Info" size={16} className="mt-0.5 shrink-0" />
                   <p>
-                    Узнать свой ID можно на сайте{' '}
+                    Поле обязательное. Найти свой ID можно на сайте{' '}
                     <a href="https://ratings.ruchess.ru/" target="_blank" rel="noopener noreferrer" className="font-semibold underline">
                       ratings.ruchess.ru
                     </a>
-                    . Если ID нет, оставьте поле пустым.
+                    . Если ID нет, оставьте 0.
                   </p>
                 </div>
               </div>
