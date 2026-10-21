@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Header, Footer } from '@/components/Layout';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import Seo from '@/components/Seo';
+import PortalUpdateBanner from '@/components/PortalUpdateBanner';
 
 const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/a45605f3-8e77-46d0-9edd-9e28028083cf.png';
 
@@ -97,6 +98,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      <PortalUpdateBanner />
 
       {/* Stats */}
       <section className="bg-secondary text-secondary-foreground">
