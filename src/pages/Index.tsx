@@ -99,8 +99,6 @@ const Index = () => {
         </div>
       </section>
 
-      <PortalUpdateBanner />
-
       {/* Stats */}
       <section className="bg-secondary text-secondary-foreground">
         <div className="container grid grid-cols-2 md:grid-cols-4 gap-4 px-4 py-6">
@@ -112,6 +110,8 @@ const Index = () => {
           ))}
         </div>
       </section>
+
+      <PortalUpdateBanner />
 
       {/* About promo */}
       <section className="bg-white">
