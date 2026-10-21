@@ -291,9 +291,8 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
     };
   }, [tournamentId, kind]);
 
-  const notStarted = games.length === 0 && rawRows.every(r => !r.points);
   const orderIdx = new Map(standingOrder.map((n, i) => [n, i]));
-  const rows = notStarted && orderIdx.size
+  const rows = orderIdx.size
     ? [...rawRows]
         .sort((a, b) => (orderIdx.get(a.username.toLowerCase()) ?? 999) - (orderIdx.get(b.username.toLowerCase()) ?? 999))
         .map((r, i) => ({ ...r, rank: i + 1 }))
