@@ -2,8 +2,6 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { TYPE_META, TournamentType } from '@/pages/turnir/TournamentTypeBadge';
 
-const BANNER_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/files/acc58395-9ef8-419c-bfb1-da2cc0ba2d84.jpg';
-
 const FEATURES = [
   { icon: 'Gamepad2', text: 'Своя игровая площадка' },
   { icon: 'TrendingUp', text: 'Внутренний рейтинг' },
@@ -24,8 +22,8 @@ export default function PortalUpdateBanner() {
     <section className="bg-white">
       <div className="container px-4 py-5">
         <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden bg-gradient-to-br from-violet-600 to-indigo-800 text-white shadow-xl">
-          <div className="grid md:grid-cols-4 gap-0">
-            <div className="md:col-span-3 p-5 md:p-6">
+          <div>
+            <div className="p-5 md:p-6">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-300 text-indigo-950 text-xs font-bold tracking-wide mb-3">
                 <Icon name="Rocket" size={14} /> ПЕРЕЗАГРУЗКА ПОРТАЛА
               </span>
@@ -36,7 +34,7 @@ export default function PortalUpdateBanner() {
                 Мы полностью обновили сайт: теперь дети играют, тренируются и соревнуются прямо у нас, а родители следят за успехами в личном кабинете.
               </p>
 
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-2 md:grid-cols-6 gap-2">
                 {FEATURES.map(f => (
                   <div key={f.text} className="flex items-center gap-2 text-xs bg-white/10 rounded-lg px-2.5 py-1.5">
                     <Icon name={f.icon} size={16} className="text-yellow-300 shrink-0" />
@@ -55,9 +53,6 @@ export default function PortalUpdateBanner() {
               </div>
             </div>
 
-            <div className="md:col-span-1 hidden md:block relative">
-              <img src={BANNER_IMG} alt="Дети играют в шахматы на портале" className="absolute inset-0 w-full h-full object-cover" />
-            </div>
           </div>
 
           <div className="bg-indigo-950/40 p-4 md:p-5">
