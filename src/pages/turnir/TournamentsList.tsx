@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Tournament, formatDate } from './types';
+import TournamentTypeBadge, { getTypeMeta } from './TournamentTypeBadge';
 
 interface MyApplication {
   tournament_id: number;
@@ -54,10 +55,14 @@ export default function TournamentsList({
             const hallOpen = myApp?.hall_open || false;
             return (
             <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col md:flex-row overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
+              <div className={`h-1.5 md:h-auto md:w-1.5 shrink-0 ${getTypeMeta(t.tournament_type).bar}`} />
               <div className="flex-1 flex flex-col min-w-0">
                 <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+                    <div className="min-w-0 flex flex-col items-start gap-2">
+                      <TournamentTypeBadge type={t.tournament_type} />
+                      <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
+                    </div>
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                         {isOpen ? 'Приём открыт' : 'Приём закрыт'}

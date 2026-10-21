@@ -14,6 +14,7 @@ export interface Tournament {
   announcement_url: string | null;
   max_participants?: number | null;
   spots_left?: number | null;
+  tournament_type?: 'warmup' | 'training' | 'qualifying';
 }
 
 export function formatDate(dateStr: string) {
