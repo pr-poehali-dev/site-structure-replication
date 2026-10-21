@@ -19,11 +19,9 @@ const TYPES: { key: TournamentType; short: string }[] = [
 
 export default function PortalUpdateBanner() {
   return (
-    <section className="bg-white">
-      <div className="container px-4 py-5">
-        <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden bg-gradient-to-br from-violet-600 to-indigo-800 text-white shadow-xl">
-          <div>
-            <div className="p-5 md:p-6">
+    <section className="bg-gradient-to-br from-violet-600 to-indigo-800 text-white">
+      <div className="container px-4">
+        <div className="py-6 md:py-7">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-300 text-indigo-950 text-xs font-bold tracking-wide mb-3">
                 <Icon name="Rocket" size={14} /> ПЕРЕЗАГРУЗКА ПОРТАЛА
               </span>
@@ -51,11 +49,11 @@ export default function PortalUpdateBanner() {
                   <a href="/turnir">Смотреть турниры</a>
                 </Button>
               </div>
-            </div>
+        </div>
+      </div>
 
-          </div>
-
-          <div className="bg-indigo-950/40 p-4 md:p-5">
+      <div className="bg-indigo-950/40">
+        <div className="container px-4 py-5">
             <p className="text-xs font-bold tracking-wide text-violet-200 mb-2">ТРИ ТИПА ТУРНИРОВ</p>
             <div className="grid sm:grid-cols-3 gap-2">
               {TYPES.map(t => {
@@ -74,7 +72,6 @@ export default function PortalUpdateBanner() {
               <Icon name="Gift" size={18} className="text-yellow-300 shrink-0 mt-0.5" />
               Приглашайте друзей: получайте 25% от их пополнений бонусами и оплачивайте ими участие в турнирах, в том числе квалификационных.
             </p>
-          </div>
         </div>
       </div>
     </section>
