@@ -166,11 +166,12 @@ function buildFromSheets(sheets: Record<string, string[]>, games: LilaGame[], ro
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame, liveGame, onLeaveGame }: Props) {
-  const [rows, setRows] = useState<LilaRow[]>([]);
+  const [rawRows, setRows] = useState<LilaRow[]>([]);
   const [games, setGames] = useState<LilaGame[]>([]);
   const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
   const [roundsCount, setRoundsCount] = useState(0);
   const [sheets, setSheets] = useState<Record<string, string[]> | null>(null);
+  const [standingOrder, setStandingOrder] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileId, setProfileId] = useState<number | null>(null);
@@ -243,7 +244,7 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
         setRows(parsed);
         if (kind === 'swiss') fetch(`${PLAYERS_URL}?sheets=${encodeURIComponent(tournamentId)}`)
           .then(r => (r.ok ? r.json() : null))
-          .then(d => { if (!cancelled && d && d.sheets && Object.keys(d.sheets).length) setSheets(d.sheets); })
+          .then(d => { if (cancelled || !d) return; if (d.sheets && Object.keys(d.sheets).length) setSheets(d.sheets); if (Array.isArray(d.order)) setStandingOrder(d.order); })
           .catch(() => {});
         if (parsed.length) {
           const names = parsed.map(r => r.username).join(',');
@@ -290,6 +291,13 @@ export default function LilaStandings({ tournamentId, kind = 'swiss', onLiveGame
     };
   }, [tournamentId, kind]);
 
+  const notStarted = games.length === 0 && rawRows.every(r => !r.points);
+  const orderIdx = new Map(standingOrder.map((n, i) => [n, i]));
+  const rows = notStarted && orderIdx.size
+    ? [...rawRows]
+        .sort((a, b) => (orderIdx.get(a.username.toLowerCase()) ?? 999) - (orderIdx.get(b.username.toLowerCase()) ?? 999))
+        .map((r, i) => ({ ...r, rank: i + 1 }))
+    : rawRows;
   const fallback = buildRounds(games, rows, roundsCount);
   const fromSheets = sheets ? buildFromSheets(sheets, games, rows) : null;
   const cells = fromSheets ? fromSheets.cells : fallback.cells;

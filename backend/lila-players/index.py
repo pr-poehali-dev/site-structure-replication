@@ -54,6 +54,7 @@ def handler(event: dict, context) -> dict:
                 return []
 
         sheets = {}
+        order = []
         for start in range(1, 31, 5):
             with ThreadPoolExecutor(max_workers=5) as ex:
                 batches = list(ex.map(fetch_page, range(start, start + 5)))
@@ -62,13 +63,14 @@ def handler(event: dict, context) -> dict:
                 for pl in batch:
                     name = ((pl.get('user') or {}).get('name') or '').lower()
                     if name:
+                        order.append(name)
                         sheets[name] = (pl.get('sheetMin') or '').split('|')
                 if len(batch) < 10:
                     done = True
                     break
             if done:
                 break
-        return resp(200, {'sheets': sheets}, 5)
+        return resp(200, {'sheets': sheets, 'order': order}, 5)
 
     raw = params.get('usernames') or ''
     names = sorted({n.strip().lower() for n in raw.split(',') if n.strip()})[:200]
