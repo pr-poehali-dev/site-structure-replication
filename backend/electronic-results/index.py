@@ -153,9 +153,6 @@ def build_snapshot(t, rows, cfg):
                 'place': n['place'], 'username': n['username'],
                 'fio': p['fio'] if p else n['username'], 'game_url': n['game_url'],
             })
-        if not noms['best_woman']:
-            girls = [m for m in table if m['gender'] == 'F'][:3]
-            noms['best_woman'] = [{'place': i + 1, 'username': m['username'], 'fio': m['fio'], 'game_url': None} for i, m in enumerate(girls)]
         out_groups.append({'name': g['name'], 'min': g['min'], 'max': g['max'], 'table': table, 'nominations': noms})
     return {
         'tournament': {'id': t['id'], 'title': t['title'], 'date': t['date'], 'has_hall': bool(t['lila_id'])},

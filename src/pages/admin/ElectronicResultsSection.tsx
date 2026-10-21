@@ -230,7 +230,7 @@ export default function ElectronicResultsSection({ password }: Props) {
                   <div key={nom.kind}>
                     <p className="text-sm font-semibold text-gray-700 mb-2">
                       {nom.label}
-                      {nom.kind === 'best_woman' && <span className="text-gray-400 font-normal"> — если не выбрать, возьмём трёх лучших девочек по таблице</span>}
+                      
                     </p>
                     <div className="flex flex-col gap-2">
                       {Array.from({ length: nom.places }, (_, idx) => idx + 1).map(place => {
