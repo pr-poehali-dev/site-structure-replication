@@ -100,6 +100,9 @@ def cors_headers():
     }
 
 
+SPECTATOR_LOGINS = {'mozg-work'}
+
+
 def get_user_id_by_token(cur, token: str):
     if not token:
         return None
@@ -493,6 +496,11 @@ def handler(event: dict, context) -> dict:
 
         user_id = get_user_id_by_token(cur, auth_token) if not is_admin else None
         my_player_id = None
+        if user_id:
+            cur.execute("SELECT login FROM users WHERE id = %s", (user_id,))
+            login_row = cur.fetchone()
+            if login_row and (login_row[0] or '').lower() in SPECTATOR_LOGINS:
+                user_id = None
         if user_id:
             # Зал опрашивается автоматически каждые ~25 секунд, пока открыта вкладка —
             # без троттлинга каждый такой опрос попадал бы в лог как отдельный "заход в зал".
