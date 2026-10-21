@@ -160,7 +160,7 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         sync_finished_tournaments(cur)
         commit_with_retry(conn)
-        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password FROM tournaments ORDER BY created_at DESC")
+        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password, tournament_type FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
         for r in rows:
@@ -172,7 +172,7 @@ def handler(event: dict, context) -> dict:
                 'diploma_sample_url': r[10], 'regulation_url': r[11], 'announcement_url': r[12],
                 'time_msk': r[13], 'hall_open': r[14], 'rounds_count': r[15], 'hall_status': r[16],
                 'rating_type': r[17], 'max_participants': r[18], 'admin_message': r[19],
-                'lila_tournament_id': r[20], 'lila_tournament_kind': r[21] or 'swiss', 'lila_tournament_password': r[22],
+                'lila_tournament_id': r[20], 'lila_tournament_kind': r[21] or 'swiss', 'lila_tournament_password': r[22], 'tournament_type': r[23] or 'qualifying',
             })
         release_conn(conn)
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
@@ -240,16 +240,18 @@ def handler(event: dict, context) -> dict:
             release_conn(conn)
             return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Не удалось распознать номер или ссылку турнира Lila'})}
 
+        tournament_type = body.get('tournament_type') if body.get('tournament_type') in ('warmup', 'training', 'qualifying') else 'qualifying'
+
         if action == 'update':
             rating_type = body.get('rating_type') if body.get('rating_type') in ('blitz', 'rapid') else 'rapid'
             cur.execute(
-                "UPDATE tournaments SET title = %s, description = %s, date = %s, location = %s, age_category = %s, price = %s, time_control = %s, diploma_sample_url = %s, regulation_url = %s, announcement_url = %s, time_msk = %s, hall_open = %s, rounds_count = %s, rating_type = %s, max_participants = %s, admin_message = %s, lila_tournament_id = %s, lila_tournament_kind = %s, lila_tournament_password = %s WHERE id = %s",
+                "UPDATE tournaments SET title = %s, description = %s, date = %s, location = %s, age_category = %s, price = %s, time_control = %s, diploma_sample_url = %s, regulation_url = %s, announcement_url = %s, time_msk = %s, hall_open = %s, rounds_count = %s, rating_type = %s, max_participants = %s, admin_message = %s, lila_tournament_id = %s, lila_tournament_kind = %s, lila_tournament_password = %s, tournament_type = %s WHERE id = %s",
                 (body.get('title'), body.get('description'), body.get('date') or None,
                  body.get('location'), body.get('age_category'), body.get('price') or None, body.get('time_control'),
                  body.get('diploma_sample_url') or None, body.get('regulation_url') or None, body.get('announcement_url') or None,
                  body.get('time_msk'), bool(body.get('hall_open')), body.get('rounds_count') or 5, rating_type,
                  body.get('max_participants') or None, body.get('admin_message') or None,
-                 lila_id, lila_kind, (body.get('lila_tournament_password') or '').strip() or None, body.get('id'))
+                 lila_id, lila_kind, (body.get('lila_tournament_password') or '').strip() or None, tournament_type, body.get('id'))
             )
             commit_with_retry(conn)
             release_conn(conn)
@@ -348,13 +350,13 @@ def handler(event: dict, context) -> dict:
 
         rating_type = body.get('rating_type') if body.get('rating_type') in ('blitz', 'rapid') else 'rapid'
         cur.execute(
-            "INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO tournaments (title, description, date, location, age_category, price, time_control, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password, tournament_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (body.get('title'), body.get('description'), body.get('date') or None,
              body.get('location'), body.get('age_category'), body.get('price') or None, body.get('time_control'),
              body.get('diploma_sample_url') or None, body.get('regulation_url') or None, body.get('announcement_url') or None,
              body.get('time_msk'), bool(body.get('hall_open')), body.get('rounds_count') or 5, rating_type,
              body.get('max_participants') or None, body.get('admin_message') or None,
-             lila_id, lila_kind, (body.get('lila_tournament_password') or '').strip() or None)
+             lila_id, lila_kind, (body.get('lila_tournament_password') or '').strip() or None, tournament_type)
         )
         new_id = cur.fetchone()[0]
         commit_with_retry(conn)

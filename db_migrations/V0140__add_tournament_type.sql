@@ -1,0 +1,1 @@
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS tournament_type VARCHAR(20) NOT NULL DEFAULT 'qualifying';

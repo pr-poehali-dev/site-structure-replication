@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import * as XLSX from 'xlsx';
 import {
-  Tournament, Application, TOURNAMENTS_URL, TOURNAMENT_HALL_URL, APPS_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
+  Tournament, TournamentType, TOURNAMENT_TYPES, Application, TOURNAMENTS_URL, TOURNAMENT_HALL_URL, APPS_URL, EMPTY_T_FORM, STATUS_LABELS, STATUS_COLORS,
 } from './adminTypes';
 import NotifyTournamentButton from './NotifyTournamentButton';
 
@@ -216,6 +216,7 @@ export default function TournamentsSection({
       hall_open: !!t.hall_open,
       rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
       rating_type: t.rating_type || 'rapid',
+      tournament_type: t.tournament_type || 'qualifying',
       max_participants: t.max_participants != null ? String(t.max_participants) : '',
       admin_message: t.admin_message || '',
       lila_tournament_ref: t.lila_tournament_id || '',
@@ -354,6 +355,16 @@ export default function TournamentsSection({
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
           <div><Label>Число туров (швейцарская система)</Label><Input type="number" min={1} max={15} className="mt-1" value={tForm.rounds_count} onChange={e => setTForm({ ...tForm, rounds_count: e.target.value })} /></div>
           <div><Label>Максимальное число участников</Label><Input type="number" min={1} className="mt-1" placeholder="Без ограничения" value={tForm.max_participants} onChange={e => setTForm({ ...tForm, max_participants: e.target.value })} /></div>
+          <div>
+            <Label>Тип турнира</Label>
+            <select
+              className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={tForm.tournament_type}
+              onChange={e => setTForm({ ...tForm, tournament_type: e.target.value as TournamentType })}
+            >
+              {TOURNAMENT_TYPES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
           <div>
             <Label>Тип рейтинга</Label>
             <select
