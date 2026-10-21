@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Tournament, formatDate } from './types';
+import { useAuth } from '@/contexts/AuthContext';
+import { isSpectatorLogin } from '@/lib/spectators';
 import TournamentTypeBadge, { getTypeMeta } from './TournamentTypeBadge';
 
 interface MyApplication {
@@ -28,6 +30,8 @@ export default function TournamentsList({
   tournaments, loading, onOpenModal, onOpenParticipants, onOpenImagePreview,
   appliedTournamentIds, myApplications, onCancelApplication, cancellingId,
 }: TournamentsListProps) {
+  const { user } = useAuth();
+  const isSpectator = isSpectatorLogin(user?.login);
   return (
     <div className="lg:col-span-2">
       <div className="flex items-center gap-3 mb-7">
@@ -95,7 +99,16 @@ export default function TournamentsList({
                     )}
                   </div>
                 </div>
-                {isApplied && (
+                {isSpectator && t.lila_tournament_id && (
+                  <div className="px-6 pb-3">
+                    <Link to={`/room/${t.id}`}>
+                      <Button className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold">
+                        <Icon name="Eye" size={16} className="mr-2" /> Войти в зал (просмотр)
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+                {isApplied && !isSpectator && (
                   <div className="px-6 pb-3">
                     {hallOpen ? (
                       <Link to={`/room/${t.id}`}>

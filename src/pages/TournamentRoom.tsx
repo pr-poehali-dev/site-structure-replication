@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import LilaStandings from '@/components/LilaStandings';
 import AgeGroupTables from '@/components/AgeGroupTables';
 import { useAuth } from '@/contexts/AuthContext';
+import { isSpectatorLogin } from '@/lib/spectators';
 import func2url from '../../backend/func2url.json';
 
 const PUBLIC_URL = func2url['tournaments-public'];
@@ -27,7 +28,8 @@ export default function TournamentRoom() {
   const { tournamentId } = useParams();
   const [tournament, setTournament] = useState<RoomTournament | null>(null);
   const [loading, setLoading] = useState(true);
-  const { token, loading: authLoading } = useAuth();
+  const { token, user, loading: authLoading } = useAuth();
+  const isSpectator = isSpectatorLogin(user?.login);
   const [joinSrc, setJoinSrc] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
   const [liveGame, setLiveGame] = useState<string | null>(null);
@@ -110,7 +112,7 @@ export default function TournamentRoom() {
 
   useEffect(() => {
     if (authLoading || !tournamentId) return;
-    if (!token) {
+    if (!token || isSpectator) {
       setJoined(true);
       return;
     }
@@ -135,7 +137,7 @@ export default function TournamentRoom() {
       .catch(e => { console.warn('lila join failed', e); if (!cancelled) setJoined(true); });
     const fallback = setTimeout(() => { if (!cancelled) setJoined(true); }, 12000);
     return () => { cancelled = true; clearTimeout(fallback); };
-  }, [token, authLoading, tournamentId]);
+  }, [token, authLoading, tournamentId, isSpectator]);
 
   useEffect(() => {
     fetch(`${PUBLIC_URL}?id=${encodeURIComponent(tournamentId || '')}`)
