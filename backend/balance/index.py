@@ -114,6 +114,91 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'bonus_balance': float(row[0]) + delta})}
 
+    if method == 'POST' and action == 'ref_click':
+        code = (body.get('code') or '').strip()[:16]
+        visitor = (body.get('visitor_id') or '').strip()[:64]
+        cur.execute("SELECT id FROM users WHERE referral_code = %s", (code,))
+        owner = cur.fetchone()
+        if owner and visitor:
+            cur.execute("SELECT 1 FROM referral_clicks WHERE referral_code = %s AND visitor_id = %s LIMIT 1", (code, visitor))
+            is_unique = cur.fetchone() is None
+            cur.execute(
+                "INSERT INTO referral_clicks (referral_code, referrer_id, visitor_id, is_unique) VALUES (%s, %s, %s, %s)",
+                (code, owner[0], visitor, is_unique)
+            )
+            conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
+    if method == 'POST' and action == 'admin_ref_stats':
+        if not admin_password or admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        cur.execute(
+            """SELECT COUNT(*),
+                      COUNT(*) FILTER (WHERE is_unique),
+                      COUNT(*) FILTER (WHERE created_at >= date_trunc('day', now())),
+                      COUNT(*) FILTER (WHERE created_at >= now() - interval '7 days'),
+                      COUNT(*) FILTER (WHERE created_at >= now() - interval '30 days')
+               FROM referral_clicks"""
+        )
+        r = cur.fetchone()
+        clicks = {'total': r[0], 'unique': r[1], 'today': r[2], 'week': r[3], 'month': r[4]}
+        cur.execute(
+            """SELECT COUNT(*),
+                      COUNT(*) FILTER (WHERE created_at >= date_trunc('day', now())),
+                      COUNT(*) FILTER (WHERE created_at >= now() - interval '7 days'),
+                      COUNT(*) FILTER (WHERE created_at >= now() - interval '30 days'),
+                      COUNT(DISTINCT referred_by)
+               FROM users WHERE referred_by IS NOT NULL"""
+        )
+        r = cur.fetchone()
+        regs = {'total': r[0], 'today': r[1], 'week': r[2], 'month': r[3], 'referrers': r[4]}
+        cur.execute(
+            """SELECT COUNT(*), COALESCE(SUM(amount),0), COUNT(DISTINCT source_user_id)
+               FROM balance_transactions WHERE type = 'bonus_referral'"""
+        )
+        r = cur.fetchone()
+        bonus = {'payouts': r[0], 'total': float(r[1]), 'paying_referrals': r[2]}
+        cur.execute(
+            """SELECT to_char(d, 'YYYY-MM-DD'),
+                      (SELECT COUNT(*) FROM referral_clicks c WHERE c.created_at::date = d::date),
+                      (SELECT COUNT(*) FROM users u WHERE u.referred_by IS NOT NULL AND u.created_at::date = d::date)
+               FROM generate_series(current_date - 29, current_date, '1 day') d ORDER BY d"""
+        )
+        daily = [{'date': x[0], 'clicks': x[1], 'regs': x[2]} for x in cur.fetchall()]
+        cur.execute(
+            """SELECT u.id, u.last_name, u.first_name, u.login, u.referral_code,
+                      (SELECT COUNT(*) FROM referral_clicks c WHERE c.referrer_id = u.id),
+                      (SELECT COUNT(*) FROM referral_clicks c WHERE c.referrer_id = u.id AND c.is_unique),
+                      (SELECT COUNT(*) FROM users x WHERE x.referred_by = u.id),
+                      COALESCE((SELECT SUM(t.amount) FROM balance_transactions t WHERE t.user_id = u.id AND t.type = 'bonus_referral'), 0)
+               FROM users u
+               WHERE EXISTS (SELECT 1 FROM referral_clicks c WHERE c.referrer_id = u.id)
+                  OR EXISTS (SELECT 1 FROM users x WHERE x.referred_by = u.id)
+               ORDER BY 8 DESC, 6 DESC LIMIT 100"""
+        )
+        top = [
+            {'id': x[0], 'name': f"{x[1] or ''} {x[2] or ''}".strip() or x[3], 'code': x[4],
+             'clicks': x[5], 'unique': x[6], 'regs': x[7], 'earned': float(x[8])}
+            for x in cur.fetchall()
+        ]
+        cur.execute(
+            """SELECT u.id, u.last_name, u.first_name, u.login, u.created_at,
+                      r.last_name, r.first_name, r.login,
+                      COALESCE((SELECT SUM(t.amount) FROM balance_transactions t WHERE t.type = 'bonus_referral' AND t.source_user_id = u.id), 0)
+               FROM users u JOIN users r ON r.id = u.referred_by
+               ORDER BY u.created_at DESC LIMIT 100"""
+        )
+        recent = [
+            {'id': x[0], 'name': f"{x[1] or ''} {x[2] or ''}".strip() or x[3], 'created_at': str(x[4]),
+             'referrer': f"{x[5] or ''} {x[6] or ''}".strip() or x[7], 'bonus': float(x[8])}
+            for x in cur.fetchall()
+        ]
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps(
+            {'clicks': clicks, 'regs': regs, 'bonus': bonus, 'daily': daily, 'top': top, 'recent': recent})}
+
     if method == 'POST' and action == 'admin_stats':
         if not admin_password or admin_password != os.environ.get('ADMIN_PASSWORD', ''):
             conn.close()

@@ -24,6 +24,7 @@ import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import FsrRatingsSection from './admin/FsrRatingsSection';
 import LogsSection from './admin/LogsSection';
 import BalanceSection from './admin/BalanceSection';
+import ReferralStatsSection from './admin/ReferralStatsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 import ResetDemoGameButton from './admin/ResetDemoGameButton';
 
@@ -287,6 +288,7 @@ export default function Admin() {
             ['subscription-plans', 'Ticket', 'Абонементы'],
             ['fsr-ratings', 'FileSpreadsheet', 'Файлы рейтинга'],
             ['balance', 'Wallet', 'Баланс'],
+            ['referrals', 'Share2', 'Рефералы'],
             ['logs', 'ScrollText', 'Логи'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
@@ -479,6 +481,8 @@ export default function Admin() {
             lastSync={fsrLastSync}
           />
         )}
+
+        {section === 'referrals' && <ReferralStatsSection password={password} />}
 
         {section === 'balance' && <BalanceSection password={password} />}
 

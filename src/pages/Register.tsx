@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import func2url from '../../backend/func2url.json';
 import { useAuth } from '@/contexts/AuthContext';
 
 const EMPTY_FORM = {
@@ -27,7 +28,22 @@ export default function Register() {
 
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref');
-    if (ref) localStorage.setItem(REF_KEY, ref);
+    if (ref) {
+      localStorage.setItem(REF_KEY, ref);
+      let vid = localStorage.getItem('ref_visitor_id');
+      if (!vid) {
+        vid = crypto.randomUUID();
+        localStorage.setItem('ref_visitor_id', vid);
+      }
+      if (sessionStorage.getItem('ref_click_sent') !== ref) {
+        sessionStorage.setItem('ref_click_sent', ref);
+        fetch(func2url['balance'], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ _action: 'ref_click', code: ref, visitor_id: vid }),
+        }).catch(() => undefined);
+      }
+    }
   }, []);
 
   function set<K extends keyof typeof EMPTY_FORM>(key: K, value: string) {
