@@ -19,8 +19,10 @@ const TYPES: { key: TournamentType; short: string }[] = [
 
 export default function PortalUpdateBanner() {
   return (
-    <section className="bg-gradient-to-br from-violet-600 to-indigo-800 text-white">
-      <div className="container px-4">
+    <section className="bg-white py-6">
+    <div className="container px-4">
+    <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-violet-600 to-indigo-800 text-white">
+      <div className="px-5 md:px-8">
         <div className="py-6 md:py-7">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-300 text-indigo-950 text-xs font-bold tracking-wide mb-3">
                 <Icon name="Rocket" size={14} /> ПЕРЕЗАГРУЗКА ПОРТАЛА
@@ -53,7 +55,7 @@ export default function PortalUpdateBanner() {
       </div>
 
       <div className="bg-indigo-950/40">
-        <div className="container px-4 py-5">
+        <div className="px-5 md:px-8 py-5">
             <p className="text-xs font-bold tracking-wide text-violet-200 mb-2">ТРИ ТИПА ТУРНИРОВ</p>
             <div className="grid sm:grid-cols-3 gap-2">
               {TYPES.map(t => {
@@ -74,6 +76,8 @@ export default function PortalUpdateBanner() {
             </p>
         </div>
       </div>
+    </div>
+    </div>
     </section>
   );
 }
