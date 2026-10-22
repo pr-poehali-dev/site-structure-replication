@@ -114,6 +114,58 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True, 'bonus_balance': float(row[0]) + delta})}
 
+    if method == 'POST' and action == 'admin_stats':
+        if not admin_password or admin_password != os.environ.get('ADMIN_PASSWORD', ''):
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        cur.execute(
+            """SELECT COALESCE(SUM(balance),0), COALESCE(SUM(bonus_balance),0),
+                      COUNT(*) FILTER (WHERE balance > 0), COUNT(*) FILTER (WHERE bonus_balance > 0), COUNT(*)
+               FROM users"""
+        )
+        r = cur.fetchone()
+        totals = {'money': float(r[0]), 'bonus': float(r[1]), 'users_with_money': r[2], 'users_with_bonus': r[3], 'users_total': r[4]}
+        cur.execute(
+            """SELECT
+                 COALESCE(SUM(amount) FILTER (WHERE created_at >= date_trunc('day', now())), 0),
+                 COALESCE(SUM(amount) FILTER (WHERE created_at >= now() - interval '7 days'), 0),
+                 COALESCE(SUM(amount) FILTER (WHERE created_at >= now() - interval '30 days'), 0),
+                 COALESCE(SUM(amount), 0), COUNT(*)
+               FROM balance_transactions WHERE type = 'topup'"""
+        )
+        r = cur.fetchone()
+        topups = {'today': float(r[0]), 'week': float(r[1]), 'month': float(r[2]), 'all': float(r[3]), 'count': r[4]}
+        cur.execute(
+            """SELECT COALESCE(SUM(-amount),0) FROM balance_transactions WHERE account = 'money' AND amount < 0"""
+        )
+        spent = float(cur.fetchone()[0])
+        cur.execute(
+            """SELECT COALESCE(SUM(amount) FILTER (WHERE amount > 0),0), COALESCE(SUM(-amount) FILTER (WHERE amount < 0),0)
+               FROM balance_transactions WHERE account = 'bonus'"""
+        )
+        r = cur.fetchone()
+        bonus_flow = {'earned': float(r[0]), 'spent': float(r[1])}
+        cur.execute(
+            """SELECT to_char(d, 'YYYY-MM-DD'), COALESCE(SUM(t.amount), 0)
+               FROM generate_series(current_date - 29, current_date, '1 day') d
+               LEFT JOIN balance_transactions t ON t.type = 'topup' AND t.created_at::date = d::date
+               GROUP BY d ORDER BY d"""
+        )
+        daily = [{'date': x[0], 'amount': float(x[1])} for x in cur.fetchall()]
+        cur.execute(
+            """SELECT t.id, t.amount, t.description, t.created_at, u.id, u.last_name, u.first_name, u.login
+               FROM balance_transactions t JOIN users u ON u.id = t.user_id
+               WHERE t.type = 'topup' ORDER BY t.created_at DESC LIMIT 300"""
+        )
+        history = [
+            {'id': x[0], 'amount': float(x[1]), 'description': x[2], 'created_at': str(x[3]), 'user_id': x[4],
+             'name': f"{x[5] or ''} {x[6] or ''}".strip() or x[7], 'login': x[7]}
+            for x in cur.fetchall()
+        ]
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps(
+            {'totals': totals, 'topups': topups, 'spent': spent, 'bonus_flow': bonus_flow, 'daily': daily, 'history': history})}
+
     user_id = get_user_id_by_token(cur, token)
     if not user_id:
         conn.close()
