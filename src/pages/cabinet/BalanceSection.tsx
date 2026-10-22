@@ -154,7 +154,7 @@ export default function BalanceSection() {
 
   const visibleTransactions = transactions.filter(t => historyFilter === 'all' || (t.account || 'money') === historyFilter);
 
-  const referralLink = referralCode ? `${window.location.origin}/register?ref=${referralCode}` : '';
+  const referralLink = referralCode ? `https://мир-шахмат.рф/register?ref=${referralCode}` : '';
 
   async function copyReferralLink() {
     try {

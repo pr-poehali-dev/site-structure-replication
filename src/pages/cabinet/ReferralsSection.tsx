@@ -35,7 +35,7 @@ export default function ReferralsSection() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const link = code ? `${window.location.origin}/register?ref=${code}` : '';
+  const link = code ? `https://мир-шахмат.рф/register?ref=${code}` : '';
 
   async function copyLink() {
     try {
