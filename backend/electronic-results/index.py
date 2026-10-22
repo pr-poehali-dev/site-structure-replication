@@ -109,6 +109,7 @@ def build_rows(cur, t):
             'points': r.get('score', r.get('points', 0)),
             'tieBreak': r.get('tieBreak'),
             'rating': r.get('rating'),
+            'performance': r.get('performance'),
         })
     rows.sort(key=lambda x: x['rank'] or 9999)
     return rows

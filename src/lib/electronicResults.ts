@@ -22,6 +22,7 @@ export interface ResultRow {
   points: number;
   tieBreak?: number | null;
   rating?: number | null;
+  performance?: number | null;
   group?: string | null;
   place?: number;
 }

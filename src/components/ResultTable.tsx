@@ -13,6 +13,8 @@ export default function ResultTable({ rows, grouped }: { rows: ResultRow[]; grou
             <th className="px-3">Участник</th>
             <th className="px-3">Возраст</th>
             <th className="px-3 text-right">Очки</th>
+            <th className="px-3 text-right">Бухгольц</th>
+            <th className="px-3 text-right">Перфоманс</th>
           </tr>
         </thead>
         <tbody>
@@ -26,6 +28,8 @@ export default function ResultTable({ rows, grouped }: { rows: ResultRow[]; grou
                 </td>
                 <td className="px-3">{r.age ?? '—'}</td>
                 <td className="px-3 text-right font-semibold">{r.points}</td>
+                <td className="px-3 text-right text-gray-500">{r.tieBreak ?? '—'}</td>
+                <td className="px-3 text-right text-gray-500">{r.performance ?? '—'}</td>
               </tr>
             );
           })}
