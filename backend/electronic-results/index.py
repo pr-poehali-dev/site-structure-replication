@@ -247,9 +247,24 @@ def handler(event: dict, context) -> dict:
             if not row or not row[0]:
                 conn.close()
                 return resp(404, {'error': 'Результаты не опубликованы'})
-            cur.execute("SELECT lila_tournament_id FROM tournaments WHERE id = %s", (int(tid),))
+            cur.execute("SELECT lila_tournament_id, lila_tournament_kind FROM tournaments WHERE id = %s", (int(tid),))
             trow = cur.fetchone()
             snap = json.loads(row[0])
+            if trow and trow[0]:
+                try:
+                    extra = {r['username'].lower(): r for r in lila_results(trow[0], trow[1] or 'swiss')}
+                    rows_all = list(snap.get('overall') or [])
+                    for g in snap.get('groups') or []:
+                        rows_all += g.get('table') or []
+                    for r in rows_all:
+                        e = extra.get(str(r.get('username', '')).lower())
+                        if e:
+                            if r.get('performance') is None:
+                                r['performance'] = e.get('performance')
+                            if r.get('tieBreak') is None:
+                                r['tieBreak'] = e.get('tieBreak')
+                except Exception:
+                    pass
             snap.setdefault('tournament', {})['has_hall'] = bool(trow and trow[0])
             cur.execute("SELECT file_url FROM electronic_result_files WHERE tournament_id = %s AND kind = 'protocol' AND username = %s", (int(tid), PROTOCOL_USER))
             prow = cur.fetchone()
