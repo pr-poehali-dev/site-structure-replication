@@ -80,9 +80,16 @@ export default function TournamentsList({
                     </div>
                   </div>
                   {t.date && (
-                    <p className="mt-1 text-secondary font-semibold text-sm flex items-center gap-1">
-                      <Icon name="Calendar" size={14} /> {formatDate(t.date)}{t.time_msk && `, ${t.time_msk} МСК`}
-                    </p>
+                    <div className="mt-3 inline-flex items-center gap-3 rounded-xl bg-secondary/10 px-4 py-2.5">
+                      <Icon name="CalendarDays" size={22} className="text-secondary shrink-0" />
+                      <div className="leading-tight">
+                        <p className="font-heading font-bold text-lg text-primary">{formatDate(t.date)}</p>
+                        <p className="text-sm text-gray-600 capitalize">
+                          {new Date(t.date).toLocaleDateString('ru-RU', { weekday: 'long' })}
+                          {t.time_msk && <span className="normal-case">, начало в {t.time_msk} МСК</span>}
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="px-6 py-4 flex-1 flex flex-col gap-3">
