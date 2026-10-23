@@ -31,7 +31,7 @@ interface Theme {
 
 const THEMES: Record<Period, Theme> = {
   month: {
-    title: 'Лидеры месяца',
+    title: 'Самые активные участники месяца',
     icon: 'Flame',
     header: '#FF6B4A',
     headerText: '#ffffff',
@@ -40,7 +40,7 @@ const THEMES: Record<Period, Theme> = {
     border: '#FFC9BB',
   },
   all: {
-    title: 'Лидеры за всё время',
+    title: 'Самые активные участники за всё время',
     icon: 'Trophy',
     header: '#7C4DFF',
     headerText: '#ffffff',
@@ -52,7 +52,7 @@ const THEMES: Record<Period, Theme> = {
 
 function Row({ p, theme }: { p: Player; theme: Theme }) {
   return (
-    <Link to={`/player/${p.user_id}`} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-black/5 transition-colors">
+    <Link to={`/player/${p.user_id}`} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-black/5 transition-colors">
       <span
         className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
         style={{ background: p.place <= 3 ? theme.header : theme.border, color: p.place <= 3 ? theme.headerText : '#141414' }}
@@ -65,7 +65,7 @@ function Row({ p, theme }: { p: Player; theme: Theme }) {
           {(p.last_name[0] || '') + (p.first_name[0] || '')}
         </AvatarFallback>
       </Avatar>
-      <p className="min-w-0 flex-1 font-semibold text-sm truncate text-[#141414]">{p.last_name} {p.first_name}</p>
+      <p className="min-w-0 flex-1 font-semibold text-xs sm:text-sm leading-tight text-[#141414] break-words">{p.last_name} {p.first_name}</p>
       <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
         {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
       </span>
@@ -83,23 +83,28 @@ interface BoardProps {
 function Board({ period, players, total, onShowAll }: BoardProps) {
   const theme = THEMES[period];
   return (
-    <div className="rounded-xl overflow-hidden shadow-md border" style={{ background: theme.soft, borderColor: theme.border }}>
-      <div className="px-4 py-2 flex items-center justify-between gap-2" style={{ background: theme.header, color: theme.headerText }}>
-        <h2 className="font-heading font-bold text-base uppercase flex items-center gap-2">
-          <Icon name={theme.icon} size={18} /> {theme.title}
+    <div className="rounded-xl overflow-hidden shadow-md border flex flex-col" style={{ background: theme.soft, borderColor: theme.border }}>
+      <div className="px-3 py-2.5" style={{ background: theme.header, color: theme.headerText }}>
+        <h2 className="font-heading font-bold text-sm leading-tight uppercase flex items-start gap-2">
+          <Icon name={theme.icon} size={16} className="shrink-0 mt-0.5" /> {theme.title}
         </h2>
-        {total > 3 && (
-          <button type="button" onClick={() => onShowAll(period)} className="text-xs font-semibold underline underline-offset-2 hover:opacity-80">
-            Показать всех ({total})
-          </button>
-        )}
       </div>
       {players.length === 0 ? (
         <p className="px-4 py-4 text-sm text-[#666666]">Пока нет завершённых турниров</p>
       ) : (
-        <div className="py-1">
+        <div className="py-1 flex-1">
           {players.map(p => <Row key={p.user_id} p={p} theme={theme} />)}
         </div>
+      )}
+      {total > 3 && (
+        <button
+          type="button"
+          onClick={() => onShowAll(period)}
+          className="px-3 py-2 text-xs font-semibold border-t text-left hover:bg-black/5 transition-colors"
+          style={{ color: theme.accent, borderColor: theme.border }}
+        >
+          Показать всех ({total})
+        </button>
       )}
     </div>
   );
@@ -133,8 +138,10 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
   return (
     <div className="animate-fade-in flex flex-col gap-3">
       <h1 className="sr-only">Мир шахмат — центр поддержки детского шахматного спорта</h1>
-      <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} />
-      <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} />
+      <div className="grid grid-cols-2 gap-3 items-stretch">
+        <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} />
+        <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} />
+      </div>
       <p className="text-xs text-[#666666] px-1">
         Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3
       </p>
