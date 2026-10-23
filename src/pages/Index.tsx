@@ -70,10 +70,10 @@ const Index = () => {
       <PublicPushSubscribe hideTrigger />
 
       {/* Hero */}
-      <section id="top" className="relative overflow-hidden bg-gradient-to-br from-[#F3F9FF] via-white to-[#EEFAF3]">
-        <div className="absolute inset-0 chess-grid opacity-30" />
-        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-[#2DB86B]/20 blur-3xl animate-float" />
-        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#3D7BF7]/20 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+      <section id="top" className="relative overflow-hidden bg-gradient-to-br from-[#14224F] via-[#1B2F6B] to-[#0F1B3F]">
+        <div className="absolute inset-0 chess-grid opacity-5" />
+        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-[#2DB86B]/30 blur-3xl animate-float" />
+        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#3D7BF7]/30 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <MostActive
             fallback={
@@ -98,7 +98,7 @@ const Index = () => {
           </div>
             }
           />
-          <div className="relative animate-scale-in flex items-center">
+          <div className="relative animate-scale-in flex items-center rounded-3xl bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.75)_55%,rgba(255,255,255,0.25)_100%)]">
             <img src={HERO_IMG} alt="Шахматная доска" className="w-full h-full object-contain" style={{ maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)' }} />
           </div>
         </div>

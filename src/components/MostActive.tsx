@@ -52,20 +52,20 @@ const THEMES: Record<Period, Theme> = {
 
 function Row({ p, theme, onOpen, top = false }: { p: Player; theme: Theme; onOpen: (id: number) => void; top?: boolean }) {
   return (
-    <button type="button" onClick={() => onOpen(p.user_id)} className={`w-full text-left flex items-center gap-2 px-2.5 hover:bg-black/5 transition-colors ${top ? 'py-2.5 bg-white/70 border-l-4' : 'py-1.5 opacity-80'}`} style={top ? { borderLeftColor: theme.header } : undefined}>
+    <button type="button" onClick={() => onOpen(p.user_id)} className={`w-full text-left flex items-center gap-2 px-2.5 hover:bg-black/5 transition-colors ${top ? 'py-2 bg-white/70 border-l-4' : 'py-1 opacity-80'}`} style={top ? { borderLeftColor: theme.header } : undefined}>
       <span
         className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
         style={{ background: top ? theme.header : theme.border, color: top ? theme.headerText : '#141414' }}
       >
         {p.place}
       </span>
-      <Avatar className={`shrink-0 ${top ? 'w-9 h-9' : 'w-7 h-7'}`}>
+      <Avatar className={`shrink-0 ${top ? 'w-8 h-8' : 'w-6 h-6'}`}>
         <AvatarImage src={p.avatar_url || undefined} alt={p.first_name} />
         <AvatarFallback className="text-[10px] font-bold" style={{ background: theme.border, color: '#141414' }}>
           {(p.last_name[0] || '') + (p.first_name[0] || '')}
         </AvatarFallback>
       </Avatar>
-      <p className={`min-w-0 flex-1 ${top ? 'font-bold' : 'font-medium'} text-xs sm:text-sm leading-tight text-[#141414] break-words`}>{p.last_name} {p.first_name}</p>
+      <p className={`min-w-0 flex-1 ${top ? 'font-bold' : 'font-medium'} text-xs leading-tight text-[#141414] break-words`}>{p.last_name} {p.first_name}</p>
       <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
         {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
       </span>
@@ -85,8 +85,8 @@ function Board({ period, players, total, onShowAll, onOpenProfile }: BoardProps)
   const theme = THEMES[period];
   return (
     <div className="rounded-xl overflow-hidden shadow-md border flex flex-col" style={{ background: theme.soft, borderColor: theme.border }}>
-      <div className="px-3 py-2.5" style={{ background: theme.header, color: theme.headerText }}>
-        <h2 className="font-heading font-bold text-sm leading-tight uppercase flex items-start gap-2">
+      <div className="px-3 py-2" style={{ background: theme.header, color: theme.headerText }}>
+        <h2 className="font-heading font-bold text-xs leading-tight uppercase flex items-start gap-2">
           <Icon name={theme.icon} size={16} className="shrink-0 mt-0.5" /> {theme.title}
         </h2>
       </div>
@@ -140,11 +140,11 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
   return (
     <div className="animate-fade-in flex flex-col gap-3">
       <h1 className="sr-only">Мир шахмат — центр поддержки детского шахматного спорта</h1>
-      <div className="grid grid-cols-2 gap-3 items-stretch">
+      <div className="grid grid-cols-2 gap-5 items-stretch max-w-[540px]">
         <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} onOpenProfile={setProfileId} />
         <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} onOpenProfile={setProfileId} />
       </div>
-      <p className="text-xs text-[#666666] px-1">
+      <p className="text-[11px] text-white/70 px-1">
         Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3
       </p>
 
