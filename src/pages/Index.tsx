@@ -44,13 +44,6 @@ const OLIMPIADS = [
   },
 ];
 
-const STATS = [
-  { value: '1 000+', label: 'юных участников' },
-  { value: '100+', label: 'проведённых турниров' },
-  { value: '300+', label: 'комплектов наград' },
-  { value: 'Россия', label: 'и страны СНГ' },
-];
-
 const SERVICES = [
   { id: 'turnir', icon: 'Swords', title: 'Турниры', desc: 'Регулярные шахматные турниры для детей всех уровней подготовки — от новичков до разрядников.', color: 'bg-secondary/20 text-primary' },
   { id: 'result', icon: 'ListChecks', title: 'Результаты', desc: 'Итоговые таблицы и протоколы прошедших соревнований доступны участникам и родителям.', color: 'bg-emerald-100 text-emerald-600' },
@@ -102,18 +95,6 @@ const Index = () => {
             }
           />
           <MostActive kinds={['blitz', 'rapid']} note="Рейтинг МШ — по итогам турниров «Мир шахмат»" />
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="bg-gradient-to-r from-[#3D7BF7] to-[#2DB86B] text-white">
-        <div className="container grid grid-cols-2 md:grid-cols-4 gap-4 px-4 py-6">
-          {STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-heading font-bold text-3xl md:text-4xl">{s.value}</div>
-              <div className="text-sm font-medium mt-1 opacity-80">{s.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 
