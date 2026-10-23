@@ -388,9 +388,16 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 </div>
               </div>
               <div className="border-t border-gray-100 pt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Бонусный счёт: {(editUser.bonus_balance ?? 0).toLocaleString('ru')} ₽
-                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Текущий баланс</p>
+                    <p className="font-heading font-bold text-2xl text-primary mt-0.5">{(editUser.balance ?? 0).toLocaleString('ru')} ₽</p>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Бонусный счёт</p>
+                    <p className="font-heading font-bold text-2xl text-primary mt-0.5">{(editUser.bonus_balance ?? 0).toLocaleString('ru')} ₽</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_auto] gap-2">
                   <Input type="number" step="1" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} placeholder="+500 или -200" />
                   <Input value={bonusNote} onChange={e => setBonusNote(e.target.value)} placeholder="Комментарий (необязательно)" />

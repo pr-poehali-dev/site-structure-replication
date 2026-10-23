@@ -292,8 +292,14 @@ def handler(event: dict, context) -> dict:
         else:
             cur.execute(f"{USER_SELECT} ORDER BY created_at DESC LIMIT 200")
         rows = cur.fetchall()
+        users = [user_to_dict(r) for r in rows]
+        if users:
+            cur.execute("SELECT id, balance FROM users WHERE id = ANY(%s)", ([u['id'] for u in users],))
+            balances = {r[0]: float(r[1] or 0) for r in cur.fetchall()}
+            for u in users:
+                u['balance'] = balances.get(u['id'], 0)
         conn.close()
-        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': [user_to_dict(r) for r in rows]})}
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': users})}
 
     # Текущий пользователь по токену
     if method == 'GET':
