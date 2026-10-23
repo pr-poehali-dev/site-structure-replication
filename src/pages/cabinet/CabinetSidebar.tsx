@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, initials, fileToBase64 } from './utils';
+import ActivityBadge from '@/components/ActivityBadge';
 import func2url from '../../../backend/func2url.json';
 
 const BALANCE_URL = func2url['balance'];
@@ -85,6 +86,7 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
         </div>
 
         <div className="w-full flex flex-col gap-2">
+          <ActivityBadge userId={user.id} />
           <div>
             <div className="flex items-center gap-1 mb-1">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide text-left">Рейтинг МШ (Мир шахмат)</p>

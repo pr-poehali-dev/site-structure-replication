@@ -1,0 +1,6 @@
+{
+  "tests": [
+    {"name": "GET top returns 200", "method": "GET", "path": "/", "expectedStatus": 200},
+    {"name": "GET bad user_id returns 400", "method": "GET", "path": "/?user_id=abc", "expectedStatus": 400}
+  ]
+}

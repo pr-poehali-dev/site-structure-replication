@@ -4,6 +4,7 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import ActivityBadge from '@/components/ActivityBadge';
 import MiniChessBoard from '@/components/MiniChessBoard';
 import LilaGameDialog from '@/components/LilaGameDialog';
 import { shortFio } from '@/lib/fio';
@@ -173,6 +174,7 @@ export default function PlayerProfile() {
               </div>
 
               <div className="w-full flex flex-col gap-2">
+                <ActivityBadge userId={profile.id} />
                 <div>
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 text-left">Рейтинг МШ (Мир шахмат)</p>
                   <div className="flex gap-2">
