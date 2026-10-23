@@ -6,50 +6,10 @@ import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import Seo from '@/components/Seo';
 import PortalUpdateBanner from '@/components/PortalUpdateBanner';
 import MostActive from '@/components/MostActive';
-
-const HERO_IMG = 'https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/a45605f3-8e77-46d0-9edd-9e28028083cf.png';
-
-const NAV = [
-  { label: 'Турниры', href: '/turnir' },
-  { label: 'Фестивали', href: '#festivali' },
-  { label: 'Шашки', href: '#shashki' },
-  { label: 'Результаты', href: '#result' },
-  { label: 'Дипломы', href: '#diplomy' },
-  { label: 'Кубки', href: '#kubki' },
-  { label: 'Оплата', href: '#pay' },
-  { label: 'Контакты', href: '#contacts' },
-];
-
-const OLIMPIADS = [
-  {
-    name: 'Дебют',
-    slug: 'debyut',
-    icon: 'Swords',
-    desc: 'Задания на знание дебютной базы, а также проверка знания основных правил игры в дебюте.',
-    color: 'bg-orange-500 text-white',
-  },
-  {
-    name: 'Эврика',
-    slug: 'evrika',
-    icon: 'Lightbulb',
-    desc: 'Решение шахматных задач на тактику и комбинации. Проверь свою смекалку и наблюдательность.',
-    color: 'bg-secondary text-secondary-foreground',
-  },
-  {
-    name: 'Эрудит',
-    slug: 'erudit',
-    icon: 'BookOpen',
-    desc: 'Задания на знание правил и истории развития шахмат. Для тех, кто любит думать глубоко.',
-    color: 'bg-emerald-500 text-white',
-  },
-];
-
-const SERVICES = [
-  { id: 'turnir', icon: 'Swords', title: 'Турниры', desc: 'Регулярные шахматные турниры для детей всех уровней подготовки — от новичков до разрядников.', color: 'bg-secondary/20 text-primary' },
-  { id: 'result', icon: 'ListChecks', title: 'Результаты', desc: 'Итоговые таблицы и протоколы прошедших соревнований доступны участникам и родителям.', color: 'bg-emerald-100 text-emerald-600' },
-  { id: 'kubki', icon: 'Award', title: 'Заказать награды', desc: 'Кубки, медали и памятные подарки для победителей и призёров турниров.', color: 'bg-orange-100 text-orange-600' },
-  { id: 'pay', icon: 'CreditCard', title: 'Оплата', desc: 'Удобная онлайн-оплата участия в турнирах и олимпиадах центра «Мир шахмат».', color: 'bg-secondary/20 text-primary' },
-];
+import QuickLinks from '@/components/home/QuickLinks';
+import UpcomingTournaments from '@/components/home/UpcomingTournaments';
+import OlympiadsAndPerks from '@/components/home/OlympiadsAndPerks';
+import SidebarCards from '@/components/home/SidebarCards';
 
 const Index = () => {
   return (
@@ -98,160 +58,20 @@ const Index = () => {
         </div>
       </section>
 
+      <section className="bg-gradient-to-b from-[#EEF4FF] to-white">
+        <div className="container px-4 py-6 flex flex-col gap-5">
+          <QuickLinks />
+          <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+            <div className="flex flex-col gap-5">
+              <UpcomingTournaments />
+              <OlympiadsAndPerks />
+            </div>
+            <SidebarCards />
+          </div>
+        </div>
+      </section>
+
       <PortalUpdateBanner />
-
-      {/* About promo */}
-      <section className="bg-white">
-        <div className="container px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-7">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
-              <Icon name="Sparkles" size={15} /> Официальные онлайн-турниры
-            </span>
-            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary leading-tight">
-              Мир Шахмат — там, где ценят <span className="text-secondary">каждого</span> участника
-            </h2>
-            <p className="mt-5 text-muted-foreground text-lg leading-relaxed max-w-2xl mx-auto">
-              Мы — ведущий центр поддержки детского шахматного спорта, специализирующийся на организации официальных онлайн-турниров и олимпиад. Наша миссия — создать для юных шахматистов платформу для развития, соревнований и признания их уникальных талантов.
-            </p>
-          </div>
-
-          <h3 className="font-heading font-bold text-xl md:text-2xl text-primary text-center uppercase mb-6">Что отличает наши турниры?</h3>
-
-          <div className="flex justify-center mb-10">
-            <div className="inline-flex items-center gap-4 bg-primary/8 border border-primary/20 rounded-2xl px-6 py-4">
-              <Icon name="Globe" size={22} className="text-secondary shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-primary">
-                  Статус <span className="text-secondary">Всероссийского</span> или <span className="text-secondary">Международного</span> турнира
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">в зависимости от географии участников</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
-            <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-orange-100 text-orange-600">
-                <Icon name="ScrollText" size={28} />
-              </span>
-              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Официальные награды</h4>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                По итогам соревнований победители и призёры получают Дипломы I, II и III степени. Наставники получают благодарственные письма.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Все результаты подтверждены протоколами — смотреть в разделе <a href="/result" className="text-primary hover:text-secondary underline underline-offset-2 transition-colors">«Результаты»</a>
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-secondary/40 bg-secondary/5 p-7 flex flex-col gap-4 md:col-span-1">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-secondary text-secondary-foreground">
-                <Icon name="Trophy" size={28} />
-              </span>
-              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Множество номинаций</h4>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-2">
-                Шанс получить награду есть у каждого — вне зависимости от итогового места. Мы отмечаем самые яркие моменты:
-              </p>
-              <ul className="space-y-1.5">
-                {['"Самый быстрый мат"', '"Самый красивый мат"', '"Лучшая шахматистка"', '"Юное дарование"', '"Боевая ничья"'].map(n => (
-                  <li key={n} className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Icon name="Star" size={14} className="text-secondary shrink-0" />{n}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-7 flex flex-col gap-4">
-              <span className="grid place-items-center w-14 h-14 rounded-xl bg-emerald-100 text-emerald-600">
-                <Icon name="Globe" size={28} />
-              </span>
-              <h4 className="font-heading font-semibold text-lg text-primary uppercase">Из любой точки мира</h4>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Соревнуйтесь с сильнейшими сверстниками, не выходя из дома. Доступность онлайн-формата открывает возможности для всех.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-primary text-white p-8 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-            <Icon name="Users" size={40} className="text-secondary shrink-0" />
-            <div className="flex-1">
-              <p className="text-lg font-medium leading-relaxed">
-                Помогите своему ученику не просто играть в шахматы, а получать заслуженное признание и удовольствие от игры. Присоединяйтесь к нашим турнирам и следите за расписанием в нашей группе <span className="text-secondary font-semibold">ВКонтакте «Мир Шахмат»</span>.
-              </p>
-            </div>
-            <a href="https://vk.com/mirshahmat" target="_blank" rel="noopener noreferrer"
-              className="shrink-0 inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-semibold px-6 py-3 rounded-xl hover:bg-secondary/90 transition-colors whitespace-nowrap">
-              <Icon name="ExternalLink" size={16} /> Группа ВКонтакте
-            </a>
-          </div>
-        </div>
-        </div>
-      </section>
-
-      {/* Olimpiads */}
-      <section id="olimpiady" className="bg-sky-50/60 scroll-mt-16">
-        <div className="container px-4 py-8">
-          <div className="text-center max-w-2xl mx-auto mb-4">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
-              <Icon name="Medal" size={15} /> Регулярные олимпиады
-            </span>
-            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Регулярные олимпиады</h2>
-          </div>
-          <div className="flex flex-wrap justify-center gap-6 mb-10">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon name="Monitor" size={16} className="text-secondary" />
-              Интерактивный онлайн-формат
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon name="Clock" size={16} className="text-secondary" />
-              Результаты в течение 2 рабочих дней
-            </div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {OLIMPIADS.map((o) => (
-              <div key={o.name} className="group rounded-2xl border border-border bg-card p-7 flex flex-col hover:shadow-xl hover:border-secondary transition-all">
-                <span className={`grid place-items-center w-14 h-14 rounded-xl ${o.color} mb-5`}>
-                  <Icon name={o.icon} size={28} />
-                </span>
-                <h3 className="font-heading font-semibold text-xl uppercase text-primary mb-3">
-                  Олимпиада «{o.name}»
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed flex-1">{o.desc}</p>
-                <a
-                  href="/olimpiady"
-                  className="mt-6 inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground font-semibold rounded-xl px-5 py-2.5 text-sm hover:bg-secondary/90 transition-colors"
-                >
-                  <Icon name="ArrowRight" size={16} /> Принять участие
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Services / разделы */}
-      <section className="bg-white chess-grid">
-        <div className="container px-4 py-8">
-          <div className="text-center max-w-2xl mx-auto mb-7">
-            <h2 className="font-heading font-bold text-3xl md:text-5xl uppercase text-primary">Разделы центра</h2>
-            <p className="mt-4 text-muted-foreground text-lg">Всё, что нужно юному шахматисту и его родителям.</p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SERVICES.map((s) => (
-              <div id={s.id} key={s.id} className="scroll-mt-24 rounded-2xl bg-card border border-border p-7 hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className={`grid place-items-center w-12 h-12 rounded-xl ${s.color}`}>
-                    <Icon name={s.icon} size={24} />
-                  </span>
-                  <h3 className="font-heading font-semibold text-xl uppercase text-primary">{s.title}</h3>
-                </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
-                <a href="#contacts" className="inline-flex items-center gap-1 mt-5 text-sm font-semibold text-primary hover:text-secondary transition-colors"></a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>
