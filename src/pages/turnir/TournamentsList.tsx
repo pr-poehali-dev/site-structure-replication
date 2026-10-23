@@ -58,6 +58,7 @@ export default function TournamentsList({
             const isApplied = appliedTournamentIds.includes(t.id);
             const myApp = myApplications.find(a => a.tournament_id === t.id);
             const hallOpen = myApp?.hall_open || false;
+            const hallLocked = hallOpen || (!!myApp && myApp.hall_status !== 'not_started' && !!myApp.hall_status);
             return (
             <div key={t.id} className={`bg-white rounded-2xl shadow-md border flex flex-col md:flex-row overflow-hidden transition-shadow ${isOpen ? 'border-gray-100 hover:shadow-lg' : 'border-gray-200 opacity-80'}`}>
               <div className={`h-1.5 md:h-auto md:w-1.5 shrink-0 ${getTypeMeta(t.tournament_type).bar}`} />
@@ -151,6 +152,10 @@ export default function TournamentsList({
                   {isCancelled ? (
                     <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-red-50 text-red-600 font-semibold py-2.5 text-sm">
                       <Icon name="Ban" size={15} /> Турнир отменён
+                    </div>
+                  ) : isApplied && hallLocked ? (
+                    <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 text-emerald-700 font-semibold py-2.5 text-sm">
+                      <Icon name="CheckCircle2" size={15} /> Вы участвуете
                     </div>
                   ) : isApplied ? (
                     <Button

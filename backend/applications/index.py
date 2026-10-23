@@ -103,6 +103,11 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Заявка не найдена'})}
         app_id, app_price, app_status, app_bonus = app_row
+        cur.execute("SELECT COALESCE(hall_open, false), COALESCE(hall_status, 'not_started') FROM tournaments WHERE id = %s", (tournament_id,))
+        t_row = cur.fetchone()
+        if t_row and (t_row[0] or t_row[1] != 'not_started'):
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнирный зал уже открыт, отменить участие нельзя'})}
         cur.execute(
             "UPDATE applications SET status = 'cancelled' WHERE id = %s",
             (app_id,)
