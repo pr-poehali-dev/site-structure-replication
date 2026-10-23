@@ -1,13 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import func2url from '../../backend/func2url.json';
 
 const URL = func2url['activity-rating'];
-const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+type Period = 'month' | 'all';
 
 interface Player {
   user_id: number;
@@ -19,113 +19,139 @@ interface Player {
   avatar_url: string | null;
 }
 
-function Row({ p }: { p: Player }) {
+interface Theme {
+  title: string;
+  icon: string;
+  header: string;
+  headerText: string;
+  accent: string;
+  soft: string;
+  border: string;
+}
+
+const THEMES: Record<Period, Theme> = {
+  month: {
+    title: 'Лидеры месяца',
+    icon: 'Flame',
+    header: '#FF6B4A',
+    headerText: '#ffffff',
+    accent: '#E8452A',
+    soft: '#FFF1EC',
+    border: '#FFC9BB',
+  },
+  all: {
+    title: 'Лидеры за всё время',
+    icon: 'Trophy',
+    header: '#7C4DFF',
+    headerText: '#ffffff',
+    accent: '#5B2FE0',
+    soft: '#F1ECFF',
+    border: '#CDBBFF',
+  },
+};
+
+function Row({ p, theme }: { p: Player; theme: Theme }) {
   return (
-    <Link to={`/player/${p.user_id}`} className="flex items-center gap-2.5 px-2 py-2 hover:bg-muted/40 transition-colors rounded-lg">
-      <span className="w-7 text-center font-heading font-bold text-primary shrink-0">{MEDALS[p.place] || p.place}</span>
-      <Avatar className="w-8 h-8 shrink-0">
+    <Link to={`/player/${p.user_id}`} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-black/5 transition-colors">
+      <span
+        className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
+        style={{ background: p.place <= 3 ? theme.header : theme.border, color: p.place <= 3 ? theme.headerText : '#141414' }}
+      >
+        {p.place}
+      </span>
+      <Avatar className="w-7 h-7 shrink-0">
         <AvatarImage src={p.avatar_url || undefined} alt={p.first_name} />
-        <AvatarFallback className="bg-secondary/20 text-primary text-xs font-bold">
+        <AvatarFallback className="text-[10px] font-bold" style={{ background: theme.border, color: '#141414' }}>
           {(p.last_name[0] || '') + (p.first_name[0] || '')}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-primary text-sm truncate">{p.last_name} {p.first_name}</p>
-        <p className="text-xs text-muted-foreground">Турниров: {p.tournaments}</p>
-      </div>
-      <span className="shrink-0 font-heading font-bold text-secondary">{p.points} <span className="text-xs font-medium text-muted-foreground">оч.</span></span>
+      <p className="min-w-0 flex-1 font-semibold text-sm truncate text-[#141414]">{p.last_name} {p.first_name}</p>
+      <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
+        {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
+      </span>
     </Link>
   );
 }
 
-type Period = 'all' | 'month';
+interface BoardProps {
+  period: Period;
+  players: Player[];
+  total: number;
+  onShowAll: (period: Period) => void;
+}
+
+function Board({ period, players, total, onShowAll }: BoardProps) {
+  const theme = THEMES[period];
+  return (
+    <div className="rounded-xl overflow-hidden shadow-md border" style={{ background: theme.soft, borderColor: theme.border }}>
+      <div className="px-4 py-2 flex items-center justify-between gap-2" style={{ background: theme.header, color: theme.headerText }}>
+        <h2 className="font-heading font-bold text-base uppercase flex items-center gap-2">
+          <Icon name={theme.icon} size={18} /> {theme.title}
+        </h2>
+        {total > 3 && (
+          <button type="button" onClick={() => onShowAll(period)} className="text-xs font-semibold underline underline-offset-2 hover:opacity-80">
+            Показать всех ({total})
+          </button>
+        )}
+      </div>
+      {players.length === 0 ? (
+        <p className="px-4 py-4 text-sm text-[#666666]">Пока нет завершённых турниров</p>
+      ) : (
+        <div className="py-1">
+          {players.map(p => <Row key={p.user_id} p={p} theme={theme} />)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MostActive({ fallback = null }: { fallback?: ReactNode }) {
-  const [top, setTop] = useState<Player[]>([]);
-  const [total, setTotal] = useState(0);
-  const [all, setAll] = useState<Player[] | null>(null);
-  const [open, setOpen] = useState(false);
-  const [loadingAll, setLoadingAll] = useState(false);
-  const [period, setPeriod] = useState<Period>('all');
-  const [loaded, setLoaded] = useState(false);
+  const [data, setData] = useState<Record<Period, { players: Player[]; total: number }> | null>(null);
+  const [dialog, setDialog] = useState<Period | null>(null);
+  const [full, setFull] = useState<Partial<Record<Period, Player[]>>>({});
 
   useEffect(() => {
-    setAll(null);
-    fetch(`${URL}?limit=10&period=${period}`)
-      .then(r => r.json())
-      .then(d => { setTop(d.players || []); setTotal(d.total || 0); })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, [period]);
+    Promise.all((['month', 'all'] as Period[]).map(p => fetch(`${URL}?limit=3&period=${p}`).then(r => r.json())))
+      .then(([m, a]) => setData({
+        month: { players: m.players || [], total: m.total || 0 },
+        all: { players: a.players || [], total: a.total || 0 },
+      }))
+      .catch(() => setData(null));
+  }, []);
 
-  async function showAll() {
-    setOpen(true);
-    if (all) return;
-    setLoadingAll(true);
-    try {
-      const d = await fetch(`${URL}?all=1&period=${period}`).then(r => r.json());
-      setAll(d.players || []);
-    } finally {
-      setLoadingAll(false);
-    }
+  async function showAll(period: Period) {
+    setDialog(period);
+    if (full[period]) return;
+    const d = await fetch(`${URL}?all=1&period=${period}`).then(r => r.json());
+    setFull(prev => ({ ...prev, [period]: d.players || [] }));
   }
 
-  if (!loaded || (top.length === 0 && period === 'all')) return <>{fallback}</>;
+  if (!data || (data.all.players.length === 0 && data.month.players.length === 0)) return <>{fallback}</>;
 
-  const half = Math.ceil(top.length / 2);
-  const columns = [top.slice(0, half), top.slice(half)];
+  const theme = dialog ? THEMES[dialog] : null;
 
   return (
-    <div className="animate-fade-in rounded-2xl border border-border bg-white/90 backdrop-blur shadow-md p-4 md:p-5">
+    <div className="animate-fade-in flex flex-col gap-3">
       <h1 className="sr-only">Мир шахмат — центр поддержки детского шахматного спорта</h1>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-heading font-bold text-xl md:text-2xl uppercase text-primary flex items-center gap-2">
-          <Icon name="Flame" size={22} className="text-orange-500" /> Самые активные
-        </h2>
-        <div className="inline-flex rounded-full bg-muted p-1 text-xs font-semibold">
-          {([['all', 'За всё время'], ['month', 'За месяц']] as [Period, string][]).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setPeriod(key)}
-              className={`px-3 py-1 rounded-full transition-colors ${period === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-primary'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="text-xs text-muted-foreground mb-3">
+      <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} />
+      <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} />
+      <p className="text-xs text-[#666666] px-1">
         Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3
       </p>
-      {top.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">В этом месяце ещё нет завершённых турниров</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-x-4">
-          {columns.map((col, i) => (
-            <div key={i} className="divide-y divide-border">
-              {col.map(p => <Row key={p.user_id} p={p} />)}
-            </div>
-          ))}
-        </div>
-      )}
-      {total > top.length && (
-        <div className="text-center mt-3">
-          <Button variant="outline" size="sm" onClick={showAll} className="border-primary/30 text-primary">
-            Показать всех ({total})
-          </Button>
-        </div>
-      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-5 py-4 border-b border-border">
-            <DialogTitle className="font-heading text-primary">Рейтинг активности · {period === 'month' ? 'этот месяц' : 'всё время'}</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto divide-y divide-border">
-            {loadingAll && <p className="p-6 text-center text-sm text-muted-foreground">Загрузка...</p>}
-            {(all || []).map(p => <Row key={p.user_id} p={p} />)}
-          </div>
+      <Dialog open={!!dialog} onOpenChange={o => !o && setDialog(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+          {theme && dialog && (
+            <>
+              <DialogHeader className="px-5 py-4" style={{ background: theme.header }}>
+                <DialogTitle className="font-heading" style={{ color: theme.headerText }}>{theme.title}</DialogTitle>
+              </DialogHeader>
+              <div className="overflow-y-auto py-1" style={{ background: theme.soft }}>
+                {!full[dialog] && <p className="p-6 text-center text-sm text-[#666666]">Загрузка...</p>}
+                {(full[dialog] || []).map(p => <Row key={p.user_id} p={p} theme={theme} />)}
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
