@@ -31,7 +31,7 @@ const Index = () => {
           <MostActive
             kinds={['month', 'all']}
             heading="Мир шахмат — центр поддержки детского шахматного спорта"
-            note="Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3"
+            note="Очки за участие в турнирах: разминочный — 1, тренировочный — 2, квалификационный — 3  (не зависит от результатов)"
             fallback={
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
