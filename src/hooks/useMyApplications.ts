@@ -16,6 +16,7 @@ export interface SharedApplication {
   created_at: string;
   hall_open: boolean;
   tournament_status: string;
+  cancel_reason?: string | null;
   description: string | null;
   date: string | null;
   location: string | null;

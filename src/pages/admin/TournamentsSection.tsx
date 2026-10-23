@@ -274,6 +274,19 @@ export default function TournamentsSection({
     XLSX.writeFile(workbook, `Заявки — ${safeTitle}.xlsx`);
   }
 
+  async function handleCancelTournament(t: Tournament) {
+    const reason = window.prompt(`Отменить турнир «${t.title}»?\nВзносы участникам будут возвращены на баланс.\n\nУкажите причину отмены (её увидят участники):`);
+    if (reason === null) return;
+    if (!reason.trim()) { alert('Причина обязательна'); return; }
+    const res = await fetch(TOURNAMENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify({ _action: 'cancel', id: t.id, reason: reason.trim() }),
+    });
+    if (!res.ok) { alert('Не удалось отменить турнир'); return; }
+    fetchTournaments();
+  }
+
   async function handleToggleStatus(t: Tournament) {
     const newStatus = t.status === 'open' ? 'closed' : 'open';
     await fetch(TOURNAMENTS_URL, {
@@ -487,10 +500,21 @@ export default function TournamentsSection({
                       <Button variant="outline" size="sm" onClick={() => handleEditTournament(t)}>
                         <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
                       </Button>
+                      {t.status === 'cancelled' ? (
+                        <span className="text-xs px-2 py-1.5 rounded-lg bg-red-100 text-red-700 font-medium flex items-center gap-1" title={t.cancel_reason || ''}>
+                          <Icon name="Ban" size={13} /> Отменён{t.cancel_reason ? `: ${t.cancel_reason}` : ''}
+                        </span>
+                      ) : (
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleCancelTournament(t)}>
+                          <Icon name="Ban" size={14} className="mr-1" /> Отменить турнир
+                        </Button>
+                      )}
+                      {t.status !== 'cancelled' && (
                       <Button variant="outline" size="sm" onClick={() => handleToggleStatus(t)}>
                         <Icon name={t.status === 'open' ? 'PauseCircle' : 'PlayCircle'} size={14} className="mr-1" />
                         {t.status === 'open' ? 'Закрыть приём' : 'Открыть приём'}
                       </Button>
+                      )}
                       <Button variant="outline" size="sm" className={t.hall_open ? 'text-purple-600 border-purple-200 hover:bg-purple-50' : ''} onClick={() => handleToggleHall(t)}>
                         <Icon name="DoorOpen" size={14} className="mr-1" />
                         {t.hall_open ? 'Закрыть зал' : 'Открыть зал'}

@@ -9,6 +9,7 @@ export interface Tournament {
   time_control: string;
   time_msk: string;
   status: string;
+  cancel_reason?: string | null;
   diploma_sample_url: string | null;
   regulation_url: string | null;
   announcement_url: string | null;

@@ -160,7 +160,7 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         sync_finished_tournaments(cur)
         commit_with_retry(conn)
-        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password, tournament_type FROM tournaments ORDER BY created_at DESC")
+        cur.execute("SELECT id, title, description, date, location, age_category, price, time_control, created_at, status, diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, hall_status, rating_type, max_participants, admin_message, lila_tournament_id, lila_tournament_kind, lila_tournament_password, tournament_type, cancel_reason FROM tournaments ORDER BY created_at DESC")
         rows = cur.fetchall()
         tournaments = []
         for r in rows:
@@ -172,7 +172,7 @@ def handler(event: dict, context) -> dict:
                 'diploma_sample_url': r[10], 'regulation_url': r[11], 'announcement_url': r[12],
                 'time_msk': r[13], 'hall_open': r[14], 'rounds_count': r[15], 'hall_status': r[16],
                 'rating_type': r[17], 'max_participants': r[18], 'admin_message': r[19],
-                'lila_tournament_id': r[20], 'lila_tournament_kind': r[21] or 'swiss', 'lila_tournament_password': r[22], 'tournament_type': r[23] or 'qualifying',
+                'lila_tournament_id': r[20], 'lila_tournament_kind': r[21] or 'swiss', 'lila_tournament_password': r[22], 'tournament_type': r[23] or 'qualifying', 'cancel_reason': r[24],
             })
         release_conn(conn)
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'tournaments': tournaments})}
@@ -206,6 +206,31 @@ def handler(event: dict, context) -> dict:
             commit_with_retry(conn)
             release_conn(conn)
             return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True})}
+
+        if action == 'cancel':
+            tournament_id = body.get('id')
+            reason = (body.get('reason') or '').strip()
+            if not reason:
+                release_conn(conn)
+                return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Укажите причину отмены'})}
+            cur.execute("UPDATE tournaments SET status = 'cancelled', cancel_reason = %s, hall_open = false WHERE id = %s", (reason, tournament_id))
+            cur.execute("SELECT id, user_id, price, status, bonus_paid FROM applications WHERE tournament_id = %s AND status NOT IN ('cancelled')", (tournament_id,))
+            refunded = 0
+            for app_id, user_id, price, app_status, bonus_paid in cur.fetchall():
+                if user_id and price and float(price) > 0 and app_status == 'paid':
+                    bonus_back = min(float(bonus_paid or 0), float(price))
+                    money_back = round(float(price) - bonus_back, 2)
+                    if bonus_back > 0:
+                        cur.execute("UPDATE users SET bonus_balance = bonus_balance + %s WHERE id = %s", (bonus_back, user_id))
+                        cur.execute("INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account) VALUES (%s, %s, 'refund', 'Возврат взноса: турнир отменён', %s, 'bonus')", (user_id, bonus_back, app_id))
+                    if money_back > 0:
+                        cur.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (money_back, user_id))
+                        cur.execute("INSERT INTO balance_transactions (user_id, amount, type, description, application_id, account) VALUES (%s, %s, 'refund', 'Возврат взноса: турнир отменён', %s, 'money')", (user_id, money_back, app_id))
+                    refunded += 1
+                cur.execute("UPDATE applications SET status = 'cancelled' WHERE id = %s", (app_id,))
+            commit_with_retry(conn)
+            release_conn(conn)
+            return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'ok': True, 'refunded': refunded})}
 
         if action == 'set_status':
             cur.execute("UPDATE tournaments SET status = %s WHERE id = %s", (body.get('status'), body.get('id')))

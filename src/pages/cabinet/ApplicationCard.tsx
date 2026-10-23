@@ -27,6 +27,7 @@ interface MyApplication {
   place: number | null;
   lila_ready?: boolean;
   results_published?: boolean;
+  cancel_reason?: string | null;
 }
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -45,8 +46,9 @@ function formatDate(dateStr: string) {
 
 export default function ApplicationCard({ a }: { a: MyApplication }) {
   const [expanded, setExpanded] = useState(false);
-  const s = STATUS_LABELS[a.status] || STATUS_LABELS.new;
-  const hasDetails = !!(a.results_published || a.description || a.date || a.location || a.age_category || a.price || a.time_control || a.regulation_url || a.announcement_url || a.diploma_sample_url);
+  const isTournamentCancelled = a.tournament_status === 'cancelled';
+  const s = isTournamentCancelled ? { label: 'Турнир отменён', className: 'bg-red-100 text-red-700' } : (STATUS_LABELS[a.status] || STATUS_LABELS.new);
+  const hasDetails = !!(isTournamentCancelled || a.results_published || a.description || a.date || a.location || a.age_category || a.price || a.time_control || a.regulation_url || a.announcement_url || a.diploma_sample_url);
   const showPlace = a.hall_status === 'finished' && !!a.place;
 
   return (
@@ -86,6 +88,13 @@ export default function ApplicationCard({ a }: { a: MyApplication }) {
 
       {expanded && hasDetails && (
         <div className="px-5 pb-5 pt-3 border-t border-gray-100 flex flex-col gap-4">
+          {isTournamentCancelled && (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <p className="font-semibold">Турнир отменён организаторами</p>
+              {a.cancel_reason && <p className="mt-0.5">Причина: {a.cancel_reason}</p>}
+              <p className="mt-0.5">Взнос возвращён на ваш баланс.</p>
+            </div>
+          )}
           {a.results_published && <MyResultBlock tournamentId={a.tournament_id} />}
           {a.description && (
             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{a.description}</p>

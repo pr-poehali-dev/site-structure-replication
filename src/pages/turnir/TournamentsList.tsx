@@ -52,7 +52,8 @@ export default function TournamentsList({
       ) : (
         <div className="flex flex-col gap-6">
           {tournaments.map(t => {
-            const isOpen = t.status !== 'closed';
+            const isCancelled = t.status === 'cancelled';
+            const isOpen = t.status !== 'closed' && !isCancelled;
             const hasPreviews = !!(t.announcement_url || t.diploma_sample_url);
             const isApplied = appliedTournamentIds.includes(t.id);
             const myApp = myApplications.find(a => a.tournament_id === t.id);
@@ -68,8 +69,8 @@ export default function TournamentsList({
                       <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
                     </div>
                     <div className="shrink-0 flex flex-col items-end gap-1">
-                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                        {isOpen ? 'Приём открыт' : 'Приём закрыт'}
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${isCancelled ? 'bg-red-100 text-red-700' : isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {isCancelled ? 'Турнир отменён' : isOpen ? 'Приём открыт' : 'Приём закрыт'}
                       </span>
                       {isOpen && t.spots_left != null && (
                         <span className={`text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1 ${t.spots_left <= 3 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -93,6 +94,15 @@ export default function TournamentsList({
                   )}
                 </div>
                 <div className="px-6 py-4 flex-1 flex flex-col gap-3">
+                  {isCancelled && (
+                    <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                      <Icon name="Ban" size={16} className="shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">Турнир отменён</p>
+                        {t.cancel_reason && <p className="mt-0.5">Причина: {t.cancel_reason}</p>}
+                      </div>
+                    </div>
+                  )}
                   {t.description && <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{t.description}</p>}
                   <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
                     {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
@@ -115,7 +125,7 @@ export default function TournamentsList({
                     </Link>
                   </div>
                 )}
-                {isApplied && !isSpectator && (
+                {isApplied && !isSpectator && !isCancelled && (
                   <div className="px-6 pb-3">
                     {hallOpen ? (
                       <Link to={`/room/${t.id}`}>
@@ -138,7 +148,11 @@ export default function TournamentsList({
                   </div>
                 )}
                 <div className="px-6 pb-5 flex flex-col sm:flex-row gap-2">
-                  {isApplied ? (
+                  {isCancelled ? (
+                    <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-red-50 text-red-600 font-semibold py-2.5 text-sm">
+                      <Icon name="Ban" size={15} /> Турнир отменён
+                    </div>
+                  ) : isApplied ? (
                     <Button
                       variant="outline"
                       className="flex-1 text-red-500 border-red-200 hover:bg-red-50 font-semibold"

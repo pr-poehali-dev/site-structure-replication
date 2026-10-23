@@ -49,7 +49,7 @@ export default function Cabinet() {
     return <Navigate to="/login" replace />;
   }
 
-  const history = apps.filter(a => a.tournament_status === 'archived' || a.status === 'cancelled' || a.hall_status === 'finished');
+  const history = apps.filter(a => a.tournament_status === 'archived' || a.tournament_status === 'cancelled' || a.status === 'cancelled' || a.hall_status === 'finished');
   const activeHalls = apps.filter(a => a.status === 'paid' && a.hall_open && !history.includes(a));
   const ongoing = apps.filter(a => !activeHalls.includes(a) && !history.includes(a));
 

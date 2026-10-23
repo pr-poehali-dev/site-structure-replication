@@ -10,6 +10,7 @@ export interface Tournament {
   id: number; title: string; description: string; date: string | null;
   location: string; age_category: string; price: number | null; time_control: string; time_msk: string; created_at: string;
   status: string;
+  cancel_reason?: string | null;
   diploma_sample_url: string | null; regulation_url: string | null; announcement_url: string | null;
   hall_open: boolean;
   rounds_count?: number;
