@@ -12,7 +12,7 @@ export default function Contacts() {
       />
       <Header />
 
-      <section className="relative overflow-hidden bg-amber-50 flex-1">
+      <section className="relative overflow-hidden bg-sky-50 flex-1">
         <div className="absolute inset-0 chess-grid opacity-60" />
         <div className="container relative px-4 py-14 max-w-3xl mx-auto">
           <div className="text-center mb-10">

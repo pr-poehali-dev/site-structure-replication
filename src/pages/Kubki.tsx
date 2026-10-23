@@ -204,7 +204,7 @@ export default function Kubki() {
       <Header />
 
       {/* Hero */}
-      <section className="bg-amber-50 relative overflow-hidden">
+      <section className="bg-sky-50 relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
         <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
         <div className="container relative px-4 py-10 md:py-14 max-w-5xl mx-auto text-center">

@@ -100,7 +100,7 @@ const OlimpiadPage = () => {
       )}
 
       {/* Hero */}
-      <section className="bg-amber-50 relative overflow-hidden">
+      <section className="bg-sky-50 relative overflow-hidden">
         <div className="absolute inset-0 chess-grid opacity-40" />
         <div className="container relative px-4 py-5 max-w-4xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">

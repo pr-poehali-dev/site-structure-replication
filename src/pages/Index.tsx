@@ -189,7 +189,7 @@ const Index = () => {
       </section>
 
       {/* Olimpiads */}
-      <section id="olimpiady" className="bg-amber-50/60 scroll-mt-16">
+      <section id="olimpiady" className="bg-sky-50/60 scroll-mt-16">
         <div className="container px-4 py-8">
           <div className="text-center max-w-2xl mx-auto mb-4">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
