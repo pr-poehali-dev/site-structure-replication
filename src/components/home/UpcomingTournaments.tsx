@@ -44,8 +44,8 @@ export default function UpcomingTournaments() {
   }, []);
 
   return (
-    <section className="rounded-2xl bg-white border border-border shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
+    <section className="rounded-2xl bg-blue-50 border border-blue-200 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-blue-200 bg-blue-100/70">
         <h2 className="font-heading font-bold text-lg uppercase text-primary flex items-center gap-2">
           <Icon name="CalendarDays" size={20} className="text-secondary" /> Ближайшие турниры
         </h2>
@@ -58,7 +58,7 @@ export default function UpcomingTournaments() {
       ) : items.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">Новые турниры скоро появятся</p>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-blue-100 bg-white">
           {items.map(t => {
             const meta = getTypeMeta(t.tournament_type);
             const p = dayParts(t.date as string);

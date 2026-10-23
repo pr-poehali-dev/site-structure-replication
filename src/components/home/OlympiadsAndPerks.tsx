@@ -16,8 +16,8 @@ const PERKS = [
 export default function OlympiadsAndPerks() {
   return (
     <>
-      <section className="rounded-2xl bg-white border border-border shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
+      <section className="rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-emerald-200 bg-emerald-100/70">
           <h2 className="font-heading font-bold text-lg uppercase text-primary flex items-center gap-2">
             <Icon name="Medal" size={20} className="text-secondary" /> Регулярные олимпиады
           </h2>
@@ -27,7 +27,7 @@ export default function OlympiadsAndPerks() {
         </div>
         <div className="grid sm:grid-cols-3 gap-3 p-4">
           {OLYMPIADS.map(o => (
-            <Link key={o.name} to="/olimpiady" className="rounded-xl border border-border p-4 hover:shadow-md hover:border-secondary/50 transition-all">
+            <Link key={o.name} to="/olimpiady" className="rounded-xl border border-emerald-100 bg-white p-4 hover:shadow-md hover:border-emerald-300 transition-all">
               <span className={`grid place-items-center w-10 h-10 rounded-lg mb-3 ${o.color}`}><Icon name={o.icon} size={20} /></span>
               <p className="font-heading font-bold uppercase text-primary leading-tight">«{o.name}»</p>
               <p className="text-xs text-muted-foreground mt-1 leading-snug">{o.desc}</p>
@@ -40,15 +40,15 @@ export default function OlympiadsAndPerks() {
         </p>
       </section>
 
-      <section className="rounded-2xl bg-white border border-border shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border">
+      <section className="rounded-2xl bg-amber-50 border border-amber-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-amber-200 bg-amber-100/70">
           <h2 className="font-heading font-bold text-lg uppercase text-primary flex items-center gap-2">
             <Icon name="Sparkles" size={20} className="text-secondary" /> Что отличает наши турниры
           </h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-3 p-4">
           {PERKS.map(p => (
-            <div key={p.title} className="rounded-xl bg-muted/50 p-4">
+            <div key={p.title} className="rounded-xl border border-amber-100 bg-white p-4">
               <span className={`grid place-items-center w-10 h-10 rounded-lg mb-3 ${p.color}`}><Icon name={p.icon} size={20} /></span>
               <p className="font-semibold text-primary text-sm leading-tight">{p.title}</p>
               <p className="text-xs text-muted-foreground mt-1 leading-snug">{p.desc}</p>
