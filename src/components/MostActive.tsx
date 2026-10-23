@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import PlayerProfileModal from '@/components/PlayerProfileModal';
 import func2url from '../../backend/func2url.json';
 
 const URL = func2url['activity-rating'];
@@ -50,9 +50,9 @@ const THEMES: Record<Period, Theme> = {
   },
 };
 
-function Row({ p, theme }: { p: Player; theme: Theme }) {
+function Row({ p, theme, onOpen }: { p: Player; theme: Theme; onOpen: (id: number) => void }) {
   return (
-    <Link to={`/player/${p.user_id}`} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-black/5 transition-colors">
+    <button type="button" onClick={() => onOpen(p.user_id)} className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 hover:bg-black/5 transition-colors">
       <span
         className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
         style={{ background: p.place <= 3 ? theme.header : theme.border, color: p.place <= 3 ? theme.headerText : '#141414' }}
@@ -69,7 +69,7 @@ function Row({ p, theme }: { p: Player; theme: Theme }) {
       <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
         {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
       </span>
-    </Link>
+    </button>
   );
 }
 
@@ -78,9 +78,10 @@ interface BoardProps {
   players: Player[];
   total: number;
   onShowAll: (period: Period) => void;
+  onOpenProfile: (id: number) => void;
 }
 
-function Board({ period, players, total, onShowAll }: BoardProps) {
+function Board({ period, players, total, onShowAll, onOpenProfile }: BoardProps) {
   const theme = THEMES[period];
   return (
     <div className="rounded-xl overflow-hidden shadow-md border flex flex-col" style={{ background: theme.soft, borderColor: theme.border }}>
@@ -93,7 +94,7 @@ function Board({ period, players, total, onShowAll }: BoardProps) {
         <p className="px-4 py-4 text-sm text-[#666666]">Пока нет завершённых турниров</p>
       ) : (
         <div className="py-1 flex-1">
-          {players.map(p => <Row key={p.user_id} p={p} theme={theme} />)}
+          {players.map(p => <Row key={p.user_id} p={p} theme={theme} onOpen={onOpenProfile} />)}
         </div>
       )}
       {total > 3 && (
@@ -113,6 +114,7 @@ function Board({ period, players, total, onShowAll }: BoardProps) {
 export default function MostActive({ fallback = null }: { fallback?: ReactNode }) {
   const [data, setData] = useState<Record<Period, { players: Player[]; total: number }> | null>(null);
   const [dialog, setDialog] = useState<Period | null>(null);
+  const [profileId, setProfileId] = useState<number | null>(null);
   const [full, setFull] = useState<Partial<Record<Period, Player[]>>>({});
 
   useEffect(() => {
@@ -139,8 +141,8 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
     <div className="animate-fade-in flex flex-col gap-3">
       <h1 className="sr-only">Мир шахмат — центр поддержки детского шахматного спорта</h1>
       <div className="grid grid-cols-2 gap-3 items-stretch">
-        <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} />
-        <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} />
+        <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} onOpenProfile={setProfileId} />
+        <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} onOpenProfile={setProfileId} />
       </div>
       <p className="text-xs text-[#666666] px-1">
         Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3
@@ -155,12 +157,13 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
               </DialogHeader>
               <div className="overflow-y-auto py-1" style={{ background: theme.soft }}>
                 {!full[dialog] && <p className="p-6 text-center text-sm text-[#666666]">Загрузка...</p>}
-                {(full[dialog] || []).map(p => <Row key={p.user_id} p={p} theme={theme} />)}
+                {(full[dialog] || []).map(p => <Row key={p.user_id} p={p} theme={theme} onOpen={setProfileId} />)}
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+      <PlayerProfileModal userId={profileId} onClose={() => setProfileId(null)} />
     </div>
   );
 }
