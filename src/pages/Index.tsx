@@ -106,7 +106,7 @@ const Index = () => {
       </section>
 
       {/* Stats */}
-      <section className="bg-secondary text-secondary-foreground">
+      <section className="bg-gradient-to-r from-[#3D7BF7] to-[#2DB86B] text-white">
         <div className="container grid grid-cols-2 md:grid-cols-4 gap-4 px-4 py-6">
           {STATS.map((s) => (
             <div key={s.label} className="text-center">

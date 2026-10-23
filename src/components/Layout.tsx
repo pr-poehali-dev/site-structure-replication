@@ -113,7 +113,7 @@ export function Header() {
   }, [user, token, fetchBalance]);
 
   return (
-    <header className="sticky top-0 z-50 bg-secondary/95 backdrop-blur border-b border-primary/10">
+    <header className="sticky top-0 z-50 bg-[#F3F9FF]/95 backdrop-blur border-b border-[#3D7BF7]/20 shadow-sm">
       <div className="container flex items-center justify-between h-16 px-4">
         <a href="/" />
         <nav className="hidden lg:flex items-center gap-1">
@@ -193,7 +193,7 @@ export function Header() {
         </button>
       </div>
       {menuOpen && (
-        <nav className="lg:hidden bg-secondary px-4 pb-4 flex flex-col gap-1 animate-fade-in">
+        <nav className="lg:hidden bg-[#F3F9FF] px-4 pb-4 flex flex-col gap-1 animate-fade-in">
           {NAV.map((n) => (
             n.href === '/turnir' ? (
               <a
