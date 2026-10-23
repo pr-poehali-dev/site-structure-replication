@@ -85,6 +85,28 @@ def handler(event: dict, context) -> dict:
     period = 'month' if params.get('period') == 'month' else 'all'
     conn = get_conn()
     cur = conn.cursor()
+
+    rating_kind = params.get('rating')
+    if rating_kind in ('blitz', 'rapid'):
+        col = 'rating_blitz' if rating_kind == 'blitz' else 'rating_rapid'
+        ids = sorted({uid for (_, uid) in collect_participation(cur)})
+        players = []
+        if ids:
+            id_list = ','.join(str(i) for i in ids)
+            cur.execute(f"SELECT id, last_name, first_name, avatar_url, {col} FROM users WHERE id IN ({id_list}) AND {col} IS NOT NULL ORDER BY {col} DESC, last_name, first_name")
+            rows = cur.fetchall()
+            prev, place = None, 0
+            for i, r in enumerate(rows, start=1):
+                if r[4] != prev:
+                    place, prev = i, r[4]
+                players.append({'user_id': r[0], 'points': int(r[4]), 'tournaments': 0, 'place': place,
+                                'last_name': r[1], 'first_name': r[2], 'avatar_url': r[3]})
+        conn.close()
+        total = len(players)
+        if params.get('all') != '1':
+            limit = params.get('limit') or '10'
+            players = players[:max(1, min(int(limit) if limit.isdigit() else 10, 100))]
+        return {'statusCode': 200, 'headers': {**cors_headers(), 'Cache-Control': 'public, max-age=30'}, 'body': json.dumps({'players': players, 'total': total})}
     ranking = build_ranking(collect_participation(cur), period)
 
     user_id = (params.get('user_id') or '').strip()

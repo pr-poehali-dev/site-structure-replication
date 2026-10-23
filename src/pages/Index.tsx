@@ -76,6 +76,9 @@ const Index = () => {
         <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#3D7BF7]/30 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <MostActive
+            kinds={['month', 'all']}
+            heading="Мир шахмат — центр поддержки детского шахматного спорта"
+            note="Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3"
             fallback={
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
@@ -98,9 +101,7 @@ const Index = () => {
           </div>
             }
           />
-          <div className="relative animate-scale-in flex items-center rounded-3xl bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.75)_55%,rgba(255,255,255,0.25)_100%)]">
-            <img src={HERO_IMG} alt="Шахматная доска" className="w-full h-full object-contain" style={{ maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)' }} />
-          </div>
+          <MostActive kinds={['blitz', 'rapid']} note="Рейтинг МШ — по итогам турниров «Мир шахмат»" />
         </div>
       </section>
 

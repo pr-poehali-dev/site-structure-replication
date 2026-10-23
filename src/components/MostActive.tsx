@@ -7,7 +7,19 @@ import func2url from '../../backend/func2url.json';
 
 const URL = func2url['activity-rating'];
 
-type Period = 'month' | 'all';
+export type BoardKey = 'month' | 'all' | 'blitz' | 'rapid';
+
+interface Theme {
+  title: string;
+  icon: string;
+  header: string;
+  headerText: string;
+  accent: string;
+  soft: string;
+  border: string;
+  query: string;
+  unit: string;
+}
 
 interface Player {
   user_id: number;
@@ -19,34 +31,22 @@ interface Player {
   avatar_url: string | null;
 }
 
-interface Theme {
-  title: string;
-  icon: string;
-  header: string;
-  headerText: string;
-  accent: string;
-  soft: string;
-  border: string;
-}
-
-const THEMES: Record<Period, Theme> = {
+export const THEMES: Record<BoardKey, Theme> = {
   month: {
-    title: 'Самые активные участники месяца',
-    icon: 'Flame',
-    header: '#2DB86B',
-    headerText: '#ffffff',
-    accent: '#1E9A55',
-    soft: '#EAF8F0',
-    border: '#B8E6CD',
+    title: 'Самые активные участники месяца', icon: 'Flame', query: 'period=month', unit: 'оч.',
+    header: '#2DB86B', headerText: '#ffffff', accent: '#1E9A55', soft: '#EAF8F0', border: '#B8E6CD',
   },
   all: {
-    title: 'Самые активные участники за всё время',
-    icon: 'Trophy',
-    header: '#3D7BF7',
-    headerText: '#ffffff',
-    accent: '#2A5FD6',
-    soft: '#EAF1FF',
-    border: '#BBD2FF',
+    title: 'Самые активные участники за всё время', icon: 'Trophy', query: 'period=all', unit: 'оч.',
+    header: '#3D7BF7', headerText: '#ffffff', accent: '#2A5FD6', soft: '#EAF1FF', border: '#BBD2FF',
+  },
+  blitz: {
+    title: 'Лидеры рейтинга МШ · Блиц', icon: 'Zap', query: 'rating=blitz', unit: '',
+    header: '#F59E0B', headerText: '#141414', accent: '#B45309', soft: '#FFF6E0', border: '#FFDE99',
+  },
+  rapid: {
+    title: 'Лидеры рейтинга МШ · Рапид', icon: 'Timer', query: 'rating=rapid', unit: '',
+    header: '#8B5CF6', headerText: '#ffffff', accent: '#6D3FE0', soft: '#F2ECFF', border: '#D3C3FF',
   },
 };
 
@@ -67,17 +67,17 @@ function Row({ p, theme, onOpen, top = false }: { p: Player; theme: Theme; onOpe
       </Avatar>
       <p className={`min-w-0 flex-1 ${top ? 'font-bold' : 'font-medium'} text-xs leading-tight text-[#141414] break-words`}>{p.last_name} {p.first_name}</p>
       <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
-        {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
+        {p.points}{theme.unit && <span className="text-[10px] font-medium text-[#666666]"> {theme.unit}</span>}
       </span>
     </button>
   );
 }
 
 interface BoardProps {
-  period: Period;
+  period: BoardKey;
   players: Player[];
   total: number;
-  onShowAll: (period: Period) => void;
+  onShowAll: (period: BoardKey) => void;
   onOpenProfile: (id: number) => void;
 }
 
@@ -111,42 +111,49 @@ function Board({ period, players, total, onShowAll, onOpenProfile }: BoardProps)
   );
 }
 
-export default function MostActive({ fallback = null }: { fallback?: ReactNode }) {
-  const [data, setData] = useState<Record<Period, { players: Player[]; total: number }> | null>(null);
-  const [dialog, setDialog] = useState<Period | null>(null);
+interface Props {
+  kinds: [BoardKey, BoardKey];
+  note?: string;
+  fallback?: ReactNode;
+  heading?: string;
+}
+
+export default function MostActive({ kinds, note, fallback = null, heading }: Props) {
+  const [data, setData] = useState<Record<string, { players: Player[]; total: number }> | null>(null);
+  const [dialog, setDialog] = useState<BoardKey | null>(null);
   const [profileId, setProfileId] = useState<number | null>(null);
-  const [full, setFull] = useState<Partial<Record<Period, Player[]>>>({});
+  const [full, setFull] = useState<Partial<Record<BoardKey, Player[]>>>({});
 
   useEffect(() => {
-    Promise.all((['month', 'all'] as Period[]).map(p => fetch(`${URL}?limit=5&period=${p}`).then(r => r.json())))
-      .then(([m, a]) => setData({
-        month: { players: m.players || [], total: m.total || 0 },
-        all: { players: a.players || [], total: a.total || 0 },
-      }))
+    Promise.all(kinds.map(k => fetch(`${URL}?limit=5&${THEMES[k].query}`).then(r => r.json())))
+      .then(res => {
+        const next: Record<string, { players: Player[]; total: number }> = {};
+        kinds.forEach((k, i) => { next[k] = { players: res[i].players || [], total: res[i].total || 0 }; });
+        setData(next);
+      })
       .catch(() => setData(null));
-  }, []);
+  }, [kinds[0], kinds[1]]);
 
-  async function showAll(period: Period) {
-    setDialog(period);
-    if (full[period]) return;
-    const d = await fetch(`${URL}?all=1&period=${period}`).then(r => r.json());
-    setFull(prev => ({ ...prev, [period]: d.players || [] }));
+  async function showAll(key: BoardKey) {
+    setDialog(key);
+    if (full[key]) return;
+    const d = await fetch(`${URL}?all=1&${THEMES[key].query}`).then(r => r.json());
+    setFull(prev => ({ ...prev, [key]: d.players || [] }));
   }
 
-  if (!data || (data.all.players.length === 0 && data.month.players.length === 0)) return <>{fallback}</>;
+  if (!data || kinds.every(k => data[k].players.length === 0)) return <>{fallback}</>;
 
   const theme = dialog ? THEMES[dialog] : null;
 
   return (
     <div className="animate-fade-in flex flex-col gap-3">
-      <h1 className="sr-only">Мир шахмат — центр поддержки детского шахматного спорта</h1>
-      <div className="grid grid-cols-2 gap-5 items-stretch max-w-[540px]">
-        <Board period="month" players={data.month.players} total={data.month.total} onShowAll={showAll} onOpenProfile={setProfileId} />
-        <Board period="all" players={data.all.players} total={data.all.total} onShowAll={showAll} onOpenProfile={setProfileId} />
+      {heading && <h1 className="sr-only">{heading}</h1>}
+      <div className="grid grid-cols-2 gap-5 items-stretch">
+        {kinds.map(k => (
+          <Board key={k} period={k} players={data[k].players} total={data[k].total} onShowAll={showAll} onOpenProfile={setProfileId} />
+        ))}
       </div>
-      <p className="text-[11px] text-white/70 px-1">
-        Очки за турниры: разминочный — 1, тренировочный — 2, квалификационный — 3
-      </p>
+      {note && <p className="text-[11px] text-white/70 px-1">{note}</p>}
 
       <Dialog open={!!dialog} onOpenChange={o => !o && setDialog(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
