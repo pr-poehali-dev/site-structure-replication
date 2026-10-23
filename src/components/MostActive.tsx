@@ -33,20 +33,20 @@ const THEMES: Record<Period, Theme> = {
   month: {
     title: 'Самые активные участники месяца',
     icon: 'Flame',
-    header: '#FF6B4A',
+    header: '#2DB86B',
     headerText: '#ffffff',
-    accent: '#E8452A',
-    soft: '#FFF1EC',
-    border: '#FFC9BB',
+    accent: '#1E9A55',
+    soft: '#EAF8F0',
+    border: '#B8E6CD',
   },
   all: {
     title: 'Самые активные участники за всё время',
     icon: 'Trophy',
-    header: '#7C4DFF',
+    header: '#3D7BF7',
     headerText: '#ffffff',
-    accent: '#5B2FE0',
-    soft: '#F1ECFF',
-    border: '#CDBBFF',
+    accent: '#2A5FD6',
+    soft: '#EAF1FF',
+    border: '#BBD2FF',
   },
 };
 
