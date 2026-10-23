@@ -50,22 +50,22 @@ const THEMES: Record<Period, Theme> = {
   },
 };
 
-function Row({ p, theme, onOpen }: { p: Player; theme: Theme; onOpen: (id: number) => void }) {
+function Row({ p, theme, onOpen, top = false }: { p: Player; theme: Theme; onOpen: (id: number) => void; top?: boolean }) {
   return (
-    <button type="button" onClick={() => onOpen(p.user_id)} className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 hover:bg-black/5 transition-colors">
+    <button type="button" onClick={() => onOpen(p.user_id)} className={`w-full text-left flex items-center gap-2 px-2.5 hover:bg-black/5 transition-colors ${top ? 'py-2.5 bg-white/70 border-l-4' : 'py-1.5 opacity-80'}`} style={top ? { borderLeftColor: theme.header } : undefined}>
       <span
         className="w-6 h-6 rounded-full grid place-items-center text-xs font-bold shrink-0"
-        style={{ background: p.place <= 3 ? theme.header : theme.border, color: p.place <= 3 ? theme.headerText : '#141414' }}
+        style={{ background: top ? theme.header : theme.border, color: top ? theme.headerText : '#141414' }}
       >
         {p.place}
       </span>
-      <Avatar className="w-7 h-7 shrink-0">
+      <Avatar className={`shrink-0 ${top ? 'w-9 h-9' : 'w-7 h-7'}`}>
         <AvatarImage src={p.avatar_url || undefined} alt={p.first_name} />
         <AvatarFallback className="text-[10px] font-bold" style={{ background: theme.border, color: '#141414' }}>
           {(p.last_name[0] || '') + (p.first_name[0] || '')}
         </AvatarFallback>
       </Avatar>
-      <p className="min-w-0 flex-1 font-semibold text-xs sm:text-sm leading-tight text-[#141414] break-words">{p.last_name} {p.first_name}</p>
+      <p className={`min-w-0 flex-1 ${top ? 'font-bold' : 'font-medium'} text-xs sm:text-sm leading-tight text-[#141414] break-words`}>{p.last_name} {p.first_name}</p>
       <span className="shrink-0 font-heading font-bold text-sm" style={{ color: theme.accent }}>
         {p.points} <span className="text-[10px] font-medium text-[#666666]">оч.</span>
       </span>
@@ -94,10 +94,10 @@ function Board({ period, players, total, onShowAll, onOpenProfile }: BoardProps)
         <p className="px-4 py-4 text-sm text-[#666666]">Пока нет завершённых турниров</p>
       ) : (
         <div className="py-1 flex-1">
-          {players.map(p => <Row key={p.user_id} p={p} theme={theme} onOpen={onOpenProfile} />)}
+          {players.map((p, i) => <Row key={p.user_id} p={p} theme={theme} onOpen={onOpenProfile} top={i < 3} />)}
         </div>
       )}
-      {total > 3 && (
+      {total > 5 && (
         <button
           type="button"
           onClick={() => onShowAll(period)}
@@ -118,7 +118,7 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
   const [full, setFull] = useState<Partial<Record<Period, Player[]>>>({});
 
   useEffect(() => {
-    Promise.all((['month', 'all'] as Period[]).map(p => fetch(`${URL}?limit=3&period=${p}`).then(r => r.json())))
+    Promise.all((['month', 'all'] as Period[]).map(p => fetch(`${URL}?limit=5&period=${p}`).then(r => r.json())))
       .then(([m, a]) => setData({
         month: { players: m.players || [], total: m.total || 0 },
         all: { players: a.players || [], total: a.total || 0 },
@@ -157,7 +157,7 @@ export default function MostActive({ fallback = null }: { fallback?: ReactNode }
               </DialogHeader>
               <div className="overflow-y-auto py-1" style={{ background: theme.soft }}>
                 {!full[dialog] && <p className="p-6 text-center text-sm text-[#666666]">Загрузка...</p>}
-                {(full[dialog] || []).map(p => <Row key={p.user_id} p={p} theme={theme} onOpen={setProfileId} />)}
+                {(full[dialog] || []).map((p, i) => <Row key={p.user_id} p={p} theme={theme} onOpen={setProfileId} top={i < 3} />)}
               </div>
             </>
           )}
