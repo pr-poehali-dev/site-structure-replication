@@ -70,10 +70,10 @@ const Index = () => {
       <PublicPushSubscribe hideTrigger />
 
       {/* Hero */}
-      <section id="top" className="relative overflow-hidden bg-amber-50">
+      <section id="top" className="relative overflow-hidden bg-[#faf7ec]">
         <div className="absolute inset-0 chess-grid opacity-60" />
-        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
-        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-emerald-400/25 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-[#FF6B4A]/25 blur-3xl animate-float" />
+        <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#7C4DFF]/25 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <MostActive
             fallback={
