@@ -38,30 +38,40 @@ function Row({ p }: { p: Player }) {
   );
 }
 
+type Period = 'all' | 'month';
+
 export default function MostActive() {
   const [top, setTop] = useState<Player[]>([]);
   const [total, setTotal] = useState(0);
   const [all, setAll] = useState<Player[] | null>(null);
   const [open, setOpen] = useState(false);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [period, setPeriod] = useState<Period>('all');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch(`${URL}?limit=10`).then(r => r.json()).then(d => { setTop(d.players || []); setTotal(d.total || 0); }).catch(() => {});
-  }, []);
+    setAll(null);
+    fetch(`${URL}?limit=10&period=${period}`)
+      .then(r => r.json())
+      .then(d => { setTop(d.players || []); setTotal(d.total || 0); })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, [period]);
 
   async function showAll() {
     setOpen(true);
     if (all) return;
     setLoadingAll(true);
     try {
-      const d = await fetch(`${URL}?all=1`).then(r => r.json());
+      const d = await fetch(`${URL}?all=1&period=${period}`).then(r => r.json());
       setAll(d.players || []);
     } finally {
       setLoadingAll(false);
     }
   }
 
-  if (top.length === 0) return null;
+  if (loaded && top.length === 0 && period === 'all') return null;
+  if (!loaded) return null;
 
   return (
     <section className="bg-white">
@@ -75,7 +85,22 @@ export default function MostActive() {
               Очки за участие в турнирах: разминочный — 1, тренировочный — 2, квалификационный — 3
             </p>
           </div>
+          <div className="flex justify-center mb-4">
+            <div className="inline-flex rounded-full bg-muted p-1 text-sm font-semibold">
+              {([['all', 'За всё время'], ['month', 'За этот месяц']] as [Period, string][]).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setPeriod(key)}
+                  className={`px-4 py-1.5 rounded-full transition-colors ${period === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-primary'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="rounded-2xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {top.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">В этом месяце ещё нет завершённых турниров</p>}
             {top.map(p => <Row key={p.user_id} p={p} />)}
           </div>
           {total > top.length && (
@@ -91,7 +116,7 @@ export default function MostActive() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-5 py-4 border-b border-border">
-            <DialogTitle className="font-heading text-primary">Рейтинг активности</DialogTitle>
+            <DialogTitle className="font-heading text-primary">Рейтинг активности · {period === 'month' ? 'этот месяц' : 'всё время'}</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto divide-y divide-border">
             {loadingAll && <p className="p-6 text-center text-sm text-muted-foreground">Загрузка...</p>}
