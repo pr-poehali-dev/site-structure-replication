@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Header, Footer } from '@/components/Layout';
 import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import Seo from '@/components/Seo';
-import PortalUpdateBanner from '@/components/PortalUpdateBanner';
 import MostActive from '@/components/MostActive';
 import QuickLinks from '@/components/home/QuickLinks';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
@@ -70,8 +69,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      <PortalUpdateBanner />
 
       <Footer />
     </div>
