@@ -3,7 +3,8 @@ import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyApplications } from '@/hooks/useMyApplications';
-import TurnirHero from './turnir/TurnirHero';
+import PageHeader from '@/components/PageHeader';
+import PublicPushSubscribe from '@/components/PublicPushSubscribe';
 import TournamentsList from './turnir/TournamentsList';
 import TournamentRules from './turnir/TournamentRules';
 import TournamentModals, { ApplicationForm } from './turnir/TournamentModals';
@@ -161,7 +162,7 @@ export default function Turnir() {
       />
       <Header />
 
-      <TurnirHero />
+      <PageHeader icon="Trophy" crumb="Турниры" title="Турниры" subtitle="Выберите турнир и подайте заявку на участие онлайн" actions={<PublicPushSubscribe onDark />} />
 
       {/* Tournaments + Правила */}
       <section className="container px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">

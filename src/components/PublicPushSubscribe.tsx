@@ -23,9 +23,10 @@ function urlBase64ToUint8Array(base64String: string) {
 
 interface PublicPushSubscribeProps {
   hideTrigger?: boolean;
+  onDark?: boolean;
 }
 
-export default function PublicPushSubscribe({ hideTrigger = false }: PublicPushSubscribeProps) {
+export default function PublicPushSubscribe({ hideTrigger = false, onDark = false }: PublicPushSubscribeProps) {
   const [supported, setSupported] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,7 +124,7 @@ export default function PublicPushSubscribe({ hideTrigger = false }: PublicPushS
     if (hideTrigger) return null;
     return (
       <Button variant="outline" size="sm" onClick={handleUnsubscribe} disabled={loading}
-        className="border-primary/20 text-primary hover:bg-primary/5 bg-transparent">
+        className={onDark ? "border-white/30 text-white bg-white/10 hover:bg-white/20 hover:text-white" : "border-primary/20 text-primary hover:bg-primary/5 bg-transparent"}>
         <Icon name="BellOff" size={16} className="mr-1.5" /> Отключить уведомления
       </Button>
     );
@@ -133,7 +134,7 @@ export default function PublicPushSubscribe({ hideTrigger = false }: PublicPushS
     <>
       {!hideTrigger && (
         <Button variant="outline" size="sm" onClick={() => setShowExplain(true)} disabled={loading}
-          className="border-primary/20 text-primary hover:bg-primary/5 bg-transparent">
+          className={onDark ? "border-white/30 text-white bg-white/10 hover:bg-white/20 hover:text-white" : "border-primary/20 text-primary hover:bg-primary/5 bg-transparent"}>
           <Icon name="Bell" size={16} className="mr-1.5" /> Уведомлять о новых турнирах
         </Button>
       )}
