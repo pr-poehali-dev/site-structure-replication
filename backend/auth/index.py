@@ -5,7 +5,7 @@ import hashlib
 import secrets
 import base64
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 import psycopg2
 import boto3
@@ -127,6 +127,17 @@ def handler(event: dict, context) -> dict:
         if len(password) < 6:
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пароль должен быть не короче 6 символов'})}
+
+        try:
+            bd = date.fromisoformat(str(body.get('birth_date') or ''))
+        except ValueError:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Укажите дату рождения'})}
+        today = date.today()
+        age = today.year - bd.year - ((today.month, today.day) < (bd.month, bd.day))
+        if age < 0 or age >= 18:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Регистрация доступна только участникам младше 18 лет'})}
 
         if not LOGIN_RE.match(login_name):
             conn.close()
