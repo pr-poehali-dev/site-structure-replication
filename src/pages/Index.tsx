@@ -75,6 +75,8 @@ const Index = () => {
         <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-orange-400/25 blur-3xl animate-float" />
         <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-emerald-400/25 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
+          <MostActive
+            fallback={
           <div className="animate-fade-in">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
               <Icon name="Sparkles" size={16} /> Центр поддержки детского шахматного спорта
@@ -94,6 +96,8 @@ const Index = () => {
               </Button>
             </div>
           </div>
+            }
+          />
           <div className="relative animate-scale-in flex items-center">
             <img src={HERO_IMG} alt="Шахматная доска" className="w-full h-full object-contain" style={{ maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)' }} />
           </div>
@@ -113,8 +117,6 @@ const Index = () => {
       </section>
 
       <PortalUpdateBanner />
-
-      <MostActive />
 
       {/* About promo */}
       <section className="bg-white">
