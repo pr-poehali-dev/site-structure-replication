@@ -1,10 +1,11 @@
+import PageHeader from '@/components/PageHeader';
 import Icon from '@/components/ui/icon';
 import { Header, Footer } from '@/components/Layout';
 import Seo from '@/components/Seo';
 
 export default function Contacts() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground flex flex-col">
       <Seo
         title="Контакты — Мир шахмат"
         description="Свяжитесь с центром поддержки детского шахматного спорта «Мир шахмат»: email, телефон, сайт и соцсети."
@@ -12,20 +13,9 @@ export default function Contacts() {
       />
       <Header />
 
-      <section className="relative overflow-hidden bg-sky-50 flex-1">
-        <div className="absolute inset-0 chess-grid opacity-60" />
-        <div className="container relative px-4 py-14 max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-4">
-              <Icon name="Phone" size={16} /> Мы на связи
-            </span>
-            <h1 className="font-heading font-bold text-4xl md:text-5xl uppercase text-primary">
-              Контакты
-            </h1>
-            <p className="mt-4 text-muted-foreground text-lg">
-              Остались вопросы по турнирам, оплате или наградам? Напишите или позвоните нам.
-            </p>
-          </div>
+      <PageHeader icon="Phone" crumb="Контакты" title="Контакты" subtitle="Остались вопросы по турнирам, оплате или наградам? Напишите или позвоните нам." />
+      <section className="flex-1">
+        <div className="container relative px-4 py-8 max-w-3xl mx-auto">
 
           <div className="bg-white rounded-2xl border border-border shadow-sm p-8 grid sm:grid-cols-2 gap-6">
             <a

@@ -26,7 +26,7 @@ export default function ElectronicResult() {
   const group = data?.groups.find(g => g.name === tab);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#F3F7FF]">
       <Seo title={data ? `Результаты: ${data.tournament.title}` : 'Результаты турнира'} description="Итоговые результаты турнира" />
       <Header />
       <main className="flex-1 container px-4 py-10 max-w-4xl mx-auto w-full">

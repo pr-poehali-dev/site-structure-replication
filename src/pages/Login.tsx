@@ -29,7 +29,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground flex flex-col">
       <Seo title="Вход в личный кабинет" description="Вход в личный кабинет участника турниров" path="/login" noindex />
       <Header />
 

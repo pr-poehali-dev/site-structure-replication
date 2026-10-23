@@ -1,3 +1,4 @@
+import PageHeader from '@/components/PageHeader';
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
@@ -120,7 +121,7 @@ export default function PlayerProfile() {
 
   if (fetchError || !profile) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <div className="min-h-screen bg-[#F3F7FF] text-foreground flex flex-col">
         <Seo title="Профиль игрока" description="Профиль участника турниров" noindex />
         <Header />
         <main className="flex-1 flex items-center justify-center px-4 py-16">
@@ -146,16 +147,11 @@ export default function PlayerProfile() {
   const fullName = [profile.last_name, profile.first_name].filter(Boolean).join(' ');
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground flex flex-col">
       <Seo title={fullName || 'Профиль игрока'} description={`Профиль участника турниров: ${fullName}`} noindex />
       <Header />
 
-      <section className="bg-gradient-to-br from-secondary/25 via-secondary/10 to-white text-primary relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-10" />
-        <div className="container relative px-4 py-8 max-w-6xl mx-auto">
-          <h1 className="font-heading font-semibold text-2xl md:text-3xl">Профиль игрока</h1>
-        </div>
-      </section>
+      <PageHeader icon="UserRound" crumb="Профиль игрока" title="Профиль игрока" />
 
       <section className="container px-4 py-8 mx-auto max-w-6xl">
         <div className="grid lg:grid-cols-[260px_1fr] gap-6 items-start">

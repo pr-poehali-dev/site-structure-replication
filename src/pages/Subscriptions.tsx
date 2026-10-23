@@ -1,3 +1,4 @@
+import PageHeader from '@/components/PageHeader';
 import { useState, useEffect } from 'react';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
@@ -68,7 +69,7 @@ export default function Subscriptions() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground">
       <Seo
         title="Абонементы на участие в турнирах"
         description="Купите абонемент на несколько участий в шахматных турнирах со скидкой. Один код — несколько заявок."
@@ -76,21 +77,7 @@ export default function Subscriptions() {
       />
       <Header />
 
-      <section className="bg-sky-50 relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-emerald-400/25 blur-3xl animate-float" />
-        <div className="container relative px-4 py-10 md:py-14 max-w-4xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
-            <Icon name="Ticket" size={15} /> Выгоднее по одному
-          </span>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
-            <span className="text-secondary">Абонементы</span>
-          </h1>
-          <p className="mt-5 text-foreground/70 text-lg max-w-2xl mx-auto">
-            Купите пакет участий сразу и экономьте — код абонемента можно применять при подаче заявки на любой платный турнир
-          </p>
-        </div>
-      </section>
+      <PageHeader icon="Ticket" crumb="Абонементы" title={<span className="text-[#7FB0FF]">Абонементы</span>} subtitle="Купите пакет участий сразу и экономьте — код абонемента применяется при подаче заявки на любой платный турнир" />
 
       <section className="container px-4 py-12 max-w-4xl mx-auto">
         {loading ? (

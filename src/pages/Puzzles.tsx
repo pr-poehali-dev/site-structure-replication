@@ -1,3 +1,4 @@
+import PageHeader from '@/components/PageHeader';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
@@ -28,12 +29,11 @@ export default function Puzzles() {
   const shown = puzzles.filter(p => !level || p.difficulty === level);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#F3F7FF]">
       <Seo title="Шахматные задачи" description="Решайте шахматные задачи и соревнуйтесь с другими участниками" />
       <Header />
-      <main className="flex-1 container px-4 py-10 max-w-5xl mx-auto w-full">
-        <h1 className="font-heading font-bold text-4xl text-primary mb-2">Задачи</h1>
-        <p className="text-muted-foreground mb-6">Найдите лучший ход. Войдите в аккаунт, чтобы решённые задачи сохранялись и попадали в рейтинг.</p>
+      <PageHeader icon="Puzzle" crumb="Задачи" title="Задачи" subtitle="Найдите лучший ход. Войдите в аккаунт, чтобы решённые задачи сохранялись и попадали в рейтинг." />
+      <main className="flex-1 container px-4 py-8 max-w-6xl mx-auto w-full">
 
         <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-start">
           <div>

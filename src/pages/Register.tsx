@@ -91,7 +91,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground flex flex-col">
       <Seo title="Регистрация участника" description="Регистрация нового участника турниров" path="/register" noindex />
       <Header />
 

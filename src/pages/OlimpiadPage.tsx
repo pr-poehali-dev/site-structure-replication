@@ -1,3 +1,4 @@
+import PageHeader from '@/components/PageHeader';
 import { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
@@ -80,7 +81,7 @@ const OlimpiadPage = () => {
   if (!o) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground">
       <Seo
         title={`Олимпиада «${o.name}» по шахматам`}
         description={o.desc}
@@ -99,35 +100,23 @@ const OlimpiadPage = () => {
         </div>
       )}
 
-      {/* Hero */}
-      <section className="bg-sky-50 relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-40" />
-        <div className="container relative px-4 py-5 max-w-4xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/15 text-secondary text-sm font-semibold mb-6">
-            <Icon name="Medal" size={15} /> Регулярные олимпиады
-          </span>
-          <div className="flex justify-center mb-6">
-            <span className={`grid place-items-center w-20 h-20 rounded-2xl ${OLIMPIAD_COLORS[slug!]}`}>
-              <Icon name={o.icon} size={40} />
-            </span>
-          </div>
-          <h1 className="font-heading font-bold text-4xl md:text-6xl uppercase leading-tight text-primary">
-            Олимпиада <span className="text-secondary">«{o.name}»</span>
-          </h1>
-          <p className="mt-4 text-foreground/70 text-lg">{o.tagline}</p>
-          <div className="flex flex-wrap justify-center gap-4 mt-8">
-            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
-              <Icon name="Monitor" size={15} className="text-secondary" /> Интерактивный онлайн-формат
-            </div>
-            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
-              <Icon name="Clock" size={15} className="text-secondary" /> Результаты за 2 рабочих дня
-            </div>
-            <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm">
-              <Icon name="Globe" size={15} className="text-secondary" /> Из любой точки мира
-            </div>
-          </div>
+      <PageHeader
+        icon={o.icon}
+        crumb={`Олимпиада «${o.name}»`}
+        title={<>Олимпиада <span className="text-[#7FB0FF]">«{o.name}»</span></>}
+        subtitle={o.tagline}
+      />
+      <div className="container px-4 pt-5 max-w-4xl mx-auto flex flex-wrap gap-3">
+        <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm border border-border">
+          <Icon name="Monitor" size={15} className="text-secondary" /> Интерактивный онлайн-формат
         </div>
-      </section>
+        <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm border border-border">
+          <Icon name="Clock" size={15} className="text-secondary" /> Результаты за 2 рабочих дня
+        </div>
+        <div className="flex items-center gap-2 bg-white text-foreground/80 rounded-xl px-4 py-2 text-sm shadow-sm border border-border">
+          <Icon name="Globe" size={15} className="text-secondary" /> Из любой точки мира
+        </div>
+      </div>
 
       {/* Content */}
       <section className="container px-4 py-5 max-w-4xl mx-auto">

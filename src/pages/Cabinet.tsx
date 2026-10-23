@@ -1,3 +1,4 @@
+import PageHeader from '@/components/PageHeader';
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
@@ -54,18 +55,11 @@ export default function Cabinet() {
   const ongoing = apps.filter(a => !activeHalls.includes(a) && !history.includes(a));
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#F3F7FF] text-foreground">
       <Seo title="Личный кабинет" description="Личный кабинет участника турниров" path="/cabinet" noindex />
       <Header />
 
-      <section className="bg-gradient-to-br from-secondary/25 via-secondary/10 to-white text-primary relative overflow-hidden">
-        <div className="absolute inset-0 chess-grid opacity-10" />
-        <div className="container relative px-4 py-8 max-w-6xl mx-auto">
-          <h1 className="font-heading font-semibold text-2xl md:text-3xl">
-            Привет, <span className="text-secondary">{user.first_name}</span>!
-          </h1>
-        </div>
-      </section>
+      <PageHeader icon="UserRound" crumb="Личный кабинет" title={<>Привет, <span className="text-[#7FB0FF]">{user.first_name}</span>!</>} subtitle="Ваши заявки, баланс, рейтинг и партии" />
 
       <section className="container px-4 py-8 mx-auto max-w-6xl">
         <div className="grid lg:grid-cols-[260px_1fr] gap-6 items-start">
