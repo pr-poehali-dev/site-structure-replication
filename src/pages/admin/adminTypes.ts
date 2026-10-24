@@ -78,7 +78,7 @@ export interface Subscription {
 
 export interface UserAccount {
   id: number; last_name: string; first_name: string; middle_name: string | null;
-  birth_date: string | null; gender?: string | null; fsr_id: string | null; coach_fio: string | null; fio_genitive?: string | null; coach_fio_dative?: string | null;
+  birth_date: string | null; gender?: string | null; fsr_id: string | null; coach_fio: string | null; fio_genitive?: string | null; coach_last_dative?: string | null; coach_name_dative?: string | null;
   institution: string | null; country_city: string | null; email: string; phone: string | null;
   created_at: string; avatar_url: string | null; rating_blitz: number | null; rating_rapid: number | null;
   fsr_rating_blitz: number | null; fsr_rating_rapid: number | null;

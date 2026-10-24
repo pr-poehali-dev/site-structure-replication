@@ -1,0 +1,3 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS coach_last_dative VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS coach_name_dative VARCHAR(255);
+UPDATE users SET coach_last_dative = split_part(trim(coach_fio_dative), ' ', 1), coach_name_dative = NULLIF(trim(substr(trim(coach_fio_dative), length(split_part(trim(coach_fio_dative), ' ', 1)) + 1)), '') WHERE coach_fio_dative IS NOT NULL AND trim(coach_fio_dative) <> '';
