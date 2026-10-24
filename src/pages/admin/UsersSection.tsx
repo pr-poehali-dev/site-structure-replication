@@ -14,6 +14,12 @@ interface UsersSectionProps {
   password: string;
 }
 
+function needsDative(u: UserAccount) {
+  const coach = (u.coach_fio || '').trim().toLowerCase();
+  if (!coach || coach === 'нет') return false;
+  return !(u.coach_last_dative || '').trim() || !(u.coach_name_dative || '').trim();
+}
+
 const EMPTY_FORM = {
   last_name: '', first_name: '', middle_name: '', birth_date: '', gender: '', fsr_id: '',
   fio_genitive: '', coach_last_dative: '', coach_name_dative: '', coach_fio: '', institution: '', country_city: '', email: '', phone: '',
@@ -271,10 +277,19 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-[180px]">
-                <p className="font-semibold text-primary">{u.last_name} {u.first_name} {u.middle_name || ''}</p>
+                <p className="font-semibold text-primary flex items-center gap-2">
+                  {u.last_name} {u.first_name} {u.middle_name || ''}
+                  {needsDative(u) && (
+                    <span title="Заполните тренера в дательном падеже" className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                  )}
+                </p>
                 <p className="text-sm text-gray-400">{u.email}</p>
               </div>
               <div className="flex gap-3 shrink-0">
+                <div className="bg-green-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Баланс</p>
+                  <p className="font-bold text-primary">{(u.bonus_balance ?? 0).toLocaleString('ru')} ₽</p>
+                </div>
                 <div className="flex gap-1.5">
                   <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
                     <p className="text-[9px] text-gray-400 uppercase tracking-wide">МШ Блиц</p>
