@@ -75,12 +75,15 @@ function drawText(
 export async function renderDiploma(templateUrl: string, d: DiplomaData): Promise<Blob> {
   const img = await loadImage(templateUrl);
   const canvas = document.createElement('canvas');
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
+  const up = img.naturalWidth < 2000 ? 2 : 1;
+  canvas.width = img.naturalWidth * up;
+  canvas.height = img.naturalHeight * up;
   const k = canvas.width / 1414;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Не удалось создать диплом');
-  ctx.drawImage(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   ctx.scale(k, k);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
