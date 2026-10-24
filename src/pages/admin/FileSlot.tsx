@@ -22,8 +22,10 @@ function toBase64(file: File): Promise<string> {
   });
 }
 
+const TARGET = 3 * 1024 * 1024;
+
 async function shrinkImage(file: File): Promise<File> {
-  if (!file.type.startsWith('image/') || file.size < 3.5 * 1024 * 1024) return file;
+  if (!file.type.startsWith('image/') || file.size <= TARGET) return file;
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -32,18 +34,25 @@ async function shrinkImage(file: File): Promise<File> {
       i.onerror = reject;
       i.src = url;
     });
-    const scale = Math.min(1, 2600 / img.naturalWidth);
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(img.naturalWidth * scale);
-    canvas.height = Math.round(img.naturalHeight * scale);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return file;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.95));
-    if (!blob || blob.size >= file.size) return file;
-    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+    let width = Math.min(img.naturalWidth, 2600);
+    let quality = 0.92;
+    let best: Blob | null = null;
+    for (let i = 0; i < 8; i++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width);
+      canvas.height = Math.round(img.naturalHeight * (width / img.naturalWidth));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      best = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', quality));
+      if (best && best.size <= TARGET) break;
+      if (quality > 0.75) quality -= 0.07;
+      else width *= 0.85;
+    }
+    if (!best || best.size >= file.size) return file;
+    return new File([best], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
   } catch {
     return file;
   } finally {
@@ -71,7 +80,7 @@ export default function FileSlot({ tournamentId, password, username, kind, label
     setBusy(true);
     try {
       const f = await shrinkImage(orig);
-      if (f.size > 8 * 1024 * 1024) { toast.error('Файл больше 8 МБ'); setBusy(false); return; }
+      if (f.size > 4 * 1024 * 1024) { toast.error('Файл слишком тяжёлый, сохраните его как JPG или уменьшите'); setBusy(false); return; }
       await post({ _action: 'upload_file', content_type: f.type, file_name: f.name, file_b64: await toBase64(f) });
       toast.success('Файл загружен');
       onChanged();
