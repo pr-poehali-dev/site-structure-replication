@@ -286,8 +286,12 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 <p className="text-sm text-gray-400">{u.email}</p>
               </div>
               <div className="flex gap-3 shrink-0">
-                <div className="bg-green-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
+                <div className="bg-blue-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
                   <p className="text-[9px] text-gray-400 uppercase tracking-wide">Баланс</p>
+                  <p className="font-bold text-primary">{(u.balance ?? 0).toLocaleString('ru')} ₽</p>
+                </div>
+                <div className="bg-green-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Бонусы</p>
                   <p className="font-bold text-primary">{(u.bonus_balance ?? 0).toLocaleString('ru')} ₽</p>
                 </div>
                 <div className="flex gap-1.5">
