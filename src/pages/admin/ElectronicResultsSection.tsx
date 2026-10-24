@@ -31,6 +31,7 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [status, setStatus] = useState('draft');
   const [preview, setPreview] = useState<ResultsSnapshot | null>(null);
   const [files, setFiles] = useState<ResultFile[]>([]);
+  const [ratingLimit, setRatingLimit] = useState('');
 
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password };
 
@@ -62,6 +63,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     setStatus(data.config.status || 'draft');
     setPreview(data.preview);
     setFiles(data.files || []);
+    setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
   }
 
   async function reloadFiles() {
@@ -74,7 +76,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     const res = await fetch(ELECTRONIC_RESULTS_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms }),
+      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit }),
     });
     const data = await res.json().catch(() => ({}));
     setSaving(false);
@@ -194,6 +196,16 @@ export default function ElectronicResultsSection({ password }: Props) {
             <h3 className="font-heading font-bold text-base text-primary mb-2">Протокол турнира</h3>
             {slot('_tournament', 'protocol', 'Загрузить протокол')}
             <p className="text-xs text-gray-400 mt-2">PDF, PNG или JPG до 8 МБ. Появится на странице результатов и в личном кабинете участников.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон диплома</h3>
+            {slot('_tournament', 'diploma_template', 'Загрузить шаблон диплома')}
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Рейтинг МШ: до</span>
+              <Input className="w-28" type="number" min={0} placeholder="без лимита" value={ratingLimit} onChange={e => setRatingLimit(e.target.value)} />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Пустой бланк PNG или JPG до 8 МБ. Поля заполняются автоматически, когда участник нажимает «Скачать диплом». Не забудьте нажать «Сохранить».</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">

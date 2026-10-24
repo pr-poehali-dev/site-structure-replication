@@ -1,0 +1,1 @@
+ALTER TABLE electronic_results ADD COLUMN IF NOT EXISTS diploma_rating_limit INTEGER;

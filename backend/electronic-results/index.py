@@ -12,7 +12,7 @@ import psycopg2
 LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
 KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3}
 PROTOCOL_USER = '_tournament'
-FILE_KINDS = ['protocol', 'diploma', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman']
+FILE_KINDS = ['protocol', 'diploma', 'diploma_template', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman']
 ALLOWED_TYPES = {'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg'}
 
 
@@ -125,7 +125,7 @@ def assign_group(age, groups):
 
 
 def load_config(cur, tid):
-    cur.execute("SELECT status, age_groups, published_at FROM electronic_results WHERE tournament_id = %s", (tid,))
+    cur.execute("SELECT status, age_groups, published_at, diploma_rating_limit FROM electronic_results WHERE tournament_id = %s", (tid,))
     row = cur.fetchone()
     groups = json.loads(row[1]) if row else []
     cur.execute(
@@ -133,7 +133,8 @@ def load_config(cur, tid):
         (tid,),
     )
     noms = [{'id': r[0], 'group_name': r[1], 'kind': r[2], 'place': r[3], 'username': r[4], 'game_url': r[5]} for r in cur.fetchall()]
-    return {'status': row[0] if row else 'draft', 'published_at': row[2] if row else None, 'age_groups': groups, 'nominations': noms}
+    return {'status': row[0] if row else 'draft', 'published_at': row[2] if row else None, 'age_groups': groups, 'nominations': noms,
+            'diploma_rating_limit': row[3] if row else None}
 
 
 def build_snapshot(t, rows, cfg):
@@ -211,6 +212,36 @@ def handler(event: dict, context) -> dict:
             files = load_files(cur, int(tid), row[0]) if row[0] else []
             conn.close()
             return resp(200, {'files': files})
+        if params.get('diploma_data') == '1' and tid:
+            hdrs = event.get('headers') or {}
+            token = hdrs.get('X-Auth-Token') or hdrs.get('x-auth-token') or ''
+            cur.execute(
+                """SELECT u.institution, u.country_city, u.coach_fio FROM user_sessions s JOIN users u ON u.id = s.user_id
+                   WHERE s.token = %s AND s.expires_at > now()""",
+                (token,),
+            )
+            urow = cur.fetchone()
+            if not urow:
+                conn.close()
+                return resp(401, {'error': 'Не авторизован'})
+            cur.execute(
+                "SELECT file_url FROM electronic_result_files WHERE tournament_id = %s AND kind = 'diploma_template' AND username = %s",
+                (int(tid), PROTOCOL_USER),
+            )
+            frow = cur.fetchone()
+            cur.execute("SELECT title, tournament_type, age_category, date FROM tournaments WHERE id = %s", (int(tid),))
+            trow = cur.fetchone()
+            cur.execute("SELECT diploma_rating_limit FROM electronic_results WHERE tournament_id = %s", (int(tid),))
+            lrow = cur.fetchone()
+            conn.close()
+            if not trow:
+                return resp(404, {'error': 'Турнир не найден'})
+            return resp(200, {
+                'template_url': frow[0] if frow else None,
+                'rating_limit': lrow[0] if lrow else None,
+                'tournament': {'title': trow[0], 'type': trow[1] or 'qualifying', 'age_category': trow[2], 'date': trow[3]},
+                'profile': {'institution': urow[0], 'country_city': urow[1], 'coach_fio': urow[2]},
+            })
         admin = params.get('admin') == '1'
         if admin:
             if not is_admin(event):
@@ -295,10 +326,15 @@ def handler(event: dict, context) -> dict:
 
         if action in ('save', 'publish'):
             groups = parse_groups(body.get('age_groups'))
+            try:
+                rating_limit = int(body.get('diploma_rating_limit')) if body.get('diploma_rating_limit') not in (None, '') else None
+            except (TypeError, ValueError):
+                rating_limit = None
             cur.execute(
-                """INSERT INTO electronic_results (tournament_id, age_groups) VALUES (%s, %s)
-                   ON CONFLICT (tournament_id) DO UPDATE SET age_groups = EXCLUDED.age_groups, updated_at = now()""",
-                (t['id'], json.dumps(groups, ensure_ascii=False)),
+                """INSERT INTO electronic_results (tournament_id, age_groups, diploma_rating_limit) VALUES (%s, %s, %s)
+                   ON CONFLICT (tournament_id) DO UPDATE SET age_groups = EXCLUDED.age_groups,
+                   diploma_rating_limit = EXCLUDED.diploma_rating_limit, updated_at = now()""",
+                (t['id'], json.dumps(groups, ensure_ascii=False), rating_limit),
             )
             cur.execute("DELETE FROM electronic_result_nominations WHERE tournament_id = %s", (t['id'],))
             group_names = {g['name'] for g in groups}
