@@ -281,6 +281,10 @@ def handler(event: dict, context) -> dict:
             cfg = load_config(cur, t['id'])
             snap = build_snapshot(t, rows, cfg)
             files = load_files(cur, t['id'])
+            cur.execute("SELECT tournament_type, age_category FROM tournaments WHERE id = %s", (t['id'],))
+            arow = cur.fetchone()
+            snap['tournament']['type'] = (arow[0] if arow else None) or 'qualifying'
+            snap['tournament']['age_category'] = arow[1] if arow else None
             conn.close()
             return resp(200, {'tournament': snap['tournament'], 'config': cfg, 'players': snap['overall'], 'preview': snap, 'files': files})
 

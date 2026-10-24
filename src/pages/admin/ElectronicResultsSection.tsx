@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import FileSlot from './FileSlot';
 import { toast } from 'sonner';
+import { renderDiploma } from '@/lib/diploma';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
 } from '@/lib/electronicResults';
@@ -32,6 +33,8 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [preview, setPreview] = useState<ResultsSnapshot | null>(null);
   const [files, setFiles] = useState<ResultFile[]>([]);
   const [ratingLimit, setRatingLimit] = useState('');
+  const [tInfo, setTInfo] = useState<{ type: string; age_category: string | null; date: string | null }>({ type: 'qualifying', age_category: null, date: null });
+  const [previewing, setPreviewing] = useState(false);
   const [textColor, setTextColor] = useState<'black' | 'white'>('black');
 
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password };
@@ -58,6 +61,7 @@ export default function ElectronicResultsSection({ password }: Props) {
       return;
     }
     setTitle(data.tournament.title);
+    setTInfo({ type: data.tournament.type || 'qualifying', age_category: data.tournament.age_category || null, date: data.tournament.date || null });
     setPlayers(data.players || []);
     setGroups(data.config.age_groups || []);
     setNoms((data.config.nominations || []).map((n: NominationDraft) => ({ ...n, game_url: n.game_url || '' })));
@@ -157,6 +161,33 @@ export default function ElectronicResultsSection({ password }: Props) {
     );
   }
 
+  const templateFile = files.find(f => f.kind === 'diploma_template');
+
+  const showSample = async () => {
+    if (!templateFile) return;
+    setPreviewing(true);
+    try {
+      const blob = await renderDiploma(templateFile.file_url, {
+        tournamentType: tInfo.type,
+        tournamentTitle: title,
+        place: 1,
+        category: groups[0]?.name || null,
+        fio: 'Мозжерин Иван',
+        institution: 'МБОУ СОШ № 1',
+        cityCountry: 'Москва, Россия',
+        coach: 'Иванов Иван Иванович',
+        ageCategory: tInfo.age_category,
+        ratingLimit: ratingLimit ? Number(ratingLimit) : null,
+        textColor,
+        date: tInfo.date,
+      });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось собрать образец');
+    }
+    setPreviewing(false);
+  };
+
   const noAge = players.filter(p => p.age === null).length;
   const noGender = players.filter(p => !p.gender).length;
 
@@ -202,7 +233,14 @@ export default function ElectronicResultsSection({ password }: Props) {
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон диплома</h3>
-            {slot('_tournament', 'diploma_template', 'Загрузить шаблон диплома')}
+            <div className="flex flex-wrap items-center gap-2">
+              {slot('_tournament', 'diploma_template', 'Загрузить шаблон диплома')}
+              {templateFile && (
+                <Button type="button" variant="outline" disabled={previewing} onClick={showSample}>
+                  <Icon name={previewing ? 'Loader2' : 'Eye'} size={15} className={`mr-2 ${previewing ? 'animate-spin' : ''}`} /> Посмотреть образец
+                </Button>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-3">
               <span className="text-sm text-gray-600">Рейтинг МШ: до</span>
               <Input className="w-28" type="number" min={0} placeholder="без лимита" value={ratingLimit} onChange={e => setRatingLimit(e.target.value)} />
