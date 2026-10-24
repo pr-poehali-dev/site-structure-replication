@@ -1,0 +1,1 @@
+ALTER TABLE electronic_results ADD COLUMN IF NOT EXISTS diploma_text_color VARCHAR(10) NOT NULL DEFAULT 'black';

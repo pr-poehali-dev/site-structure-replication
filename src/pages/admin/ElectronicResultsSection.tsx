@@ -32,6 +32,7 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [preview, setPreview] = useState<ResultsSnapshot | null>(null);
   const [files, setFiles] = useState<ResultFile[]>([]);
   const [ratingLimit, setRatingLimit] = useState('');
+  const [textColor, setTextColor] = useState<'black' | 'white'>('black');
 
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password };
 
@@ -63,6 +64,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     setStatus(data.config.status || 'draft');
     setPreview(data.preview);
     setFiles(data.files || []);
+    setTextColor(data.config.diploma_text_color === 'white' ? 'white' : 'black');
     setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
   }
 
@@ -76,7 +78,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     const res = await fetch(ELECTRONIC_RESULTS_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit }),
+      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit, diploma_text_color: textColor }),
     });
     const data = await res.json().catch(() => ({}));
     setSaving(false);
@@ -204,6 +206,16 @@ export default function ElectronicResultsSection({ password }: Props) {
             <div className="flex items-center gap-2 mt-3">
               <span className="text-sm text-gray-600">Рейтинг МШ: до</span>
               <Input className="w-28" type="number" min={0} placeholder="без лимита" value={ratingLimit} onChange={e => setRatingLimit(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Цвет текста:</span>
+              {(['black', 'white'] as const).map(c => (
+                <button key={c} type="button" onClick={() => setTextColor(c)}
+                  className={`px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 ${textColor === c ? 'border-secondary ring-2 ring-secondary/40 font-semibold' : 'border-gray-300 hover:border-secondary'}`}>
+                  <span className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${c === 'white' ? 'bg-white' : 'bg-black'}`} />
+                  {c === 'white' ? 'Белый' : 'Чёрный'}
+                </button>
+              ))}
             </div>
             <p className="text-xs text-gray-400 mt-2">Пустой бланк PNG или JPG до 8 МБ. Поля заполняются автоматически, когда участник нажимает «Скачать диплом». Не забудьте нажать «Сохранить».</p>
           </div>

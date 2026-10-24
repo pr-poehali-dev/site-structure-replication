@@ -10,6 +10,7 @@ export interface DiplomaData {
   ageCategory: string | null;
   ratingLimit: number | null;
   date: string | null;
+  textColor?: 'black' | 'white';
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -56,6 +57,8 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
+let whiteText = false;
+
 function drawText(
   ctx: CanvasRenderingContext2D, text: string, y: number, size: number,
   opts: { style?: string; color?: string; maxWidth?: number } = {},
@@ -68,7 +71,7 @@ function drawText(
     s -= 1;
     ctx.font = `${opts.style ?? 'bold'} ${s}px ${FONT}`;
   }
-  ctx.fillStyle = opts.color ?? '#222222';
+  ctx.fillStyle = whiteText ? '#ffffff' : (opts.color ?? '#222222');
   ctx.fillText(text, CENTER_X, y);
 }
 
@@ -84,6 +87,7 @@ export async function renderDiploma(templateUrl: string, d: DiplomaData): Promis
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  whiteText = d.textColor === 'white';
   ctx.scale(k, k);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
