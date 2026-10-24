@@ -8,7 +8,7 @@ export interface DiplomaData {
   cityCountry: string | null;
   coach: string | null;
   ageCategory: string | null;
-  ratingLimit: number | null;
+  ratingLimit: string | null;
   date: string | null;
   textColor?: 'black' | 'white';
 }
@@ -115,7 +115,7 @@ export async function renderDiploma(templateUrl: string, d: DiplomaData): Promis
   }
 
   drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560 });
-  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit ? `до ${d.ratingLimit}` : 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
   drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560 });
 
   return new Promise((resolve, reject) => {

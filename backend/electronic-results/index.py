@@ -342,10 +342,7 @@ def handler(event: dict, context) -> dict:
 
         if action in ('save', 'publish'):
             groups = parse_groups(body.get('age_groups'))
-            try:
-                rating_limit = int(body.get('diploma_rating_limit')) if body.get('diploma_rating_limit') not in (None, '') else None
-            except (TypeError, ValueError):
-                rating_limit = None
+            rating_limit = str(body.get('diploma_rating_limit') or '').strip()[:100] or None
             text_color = 'white' if body.get('diploma_text_color') == 'white' else 'black'
             cur.execute(
                 """INSERT INTO electronic_results (tournament_id, age_groups, diploma_rating_limit, diploma_text_color) VALUES (%s, %s, %s, %s)

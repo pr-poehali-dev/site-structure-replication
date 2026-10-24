@@ -7,7 +7,7 @@ import { ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultFile, ResultsSnapshot } from
 
 interface DiplomaInfo {
   template_url: string | null;
-  rating_limit: number | null;
+  rating_limit: string | null;
   text_color?: 'black' | 'white';
   tournament: { title: string; type: string; age_category: string | null; date: string | null };
   profile: { institution: string | null; country_city: string | null; coach_fio: string | null };

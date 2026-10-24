@@ -1,0 +1,1 @@
+ALTER TABLE electronic_results ALTER COLUMN diploma_rating_limit TYPE VARCHAR(100) USING CASE WHEN diploma_rating_limit IS NULL THEN NULL ELSE 'до ' || diploma_rating_limit::text END;

@@ -177,7 +177,7 @@ export default function ElectronicResultsSection({ password }: Props) {
         cityCountry: 'Москва, Россия',
         coach: 'Иванов Иван Иванович',
         ageCategory: tInfo.age_category,
-        ratingLimit: ratingLimit ? Number(ratingLimit) : null,
+        ratingLimit: ratingLimit.trim() || null,
         textColor,
         date: tInfo.date,
       });
@@ -242,8 +242,8 @@ export default function ElectronicResultsSection({ password }: Props) {
               )}
             </div>
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-sm text-gray-600">Рейтинг МШ: до</span>
-              <Input className="w-28" type="number" min={0} placeholder="без лимита" value={ratingLimit} onChange={e => setRatingLimit(e.target.value)} />
+              <span className="text-sm text-gray-600">Рейтинг МШ:</span>
+              <Input className="w-48" type="text" maxLength={100} placeholder="например: от 1000 или до 800" value={ratingLimit} onChange={e => setRatingLimit(e.target.value)} />
             </div>
             <div className="flex items-center gap-2 mt-3">
               <span className="text-sm text-gray-600">Цвет текста:</span>
