@@ -96,11 +96,11 @@ export async function renderDiploma(templateUrl: string, d: DiplomaData): Promis
   }
 
   drawText(ctx, d.fio, 890, 100, { style: 'italic bold', maxWidth: 820 });
-  ctx.font = `italic bold 26px ${FONT}`;
-  const instLines = wrapText(ctx, (d.institution || '').trim(), 760).slice(0, 3);
+  ctx.font = `italic bold 31px ${FONT}`;
+  const instLines = wrapText(ctx, (d.institution || '').trim(), 820).slice(0, 3);
   const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
-  const startY = 985 - ((lines.length - 2) * 16);
-  lines.forEach((line, i) => drawText(ctx, line, startY + i * 32, 26, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
+  const startY = 985 - ((lines.length - 2) * 19);
+  lines.forEach((line, i) => drawText(ctx, line, startY + i * 38, 31, { style: 'italic bold', color: '#333333', maxWidth: 840 }));
 
   if (d.coach) {
     drawText(ctx, 'Тренер:', 1185, 38);
