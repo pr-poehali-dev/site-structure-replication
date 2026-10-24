@@ -22,6 +22,35 @@ function toBase64(file: File): Promise<string> {
   });
 }
 
+async function shrinkImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/') || file.size < 600 * 1024) return file;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = url;
+    });
+    const scale = Math.min(1, 1600 / img.naturalWidth);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export default function FileSlot({ tournamentId, password, username, kind, label, files, onChanged }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -37,10 +66,12 @@ export default function FileSlot({ tournamentId, password, username, kind, label
     if (!res.ok) throw new Error(data.error || 'Ошибка');
   }
 
-  async function upload(f: File) {
-    if (f.size > 8 * 1024 * 1024) { toast.error('Файл больше 8 МБ'); return; }
+  async function upload(orig: File) {
+    if (orig.size > 20 * 1024 * 1024) { toast.error('Файл больше 20 МБ'); return; }
     setBusy(true);
     try {
+      const f = await shrinkImage(orig);
+      if (f.size > 8 * 1024 * 1024) { toast.error('Файл больше 8 МБ'); setBusy(false); return; }
       await post({ _action: 'upload_file', content_type: f.type, file_name: f.name, file_b64: await toBase64(f) });
       toast.success('Файл загружен');
       onChanged();
