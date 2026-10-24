@@ -106,6 +106,16 @@ export default function MyResultBlock({ tournamentId }: Props) {
       )
     : [];
 
+  const manualDiploma = files.find(f => f.kind === 'diploma');
+  const docs: { key: string; label: string; url: string | null }[] = [];
+  if (manualDiploma) docs.push({ key: 'diploma', label: 'Диплом', url: manualDiploma.file_url });
+  else if (hasTemplate) docs.push({ key: 'diploma', label: 'Диплом', url: null });
+  files.filter(f => f.kind === 'thanks').forEach(f => docs.push({ key: 'thanks', label: 'Благодарственное письмо', url: f.file_url }));
+  noms.forEach((n, i) => {
+    const f = files.find(x => x.kind === `nom_${n.kind}`);
+    if (f) docs.push({ key: `nom${i}`, label: `Диплом: ${n.label}`, url: f.file_url });
+  });
+
   return (
     <div className="rounded-lg border border-secondary/40 bg-secondary/10 px-4 py-3 flex flex-col gap-2">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ваш результат</p>
@@ -122,35 +132,32 @@ export default function MyResultBlock({ tournamentId }: Props) {
           </span>
         )}
       </div>
-      {(hasTemplate || files.some(f => f.kind === 'diploma' || f.kind === 'thanks') || noms.some(n => files.some(f => f.kind === `nom_${n.kind}`))) && (
-        <div className="flex flex-wrap gap-2 pt-1">
-          {files.filter(f => f.kind === 'diploma').map(f => (
-            <a key={f.kind} href={f.file_url} target="_blank" rel="noopener noreferrer" download
-              className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
-              <Icon name="Download" size={13} /> Скачать диплом
-            </a>
-          ))}
-          {!files.some(f => f.kind === 'diploma') && hasTemplate && (
-            <button type="button" onClick={handleGenerate} disabled={generating}
-              className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 disabled:opacity-60">
-              <Icon name={generating ? 'Loader2' : 'Download'} size={13} className={generating ? 'animate-spin' : ''} /> Скачать диплом
-            </button>
-          )}
-          {files.filter(f => f.kind === 'thanks').map(f => (
-            <a key={f.kind} href={f.file_url} target="_blank" rel="noopener noreferrer" download
-              className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
-              <Icon name="Download" size={13} /> Скачать благодарственное письмо
-            </a>
-          ))}
-          {noms.map((n, i) => {
-            const f = files.find(x => x.kind === `nom_${n.kind}`);
-            return f ? (
-              <a key={i} href={f.file_url} target="_blank" rel="noopener noreferrer" download
-                className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5">
-                <Icon name="Download" size={13} /> Диплом: {n.label}
-              </a>
-            ) : null;
-          })}
+      {docs.length > 0 && (
+        <div className="rounded-lg bg-white border border-gray-200 px-3 py-2.5 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+            <Icon name="Award" size={13} className="text-secondary" /> Наградные документы
+          </p>
+          <div className="flex flex-col divide-y divide-gray-100">
+            {docs.map(d => (
+              <div key={d.key} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <span className="flex items-center gap-2 text-sm text-gray-700 min-w-0">
+                  <Icon name="FileText" size={15} className="text-secondary shrink-0" />
+                  <span className="truncate">{d.label}</span>
+                </span>
+                {d.url ? (
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" download
+                    className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 shrink-0">
+                    <Icon name="Download" size={13} /> Скачать
+                  </a>
+                ) : (
+                  <button type="button" onClick={handleGenerate} disabled={generating}
+                    className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 shrink-0 disabled:opacity-60">
+                    <Icon name={generating ? 'Loader2' : 'Download'} size={13} className={generating ? 'animate-spin' : ''} /> Скачать
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {protocolLink}
