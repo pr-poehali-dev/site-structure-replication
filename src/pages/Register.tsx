@@ -132,6 +132,7 @@ export default function Register() {
               <div>
                 <Label>Дата рождения</Label>
                 <Input type="date" required min={minBirthDate} max={maxBirthDate} className="mt-1" value={form.birth_date} onChange={e => set('birth_date', e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1">Регистрация доступна участникам младше 18 лет</p>
               </div>
               <div>
                 <Label>Пол</Label>
