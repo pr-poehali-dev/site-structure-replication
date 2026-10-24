@@ -22,7 +22,8 @@ export default function Register() {
   const { register } = useAuth();
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
-  const maxBirthDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 18); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+  const maxBirthDate = new Date().toISOString().slice(0, 10);
+  const minBirthDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 18); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
   const [submitting, setSubmitting] = useState(false);
   const [website, setWebsite] = useState('');
   const openedAt = useRef(Date.now());
@@ -130,7 +131,7 @@ export default function Register() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label>Дата рождения</Label>
-                <Input type="date" required min="1900-01-01" max={maxBirthDate} className="mt-1" value={form.birth_date} onChange={e => set('birth_date', e.target.value)} />
+                <Input type="date" required min={minBirthDate} max={maxBirthDate} className="mt-1" value={form.birth_date} onChange={e => set('birth_date', e.target.value)} />
               </div>
               <div>
                 <Label>Пол</Label>
