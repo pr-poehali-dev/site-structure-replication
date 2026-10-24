@@ -38,6 +38,24 @@ function formatDate(iso: string | null) {
   return `${d}.${m}.${y} г.`;
 }
 
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  if (!text) return [];
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (cur && ctx.measureText(test).width > maxWidth) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
 function drawText(
   ctx: CanvasRenderingContext2D, text: string, y: number, size: number,
   opts: { style?: string; color?: string; maxWidth?: number } = {},
@@ -71,15 +89,18 @@ export async function renderDiploma(templateUrl: string, d: DiplomaData): Promis
   drawText(ctx, `«${d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim()}»`, 405, 42, { style: 'italic bold' });
 
   const prize = d.place !== null && d.place >= 1 && d.place <= 3;
-  drawText(ctx, prize ? `за ${ROMAN[d.place as number]} место` : 'участник', 665, 72);
+  drawText(ctx, prize ? `за ${ROMAN[d.place as number]} место` : 'участника', 665, 72);
 
   if (d.category) {
     drawText(ctx, `в возрастной категории: ${d.category}`, 745, 32, { style: 'italic bold', color: '#2e2a7a' });
   }
 
   drawText(ctx, d.fio, 890, 100, { style: 'italic bold', maxWidth: 820 });
-  drawText(ctx, d.institution || '', 985, 26, { style: 'italic bold', color: '#333333', maxWidth: 700 });
-  drawText(ctx, d.cityCountry || '', 1017, 26, { style: 'italic bold', color: '#333333', maxWidth: 700 });
+  ctx.font = `italic bold 26px ${FONT}`;
+  const instLines = wrapText(ctx, (d.institution || '').trim(), 760).slice(0, 3);
+  const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
+  const startY = 985 - ((lines.length - 2) * 16);
+  lines.forEach((line, i) => drawText(ctx, line, startY + i * 32, 26, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
 
   if (d.coach) {
     drawText(ctx, 'Тренер:', 1185, 38);

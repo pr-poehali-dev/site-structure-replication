@@ -216,7 +216,7 @@ def handler(event: dict, context) -> dict:
             hdrs = event.get('headers') or {}
             token = hdrs.get('X-Auth-Token') or hdrs.get('x-auth-token') or ''
             cur.execute(
-                """SELECT u.institution, u.country_city, u.coach_fio FROM user_sessions s JOIN users u ON u.id = s.user_id
+                """SELECT u.institution, u.country_city, u.coach_fio, u.id FROM user_sessions s JOIN users u ON u.id = s.user_id
                    WHERE s.token = %s AND s.expires_at > now()""",
                 (token,),
             )
@@ -224,6 +224,16 @@ def handler(event: dict, context) -> dict:
             if not urow:
                 conn.close()
                 return resp(401, {'error': 'Не авторизован'})
+            urow = list(urow)
+            if not (urow[0] or '').strip() or not (urow[1] or '').strip() or not (urow[2] or '').strip():
+                cur.execute(
+                    "SELECT school, country_city, coach FROM applications WHERE user_id = %s ORDER BY created_at DESC LIMIT 5",
+                    (urow[3],),
+                )
+                for school, city, coach in cur.fetchall():
+                    for i, v in enumerate((school, city, coach)):
+                        if not (urow[i] or '').strip() and (v or '').strip():
+                            urow[i] = v.strip()
             cur.execute(
                 "SELECT file_url FROM electronic_result_files WHERE tournament_id = %s AND kind = 'diploma_template' AND username = %s",
                 (int(tid), PROTOCOL_USER),
