@@ -16,7 +16,7 @@ interface UsersSectionProps {
 
 const EMPTY_FORM = {
   last_name: '', first_name: '', middle_name: '', birth_date: '', gender: '', fsr_id: '',
-  coach_fio: '', institution: '', country_city: '', email: '', phone: '',
+  fio_genitive: '', coach_fio_dative: '', coach_fio: '', institution: '', country_city: '', email: '', phone: '',
   rating_blitz: '', rating_rapid: '', fsr_rating_blitz: '', fsr_rating_rapid: '',
 };
 
@@ -151,6 +151,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
       birth_date: u.birth_date ? u.birth_date.slice(0, 10) : '',
       gender: u.gender || '',
       fsr_id: u.fsr_id || '',
+      fio_genitive: u.fio_genitive || '',
+      coach_fio_dative: u.coach_fio_dative || '',
       coach_fio: u.coach_fio || '',
       institution: u.institution || '',
       country_city: u.country_city || '',
@@ -180,6 +182,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
         birth_date: form.birth_date || null,
         gender: form.gender || null,
         fsr_id: form.fsr_id.trim() || null,
+        fio_genitive: form.fio_genitive.trim() || null,
+        coach_fio_dative: form.coach_fio_dative.trim() || null,
         coach_fio: form.coach_fio.trim() || null,
         institution: form.institution.trim() || null,
         country_city: form.country_city.trim() || null,
@@ -338,6 +342,10 @@ export default function UsersSection({ password }: UsersSectionProps) {
                     <Label>Отчество</Label>
                     <Input className="mt-1" value={form.middle_name} onChange={e => setForm(f => ({ ...f, middle_name: e.target.value }))} />
                   </div>
+                  <div className="sm:col-span-3">
+                    <Label>ФИ в родительном падеже</Label>
+                    <Input className="mt-1" placeholder="Например: Ивана Иванова" value={form.fio_genitive} onChange={e => setForm(f => ({ ...f, fio_genitive: e.target.value }))} />
+                  </div>
                   <div>
                     <Label>Дата рождения</Label>
                     <Input type="date" className="mt-1" value={form.birth_date} onChange={e => setForm(f => ({ ...f, birth_date: e.target.value }))} />
@@ -357,6 +365,10 @@ export default function UsersSection({ password }: UsersSectionProps) {
                   <div>
                     <Label>ФИО тренера</Label>
                     <Input className="mt-1" value={form.coach_fio} onChange={e => setForm(f => ({ ...f, coach_fio: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Тренер в дательном падеже</Label>
+                    <Input className="mt-1" placeholder="Например: Петрову Петру Петровичу" value={form.coach_fio_dative} onChange={e => setForm(f => ({ ...f, coach_fio_dative: e.target.value }))} />
                   </div>
                   <div>
                     <Label>Учебное заведение</Label>

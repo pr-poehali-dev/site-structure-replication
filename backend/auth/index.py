@@ -55,6 +55,18 @@ USER_COLS = ['login', 'id', 'last_name', 'first_name', 'middle_name', 'birth_dat
 USER_SELECT = f"SELECT {', '.join(USER_COLS)} FROM users"
 
 
+def add_admin_fields(cur, users):
+    ids = [u['id'] for u in users]
+    if not ids:
+        return
+    cur.execute("SELECT id, fio_genitive, coach_fio_dative FROM users WHERE id IN (%s)" % ','.join(str(int(i)) for i in ids))
+    m = {r[0]: r for r in cur.fetchall()}
+    for u in users:
+        r = m.get(u['id'])
+        u['fio_genitive'] = r[1] if r else None
+        u['coach_fio_dative'] = r[2] if r else None
+
+
 def user_to_dict(row):
     d = dict(zip(USER_COLS, row))
     d['birth_date'] = str(d['birth_date']) if d['birth_date'] else None
@@ -293,6 +305,7 @@ def handler(event: dict, context) -> dict:
             cur.execute(f"{USER_SELECT} ORDER BY created_at DESC LIMIT 200")
         rows = cur.fetchall()
         users = [user_to_dict(r) for r in rows]
+        add_admin_fields(cur, users)
         if users:
             cur.execute("SELECT id, balance FROM users WHERE id = ANY(%s)", ([u['id'] for u in users],))
             balances = {r[0]: float(r[1] or 0) for r in cur.fetchall()}
@@ -402,7 +415,8 @@ def handler(event: dict, context) -> dict:
             """UPDATE users SET
                last_name=%s, first_name=%s, middle_name=%s, birth_date=%s, fsr_id=%s,
                coach_fio=%s, institution=%s, country_city=%s, email=%s, phone=%s,
-               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s, gender=%s
+               rating_blitz=%s, rating_rapid=%s, fsr_rating_blitz=%s, fsr_rating_rapid=%s, gender=%s,
+               fio_genitive=%s, coach_fio_dative=%s
                WHERE id=%s""",
             (last_name, first_name, (body.get('middle_name') or '').strip() or None,
              body.get('birth_date') or None, (body.get('fsr_id') or '').strip() or None,
@@ -411,6 +425,7 @@ def handler(event: dict, context) -> dict:
              num(body.get('rating_blitz')), num(body.get('rating_rapid')),
              num(body.get('fsr_rating_blitz')), num(body.get('fsr_rating_rapid')),
              body.get('gender') if body.get('gender') in ('M', 'F') else None,
+             (body.get('fio_genitive') or '').strip()[:255] or None, (body.get('coach_fio_dative') or '').strip()[:255] or None,
              user_id)
         )
         conn.commit()
