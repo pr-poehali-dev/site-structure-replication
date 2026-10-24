@@ -35,6 +35,8 @@ export default function UsersSection({ password }: UsersSectionProps) {
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusNote, setBonusNote] = useState('');
   const [bonusSaving, setBonusSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [pwdSaving, setPwdSaving] = useState(false);
 
   const fetchUsers = useCallback(async (q = '') => {
     setLoading(true);
@@ -117,8 +119,28 @@ export default function UsersSection({ password }: UsersSectionProps) {
     }
   }
 
+  async function handleSetPassword() {
+    if (!editUser) return;
+    if (newPassword.length < 6) { toast.error('Пароль должен быть не короче 6 символов'); return; }
+    setPwdSaving(true);
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ _action: 'admin_set_password', user_id: editUser.id, new_password: newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Не удалось сменить пароль'); return; }
+      toast.success('Пароль изменён, участник будет разлогинен на всех устройствах');
+      setNewPassword('');
+    } finally {
+      setPwdSaving(false);
+    }
+  }
+
   function openEdit(u: UserAccount) {
     setEditUser(u);
+    setNewPassword('');
     setBonusAmount('');
     setBonusNote('');
     setFormError('');
@@ -406,6 +428,16 @@ export default function UsersSection({ password }: UsersSectionProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">Положительное число начисляет бонусы, отрицательное списывает.</p>
+              </div>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Пароль для входа в аккаунт</p>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                  <Input type="text" autoComplete="off" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Новый пароль (не короче 6 символов)" />
+                  <Button type="button" variant="outline" onClick={handleSetPassword} disabled={pwdSaving || !newPassword}>
+                    {pwdSaving ? 'Сохранение...' : 'Сменить пароль'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Меняется только пароль входа на сайт. Аккаунт Lichess не затрагивается.</p>
               </div>
               {formError && <p className="text-red-500 text-sm">{formError}</p>}
               <div className="flex gap-2 mt-2">

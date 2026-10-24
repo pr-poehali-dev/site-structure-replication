@@ -7,6 +7,13 @@
       "expectedStatus": 401
     },
     {
+      "name": "Set password without admin is rejected",
+      "method": "POST",
+      "path": "/",
+      "body": {"_action": "admin_set_password", "user_id": 1, "new_password": "123456"},
+      "expectedStatus": 405
+    },
+    {
       "name": "OPTIONS preflight returns 200",
       "method": "OPTIONS",
       "path": "/",
