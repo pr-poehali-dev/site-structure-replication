@@ -1,5 +1,11 @@
 import { Application, Tournament, STATUS_COLORS, STATUS_LABELS, TOURNAMENTS_URL } from './adminTypes';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 
 interface ArchiveSectionProps {
@@ -12,6 +18,67 @@ interface ArchiveSectionProps {
 
 export default function ArchiveSection({ password, tournaments, apps, tLoading, fetchTournaments }: ArchiveSectionProps) {
   const archived = tournaments.filter(t => t.status === 'archived');
+  const [editT, setEditT] = useState<Tournament | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  function openEdit(t: Tournament) {
+    setEditT(t);
+    setForm({
+      title: t.title || '',
+      description: t.description || '',
+      date: t.date ? t.date.slice(0, 10) : '',
+      location: t.location || '',
+      age_category: t.age_category || '',
+      price: t.price != null ? String(t.price) : '',
+      time_control: t.time_control || '',
+      time_msk: t.time_msk || '',
+      rounds_count: t.rounds_count != null ? String(t.rounds_count) : '5',
+      max_participants: t.max_participants != null ? String(t.max_participants) : '',
+      admin_message: t.admin_message || '',
+      lila_tournament_ref: t.lila_tournament_id || '',
+      lila_tournament_password: t.lila_tournament_password || '',
+    });
+  }
+
+  function setField(k: string, v: string) {
+    setForm(f => ({ ...f, [k]: v }));
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editT) return;
+    setSaving(true);
+    try {
+      const res = await fetch(TOURNAMENTS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({
+          ...form,
+          price: form.price ? parseFloat(form.price) : null,
+          rounds_count: form.rounds_count ? parseInt(form.rounds_count, 10) : 5,
+          max_participants: form.max_participants ? parseInt(form.max_participants, 10) : null,
+          diploma_sample_url: editT.diploma_sample_url || '',
+          regulation_url: editT.regulation_url || '',
+          announcement_url: editT.announcement_url || '',
+          hall_open: !!editT.hall_open,
+          rating_type: editT.rating_type || 'rapid',
+          tournament_type: editT.tournament_type || 'qualifying',
+          _action: 'update',
+          id: editT.id,
+        }),
+      });
+      if (res.ok) {
+        toast.success('Турнир сохранён');
+        setEditT(null);
+        fetchTournaments();
+      } else {
+        toast.error('Не удалось сохранить турнир');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleRestore(t: Tournament) {
     await fetch(TOURNAMENTS_URL, {
@@ -69,6 +136,9 @@ export default function ArchiveSection({ password, tournaments, apps, tLoading, 
                       {t.location && <p className="text-sm text-gray-500">{t.location}</p>}
                     </div>
                     <div className="flex gap-2 flex-wrap shrink-0">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(t)}>
+                        <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => handleRestore(t)}>
                         <Icon name="ArchiveRestore" size={14} className="mr-1" /> Восстановить
                       </Button>
@@ -100,6 +170,72 @@ export default function ArchiveSection({ password, tournaments, apps, tLoading, 
             })}
           </div>
         )}
+
+      <Dialog open={!!editT} onOpenChange={o => !o && setEditT(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Редактирование турнира</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <Label>Название</Label>
+              <Input required value={form.title || ''} onChange={e => setField('title', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Дата</Label>
+              <Input type="date" value={form.date || ''} onChange={e => setField('date', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Место</Label>
+              <Input value={form.location || ''} onChange={e => setField('location', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Возрастная категория</Label>
+              <Input value={form.age_category || ''} onChange={e => setField('age_category', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Стоимость</Label>
+              <Input value={form.price || ''} onChange={e => setField('price', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Контроль времени</Label>
+              <Input value={form.time_control || ''} onChange={e => setField('time_control', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Время (МСК)</Label>
+              <Input value={form.time_msk || ''} onChange={e => setField('time_msk', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Туров</Label>
+              <Input value={form.rounds_count || ''} onChange={e => setField('rounds_count', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Макс. участников</Label>
+              <Input value={form.max_participants || ''} onChange={e => setField('max_participants', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Ссылка на Lila</Label>
+              <Input value={form.lila_tournament_ref || ''} onChange={e => setField('lila_tournament_ref', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label>Пароль Lila</Label>
+              <Input value={form.lila_tournament_password || ''} onChange={e => setField('lila_tournament_password', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-2">
+              <Label>Описание</Label>
+              <Textarea rows={3} value={form.description || ''} onChange={e => setField('description', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1 md:col-span-2">
+              <Label>Сообщение от администратора</Label>
+              <Textarea rows={2} value={form.admin_message || ''} onChange={e => setField('admin_message', e.target.value)} />
+            </div>
+            <div className="md:col-span-2 flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setEditT(null)}>Отмена</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
