@@ -11,7 +11,10 @@ import {
 
 function extractGameId(url: string): string | null {
   try {
-    const seg = new URL(url).pathname.split('/').filter(Boolean).find(x => /^[A-Za-z0-9]{8,12}$/.test(x));
+    const u = new URL(url);
+    const q = u.searchParams.get('game');
+    if (q && /^[A-Za-z0-9]{8}$/.test(q)) return q;
+    const seg = u.pathname.split('/').filter(Boolean).find(x => /^[A-Za-z0-9]{8,12}$/.test(x) && x !== 'room');
     return seg ? seg.slice(0, 8) : null;
   } catch {
     return null;
