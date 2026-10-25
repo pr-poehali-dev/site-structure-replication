@@ -30,6 +30,7 @@ export interface SharedApplication {
   hall_status: string;
   place: number | null;
   lila_ready?: boolean;
+  lila_finished?: boolean;
   results_published?: boolean;
 }
 

@@ -28,6 +28,7 @@ function HallButtonInner() {
       a.status === 'paid' &&
       a.hall_open &&
       a.hall_status !== 'finished' &&
+      !a.lila_finished &&
       a.tournament_status !== 'archived' &&
       !isOver(a),
   );

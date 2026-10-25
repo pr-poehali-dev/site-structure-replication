@@ -1,6 +1,8 @@
 import json
 import os
 import psycopg2
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from push_utils import notify_admins_new_application
 
 def get_conn():
@@ -19,6 +21,52 @@ def get_user_id_by_token(cur, token: str):
     cur.execute("SELECT user_id FROM user_sessions WHERE token = %s AND expires_at > now()", (token,))
     row = cur.fetchone()
     return row[0] if row else None
+
+
+LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
+
+def fetch_lila_finished(item):
+    lila_id, kind = item
+    path = 'tournament' if kind == 'arena' else 'swiss'
+    try:
+        req = urllib.request.Request(f'{LILA}/api/{path}/{lila_id}', headers={'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (mir-shakhmat)'})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            info = json.loads(r.read().decode('utf-8'))
+        return bool(info.get('isFinished')) if kind == 'arena' else info.get('status') == 'finished'
+    except Exception as e:
+        print(f'lila status failed {path}/{lila_id}: {e}')
+        return None
+
+def refresh_lila_finished(cur, conn, tournament_ids):
+    if not tournament_ids:
+        return {}
+    cur.execute(
+        """SELECT t.id, t.lila_tournament_id, COALESCE(t.lila_tournament_kind, 'swiss'), COALESCE(s.is_finished, false),
+                  (s.synced_at IS NOT NULL AND s.synced_at > now() - interval '1 minute')
+           FROM tournaments t LEFT JOIN lila_tournament_sync s ON s.tournament_id = t.id
+           WHERE t.id = ANY(%s) AND t.lila_tournament_id IS NOT NULL""",
+        (list(tournament_ids),)
+    )
+    state = {}
+    todo = []
+    for tid, lila_id, kind, finished, fresh in cur.fetchall():
+        state[tid] = finished
+        if not finished and not fresh:
+            todo.append((tid, lila_id, kind))
+    if todo:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(lambda t: fetch_lila_finished((t[1], t[2])), todo))
+        for (tid, _, _), fin in zip(todo, results):
+            if fin is None:
+                continue
+            state[tid] = fin
+            cur.execute(
+                """INSERT INTO lila_tournament_sync (tournament_id, synced_at, is_finished) VALUES (%s, now(), %s)
+                   ON CONFLICT (tournament_id) DO UPDATE SET is_finished = EXCLUDED.is_finished""",
+                (tid, fin)
+            )
+        conn.commit()
+    return state
 
 def handler(event: dict, context) -> dict:
     """Управление заявками на турниры: публичное создание и админское CRUD"""
@@ -60,12 +108,15 @@ def handler(event: dict, context) -> dict:
                 (user_id,)
             )
             rows = cur.fetchall()
+            open_ids = [r[1] for r in rows if r[7] and r[19] != 'finished' and r[21]]
+            lila_state = refresh_lila_finished(cur, conn, open_ids)
             conn.close()
             cols = ['id', 'tournament_id', 'tournament_title', 'fio', 'age', 'status', 'created_at', 'hall_open', 'tournament_status',
                      'description', 'date', 'location', 'age_category', 'price', 'time_control', 'time_msk',
                      'diploma_sample_url', 'regulation_url', 'announcement_url', 'hall_status', 'place', 'lila_ready', 'cancel_reason', 'results_published']
             my_apps = [dict(zip(cols, r)) for r in rows]
             for a in my_apps:
+                a['lila_finished'] = bool(lila_state.get(a['tournament_id']))
                 a['created_at'] = str(a['created_at'])
                 a['date'] = str(a['date']) if a['date'] else None
                 a['price'] = float(a['price']) if a['price'] is not None else None
