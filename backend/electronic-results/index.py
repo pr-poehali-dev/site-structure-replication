@@ -320,11 +320,11 @@ def handler(event: dict, context) -> dict:
             return resp(200, snap, 30)
 
         cur.execute(
-            """SELECT er.tournament_id, t.title, t.date, er.published_at FROM electronic_results er
+            """SELECT er.tournament_id, t.title, t.date, er.published_at, COALESCE(t.tournament_type, 'qualifying') FROM electronic_results er
                JOIN tournaments t ON t.id = er.tournament_id
                WHERE er.status = 'published' ORDER BY t.date DESC NULLS LAST, er.tournament_id DESC"""
         )
-        items = [{'tournament_id': r[0], 'title': r[1], 'date': r[2], 'published_at': r[3]} for r in cur.fetchall()]
+        items = [{'tournament_id': r[0], 'title': r[1], 'date': r[2], 'published_at': r[3], 'tournament_type': r[4]} for r in cur.fetchall()]
         conn.close()
         return resp(200, {'items': items}, 30)
 

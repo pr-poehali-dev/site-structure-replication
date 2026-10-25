@@ -27,18 +27,62 @@ interface TournamentResult {
   regulation_url: string | null;
 }
 
+interface ElectronicItem {
+  tournament_id: number;
+  title: string;
+  date: string | null;
+  tournament_type?: string;
+}
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const TONES = {
+  amber: { box: 'border-amber-200 bg-amber-50/60', head: 'text-amber-700', icon: 'text-amber-600', hover: 'hover:border-amber-400' },
+  blue: { box: 'border-sky-200 bg-sky-50/60', head: 'text-sky-700', icon: 'text-sky-600', hover: 'hover:border-sky-400' },
+};
+
+function ElectronicColumn({ title, icon, tone, items }: { title: string; icon: string; tone: keyof typeof TONES; items: ElectronicItem[] }) {
+  const [showAll, setShowAll] = useState(false);
+  const t = TONES[tone];
+  const visible = showAll ? items : items.slice(0, ELECTRONIC_PREVIEW);
+  return (
+    <div className={`rounded-xl border p-3 ${t.box}`}>
+      <div className={`flex items-center gap-2 mb-2 font-heading font-bold ${t.head}`}>
+        <Icon name={icon} size={18} /> {title}
+        <span className="text-xs font-medium opacity-70">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">Пока нет результатов</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {visible.map(e => (
+            <Link key={e.tournament_id} to={`/result/${e.tournament_id}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white ${t.hover} hover:shadow-sm transition-all group`}>
+              <Icon name="Trophy" size={14} className={`${t.icon} shrink-0`} />
+              <span className="flex-1 min-w-0 text-sm font-medium text-primary truncate">{e.title}</span>
+              {e.date && <span className="text-xs text-muted-foreground shrink-0">{new Date(e.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>}
+            </Link>
+          ))}
+        </div>
+      )}
+      {items.length > ELECTRONIC_PREVIEW && (
+        <button onClick={() => setShowAll(v => !v)} className={`mt-2 text-sm font-medium hover:underline ${t.head}`}>
+          {showAll ? 'Свернуть' : `Показать все (${items.length})`}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function Result() {
   const [olympiads, setOlympiads] = useState<OlympiadResult[]>([]);
   const [tournaments, setTournaments] = useState<TournamentResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [electronic, setElectronic] = useState<{ tournament_id: number; title: string; date: string | null }[]>([]);
+  const [electronic, setElectronic] = useState<ElectronicItem[]>([]);
 
-  const [showAllElectronic, setShowAllElectronic] = useState(false);
   const [filterTitle, setFilterTitle] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterRating, setFilterRating] = useState('');
@@ -136,21 +180,20 @@ export default function Result() {
               <div className="w-1 h-8 bg-secondary rounded-full" />
               <h2 className="font-heading font-bold text-2xl text-primary">Электронные результаты</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {(showAllElectronic ? electronic : electronic.slice(0, ELECTRONIC_PREVIEW)).map(e => (
-                <Link key={e.tournament_id} to={`/result/${e.tournament_id}`}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border bg-white hover:border-secondary hover:shadow-sm transition-all group">
-                  <Icon name="Trophy" size={16} className="text-secondary shrink-0" />
-                  <span className="flex-1 min-w-0 text-sm font-medium text-primary group-hover:text-secondary transition-colors truncate">{e.title}</span>
-                  {e.date && <span className="text-xs text-muted-foreground shrink-0">{new Date(e.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>}
-                </Link>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ElectronicColumn
+                title="Квалификационные"
+                icon="Medal"
+                tone="amber"
+                items={electronic.filter(e => e.tournament_type === 'qualifying' || !e.tournament_type)}
+              />
+              <ElectronicColumn
+                title="Тренировочные"
+                icon="Dumbbell"
+                tone="blue"
+                items={electronic.filter(e => e.tournament_type && e.tournament_type !== 'qualifying')}
+              />
             </div>
-            {electronic.length > ELECTRONIC_PREVIEW && (
-              <button onClick={() => setShowAllElectronic(v => !v)} className="mt-3 text-sm font-medium text-secondary hover:underline">
-                {showAllElectronic ? 'Свернуть' : `Показать все (${electronic.length})`}
-              </button>
-            )}
           </section>
         )}
 
