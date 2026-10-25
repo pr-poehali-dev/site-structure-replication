@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -28,13 +29,6 @@ interface TournamentsListProps {
   cancellingId: number | null;
 }
 
-const DATE_FILTERS = [
-  { id: 'all', label: 'Все даты' },
-  { id: 'upcoming', label: 'Предстоящие' },
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-  { id: 'past', label: 'Прошедшие' },
-];
 const TYPE_FILTERS = [
   { id: 'all', label: 'Все типы' },
   { id: 'warmup', label: 'Разминочные' },
@@ -47,34 +41,14 @@ const FORMAT_FILTERS = [
   { id: 'rapid', label: 'Рапид' },
 ];
 
-function matchDate(date: string | null | undefined, f: string) {
-  if (f === 'all') return true;
-  if (!date) return false;
-  const d = new Date(date);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (f === 'past') return d < today;
-  if (d < today) return false;
-  if (f === 'upcoming') return true;
-  const end = new Date(today);
-  if (f === 'week') end.setDate(end.getDate() + 7);
-  else end.setMonth(end.getMonth() + 1);
-  return d <= end;
-}
-
-function Chips({ items, value, onChange }: { items: { id: string; label: string }[]; value: string; onChange: (v: string) => void }) {
+function FilterSelect({ items, value, onChange }: { items: { id: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {items.map(i => (
-        <button
-          key={i.id}
-          type="button"
-          onClick={() => onChange(i.id)}
-          className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${value === i.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-primary/50'}`}
-        >
-          {i.label}
-        </button>
-      ))}
-    </div>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-9 w-full sm:w-48 text-sm"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {items.map(i => <SelectItem key={i.id} value={i.id}>{i.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -84,15 +58,17 @@ export default function TournamentsList({
 }: TournamentsListProps) {
   const { user } = useAuth();
   const isSpectator = isSpectatorLogin(user?.login);
-  const [dateF, setDateF] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [typeF, setTypeF] = useState('all');
   const [formatF, setFormatF] = useState('all');
   const tournaments = allTournaments.filter(t =>
-    matchDate(t.date, dateF) &&
+    (!dateFrom || (!!t.date && t.date.slice(0, 10) >= dateFrom)) &&
+    (!dateTo || (!!t.date && t.date.slice(0, 10) <= dateTo)) &&
     (typeF === 'all' || (t.tournament_type || 'qualifying') === typeF) &&
     (formatF === 'all' || (t.rating_type || 'rapid') === formatF)
   );
-  const filtersActive = dateF !== 'all' || typeF !== 'all' || formatF !== 'all';
+  const filtersActive = !!dateFrom || !!dateTo || typeF !== 'all' || formatF !== 'all';
   return (
     <div className="lg:col-span-2">
       <div className="flex items-center gap-3 mb-7">
@@ -100,10 +76,15 @@ export default function TournamentsList({
         <div className="h-px flex-1 bg-border" />
       </div>
       {!loading && allTournaments.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-6 flex flex-col gap-2">
-          <Chips items={DATE_FILTERS} value={dateF} onChange={setDateF} />
-          <Chips items={TYPE_FILTERS} value={typeF} onChange={setTypeF} />
-          <Chips items={FORMAT_FILTERS} value={formatF} onChange={setFormatF} />
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>с</span>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
+            <span>по</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
+          </div>
+          <FilterSelect items={TYPE_FILTERS} value={typeF} onChange={setTypeF} />
+          <FilterSelect items={FORMAT_FILTERS} value={formatF} onChange={setFormatF} />
         </div>
       )}
       {loading ? (
