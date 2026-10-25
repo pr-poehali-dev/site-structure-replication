@@ -140,7 +140,7 @@ def load_config(cur, tid):
             'thanks_text_color': (row[6] if row else None) or 'black',
             'nom_rating_limit': row[7] if row else None,
             'nom_text_color': (row[8] if row else None) or 'black',
-            'awards_enabled': bool(row[9]) if row else True}
+            'awards_enabled': bool(row[9]) if row else False}
 
 
 def build_snapshot(t, rows, cfg):
@@ -270,7 +270,7 @@ def handler(event: dict, context) -> dict:
                 'nom_template_url': nrow[0] if nrow else None,
                 'nom_rating_limit': lrow[4] if lrow else None,
                 'nom_text_color': (lrow[5] if lrow else None) or 'black',
-                'awards_enabled': bool(lrow[6]) if lrow else True,
+                'awards_enabled': bool(lrow[6]) if lrow else False,
                 'thanks_rating_limit': lrow[2] if lrow else None,
                 'thanks_text_color': (lrow[3] if lrow else None) or 'black',
                 'tournament': {'title': trow[0], 'type': trow[1] or 'qualifying', 'age_category': trow[2], 'date': trow[3]},
@@ -380,7 +380,7 @@ def handler(event: dict, context) -> dict:
             thanks_color = 'white' if body.get('thanks_text_color') == 'white' else 'black'
             nom_limit = str(body.get('nom_rating_limit') or '').strip()[:100] or None
             nom_color = 'white' if body.get('nom_text_color') == 'white' else 'black'
-            awards_enabled = body.get('awards_enabled') is not False
+            awards_enabled = body.get('awards_enabled') is True
             cur.execute(
                 """INSERT INTO electronic_results (tournament_id, age_groups, diploma_rating_limit, diploma_text_color, thanks_rating_limit, thanks_text_color, nom_rating_limit, nom_text_color, awards_enabled) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                    ON CONFLICT (tournament_id) DO UPDATE SET age_groups = EXCLUDED.age_groups,

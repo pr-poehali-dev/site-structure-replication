@@ -192,7 +192,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
     if (f) docs.push({ key: `nom${i}`, label: `Диплом: ${n.label}`, url: f.file_url });
     else if (diplomaInfo?.nom_template_url) docs.push({ key: `nom:${n.kind}`, label: `Диплом: ${n.label}`, url: null });
   });
-  if (diplomaInfo?.awards_enabled === false) docs.length = 0;
+  if (diplomaInfo?.awards_enabled !== true) docs.length = 0;
 
   return (
     <div className="rounded-lg border border-secondary/40 bg-secondary/10 px-4 py-3 flex flex-col gap-2">

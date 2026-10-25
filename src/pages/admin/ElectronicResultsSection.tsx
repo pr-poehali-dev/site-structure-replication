@@ -46,7 +46,7 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [textColor, setTextColor] = useState<'black' | 'white'>('black');
   const [nomRatingLimit, setNomRatingLimit] = useState('');
   const [nomTextColor, setNomTextColor] = useState<'black' | 'white'>('black');
-  const [awardsEnabled, setAwardsEnabled] = useState(true);
+  const [awardsEnabled, setAwardsEnabled] = useState(false);
   const [thanksRatingLimit, setThanksRatingLimit] = useState('');
   const [thanksTextColor, setThanksTextColor] = useState<'black' | 'white'>('black');
 
@@ -87,7 +87,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
     setNomTextColor(data.config.nom_text_color === 'white' ? 'white' : 'black');
     setNomRatingLimit(data.config.nom_rating_limit != null ? String(data.config.nom_rating_limit) : '');
-    setAwardsEnabled(data.config.awards_enabled !== false);
+    setAwardsEnabled(data.config.awards_enabled === true);
     setThanksTextColor(data.config.thanks_text_color === 'white' ? 'white' : 'black');
     setThanksRatingLimit(data.config.thanks_rating_limit != null ? String(data.config.thanks_rating_limit) : '');
   }
