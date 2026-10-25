@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -104,7 +105,17 @@ export default function TournamentsList({
                       </div>
                     </div>
                   )}
-                  {t.description && <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{t.description}</p>}
+                  {t.description && (
+                    <Collapsible className="group">
+                      <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                        Описание турнира
+                        <Icon name="ChevronDown" size={16} className="transition-transform group-data-[state=open]:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line mt-2">{t.description}</p>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
                   <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
                     {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
                     {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
