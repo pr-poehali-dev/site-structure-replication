@@ -199,12 +199,26 @@ def handler(event: dict, context) -> dict:
                 conn.close()
                 return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Вы уже подали заявку на этот турнир'})}
 
-        cur.execute("SELECT status, max_participants FROM tournaments WHERE id = %s", (tournament_id,))
+        cur.execute("SELECT status, max_participants, rating_min, rating_max, rating_type FROM tournaments WHERE id = %s", (tournament_id,))
         t_row = cur.fetchone()
         if not t_row:
             conn.close()
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Турнир не найден'})}
-        t_status, max_participants = t_row
+        t_status, max_participants, rating_min, rating_max, t_rating_type = t_row
+        if rating_min is not None or rating_max is not None:
+            if not user_id:
+                conn.close()
+                return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Для этого турнира необходимо войти в личный кабинет'})}
+            rcol = 'rating_blitz' if t_rating_type == 'blitz' else 'rating_rapid'
+            cur.execute(f"SELECT {rcol} FROM users WHERE id = %s", (user_id,))
+            rr = cur.fetchone()
+            u_rating = rr[0] if rr and rr[0] is not None else 1200
+            if rating_max is not None and u_rating > rating_max:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': f'В этот турнир допускаются участники с рейтингом до {rating_max}. Ваш рейтинг: {u_rating}.'})}
+            if rating_min is not None and u_rating < rating_min:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': f'В этот турнир допускаются участники с рейтингом от {rating_min}. Ваш рейтинг: {u_rating}.'})}
         if t_status != 'open':
             conn.close()
             return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Приём заявок на этот турнир закрыт'})}

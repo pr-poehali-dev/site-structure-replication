@@ -340,21 +340,28 @@ def handler(event: dict, context) -> dict:
             group_a = enriched[:group_a_size]
             group_b = enriched[group_a_size:]
 
-            def create_group_tournament(suffix):
+            max_b = max((r for _, r in group_b), default=None)
+            min_a = min((r for _, r in group_a), default=None)
+            if max_b is not None and min_a is not None and min_a > max_b:
+                min_a = max_b + 1
+            limit_a = (min_a, None)
+            limit_b = (None, max_b)
+
+            def create_group_tournament(suffix, limits):
                 new_title = f"{title} — Группа {suffix}"
                 cur.execute(
                     """INSERT INTO tournaments (title, description, date, location, age_category, price, time_control,
                        diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type,
-                       max_participants, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'closed') RETURNING id""",
+                       max_participants, status, rating_min, rating_max)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'closed', %s, %s) RETURNING id""",
                     (new_title, description, date, location, age_category, price, time_control,
                      diploma_sample_url, regulation_url, announcement_url, time_msk, hall_open, rounds_count, rating_type,
-                     None)
+                     None, limits[0], limits[1])
                 )
                 return cur.fetchone()[0], new_title
 
-            group_a_id, group_a_title = create_group_tournament('А')
-            group_b_id, group_b_title = create_group_tournament('Б')
+            group_a_id, group_a_title = create_group_tournament('А', limit_a)
+            group_b_id, group_b_title = create_group_tournament('Б', limit_b)
 
             for app_id, _ in group_a:
                 cur.execute("UPDATE applications SET tournament_id = %s, tournament_title = %s WHERE id = %s", (group_a_id, group_a_title, app_id))
