@@ -133,3 +133,67 @@ export function downloadBlob(blob: Blob, name: string) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
+
+export interface ThanksData {
+  tournamentType: string;
+  tournamentTitle: string;
+  place: number | null;
+  participantFio: string;
+  coachLastDative: string;
+  coachNameDative: string;
+  institution: string | null;
+  cityCountry: string | null;
+  ageCategory: string | null;
+  ratingLimit: string | null;
+  date: string | null;
+  textColor?: 'black' | 'white';
+}
+
+export function splitCoachDative(coachFio: string | null, last: string | null, name: string | null) {
+  const l = (last || '').trim();
+  const n = (name || '').trim();
+  if (l || n) return { last: l, name: n };
+  const parts = (coachFio || '').trim().split(/\s+/);
+  return { last: parts[0] || '', name: parts.slice(1).join(' ') };
+}
+
+export async function renderThanks(templateUrl: string, d: ThanksData): Promise<Blob> {
+  const img = await loadImage(templateUrl);
+  const canvas = document.createElement('canvas');
+  const up = img.naturalWidth < 2000 ? 2 : 1;
+  canvas.width = img.naturalWidth * up;
+  canvas.height = img.naturalHeight * up;
+  const k = canvas.width / 1414;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Не удалось создать благодарственное письмо');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  whiteText = d.textColor === 'white';
+  ctx.scale(k, k);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  drawText(ctx, TYPE_LABELS[d.tournamentType] || 'Турнир по шахматам', 352, 42, { style: 'italic bold' });
+  drawText(ctx, `«${d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim()}»`, 405, 42, { style: 'italic bold' });
+
+  drawText(ctx, d.coachLastDative, 830, 84, { style: 'italic bold', maxWidth: 820 });
+  drawText(ctx, d.coachNameDative, 915, 72, { style: 'italic bold', maxWidth: 820 });
+
+  ctx.font = `italic bold 26px ${FONT}`;
+  const instLines = wrapText(ctx, (d.institution || '').trim(), 760).slice(0, 2);
+  const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
+  lines.forEach((line, i) => drawText(ctx, line, 997 + i * 31, 26, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
+
+  const who = d.place === 1 ? 'победителя' : d.place !== null && d.place >= 2 && d.place <= 3 ? 'призёра' : 'участника';
+  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820 });
+  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820 });
+
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560 });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560 });
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать благодарственное письмо'))), 'image/png');
+  });
+}

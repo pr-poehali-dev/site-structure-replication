@@ -12,7 +12,7 @@ import psycopg2
 LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
 KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3, 'courage': 1, 'young_talent': 1, 'battle_draw': 1}
 PROTOCOL_USER = '_tournament'
-FILE_KINDS = ['protocol', 'diploma', 'diploma_template', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman', 'nom_courage', 'nom_young_talent', 'nom_battle_draw']
+FILE_KINDS = ['protocol', 'diploma', 'diploma_template', 'thanks_template', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman', 'nom_courage', 'nom_young_talent', 'nom_battle_draw']
 ALLOWED_TYPES = {'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg'}
 
 
@@ -217,7 +217,7 @@ def handler(event: dict, context) -> dict:
             hdrs = event.get('headers') or {}
             token = hdrs.get('X-Auth-Token') or hdrs.get('x-auth-token') or ''
             cur.execute(
-                """SELECT u.institution, u.country_city, u.coach_fio, u.id FROM user_sessions s JOIN users u ON u.id = s.user_id
+                """SELECT u.institution, u.country_city, u.coach_fio, u.id, u.fio_genitive, u.coach_last_dative, u.coach_name_dative FROM user_sessions s JOIN users u ON u.id = s.user_id
                    WHERE s.token = %s AND s.expires_at > now()""",
                 (token,),
             )
@@ -240,6 +240,11 @@ def handler(event: dict, context) -> dict:
                 (int(tid), PROTOCOL_USER),
             )
             frow = cur.fetchone()
+            cur.execute(
+                "SELECT file_url FROM electronic_result_files WHERE tournament_id = %s AND kind = 'thanks_template' AND username = %s",
+                (int(tid), PROTOCOL_USER),
+            )
+            throw = cur.fetchone()
             cur.execute("SELECT title, tournament_type, age_category, date FROM tournaments WHERE id = %s", (int(tid),))
             trow = cur.fetchone()
             cur.execute("SELECT diploma_rating_limit, diploma_text_color FROM electronic_results WHERE tournament_id = %s", (int(tid),))
@@ -249,10 +254,12 @@ def handler(event: dict, context) -> dict:
                 return resp(404, {'error': 'Турнир не найден'})
             return resp(200, {
                 'template_url': frow[0] if frow else None,
+                'thanks_template_url': throw[0] if throw else None,
                 'rating_limit': lrow[0] if lrow else None,
                 'text_color': lrow[1] if lrow else 'black',
                 'tournament': {'title': trow[0], 'type': trow[1] or 'qualifying', 'age_category': trow[2], 'date': trow[3]},
-                'profile': {'institution': urow[0], 'country_city': urow[1], 'coach_fio': urow[2]},
+                'profile': {'institution': urow[0], 'country_city': urow[1], 'coach_fio': urow[2],
+                            'fio_genitive': urow[4], 'coach_last_dative': urow[5], 'coach_name_dative': urow[6]},
             })
         admin = params.get('admin') == '1'
         if admin:

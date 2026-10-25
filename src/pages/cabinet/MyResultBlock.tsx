@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { renderDiploma, downloadBlob } from '@/lib/diploma';
+import { renderDiploma, renderThanks, splitCoachDative, downloadBlob } from '@/lib/diploma';
 import { ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultFile, ResultsSnapshot } from '@/lib/electronicResults';
 
 interface DiplomaInfo {
   template_url: string | null;
+  thanks_template_url?: string | null;
   rating_limit: string | null;
   text_color?: 'black' | 'white';
   tournament: { title: string; type: string; age_category: string | null; date: string | null };
-  profile: { institution: string | null; country_city: string | null; coach_fio: string | null };
+  profile: { institution: string | null; country_city: string | null; coach_fio: string | null; fio_genitive?: string | null; coach_last_dative?: string | null; coach_name_dative?: string | null };
 }
 
 interface Props {
@@ -82,6 +83,36 @@ export default function MyResultBlock({ tournamentId }: Props) {
     setGenerating(false);
   }
 
+  async function handleGenerateThanks() {
+    if (!diplomaInfo?.thanks_template_url || !snap || !user) return;
+    const mine = snap.overall.find(r => r.user_id === user.id);
+    if (!mine) return;
+    const grp = snap.groups.find(g => g.name === mine.group);
+    const grpRow = grp?.table.find(r => r.user_id === user.id);
+    const c = splitCoachDative(diplomaInfo.profile.coach_fio, diplomaInfo.profile.coach_last_dative ?? null, diplomaInfo.profile.coach_name_dative ?? null);
+    setGenerating(true);
+    try {
+      const blob = await renderThanks(diplomaInfo.thanks_template_url, {
+        tournamentType: diplomaInfo.tournament.type,
+        tournamentTitle: diplomaInfo.tournament.title,
+        place: grpRow ? grpRow.place ?? null : mine.rank,
+        participantFio: (diplomaInfo.profile.fio_genitive || '').trim() || mine.fio,
+        coachLastDative: c.last,
+        coachNameDative: c.name,
+        institution: diplomaInfo.profile.institution,
+        cityCountry: diplomaInfo.profile.country_city,
+        ageCategory: diplomaInfo.tournament.age_category,
+        ratingLimit: diplomaInfo.rating_limit,
+        textColor: diplomaInfo.text_color === 'white' ? 'white' : 'black',
+        date: diplomaInfo.tournament.date,
+      });
+      downloadBlob(blob, `Благодарственное письмо - ${mine.fio}.png`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось создать письмо');
+    }
+    setGenerating(false);
+  }
+
   if (loading) {
     return <p className="text-xs text-gray-400 flex items-center gap-2"><Icon name="Loader2" size={14} className="animate-spin" /> Загружаем ваш результат...</p>;
   }
@@ -112,7 +143,11 @@ export default function MyResultBlock({ tournamentId }: Props) {
   const docs: { key: string; label: string; url: string | null }[] = [];
   if (manualDiploma) docs.push({ key: 'diploma', label: 'Диплом', url: manualDiploma.file_url });
   else if (hasTemplate) docs.push({ key: 'diploma', label: 'Диплом', url: null });
-  files.filter(f => f.kind === 'thanks').forEach(f => docs.push({ key: 'thanks', label: 'Благодарственное письмо', url: f.file_url }));
+  const manualThanks = files.filter(f => f.kind === 'thanks');
+  manualThanks.forEach(f => docs.push({ key: 'thanks', label: 'Благодарственное письмо', url: f.file_url }));
+  if (!manualThanks.length && diplomaInfo?.thanks_template_url && (diplomaInfo.profile.coach_fio || '').trim()) {
+    docs.push({ key: 'thanks', label: 'Благодарственное письмо', url: null });
+  }
   noms.forEach((n, i) => {
     const f = files.find(x => x.kind === `nom_${n.kind}`);
     if (f) docs.push({ key: `nom${i}`, label: `Диплом: ${n.label}`, url: f.file_url });
@@ -152,7 +187,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
                     <Icon name="Download" size={13} /> Скачать
                   </a>
                 ) : (
-                  <button type="button" onClick={handleGenerate} disabled={generating}
+                  <button type="button" onClick={d.key === 'thanks' ? handleGenerateThanks : handleGenerate} disabled={generating}
                     className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 shrink-0 disabled:opacity-60">
                     <Icon name={generating ? 'Loader2' : 'Download'} size={13} className={generating ? 'animate-spin' : ''} /> Скачать
                   </button>

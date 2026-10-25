@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import FileSlot from './FileSlot';
 import { toast } from 'sonner';
-import { renderDiploma } from '@/lib/diploma';
+import { renderDiploma, renderThanks } from '@/lib/diploma';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
 } from '@/lib/electronicResults';
@@ -188,6 +188,33 @@ export default function ElectronicResultsSection({ password }: Props) {
     setPreviewing(false);
   };
 
+  const thanksTemplateFile = files.find(f => f.kind === 'thanks_template');
+
+  const showThanksSample = async () => {
+    if (!thanksTemplateFile) return;
+    setPreviewing(true);
+    try {
+      const blob = await renderThanks(thanksTemplateFile.file_url, {
+        tournamentType: tInfo.type,
+        tournamentTitle: title,
+        place: 2,
+        participantFio: 'Ивановой Марии',
+        coachLastDative: 'Смирновой',
+        coachNameDative: 'Ирине Валерьевне',
+        institution: 'Детский интеллектуальный клуб "Гарде"',
+        cityCountry: 'г. Пермь, Россия',
+        ageCategory: tInfo.age_category,
+        ratingLimit: ratingLimit.trim() || null,
+        textColor,
+        date: tInfo.date,
+      });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось собрать образец');
+    }
+    setPreviewing(false);
+  };
+
   const noAge = players.filter(p => p.age === null).length;
   const noGender = players.filter(p => !p.gender).length;
 
@@ -229,6 +256,19 @@ export default function ElectronicResultsSection({ password }: Props) {
             <h3 className="font-heading font-bold text-base text-primary mb-2">Протокол турнира</h3>
             {slot('_tournament', 'protocol', 'Загрузить протокол')}
             <p className="text-xs text-gray-400 mt-2">PDF, PNG или JPG до 8 МБ. Появится на странице результатов и в личном кабинете участников.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон благодарственного письма</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {slot('_tournament', 'thanks_template', 'Загрузить шаблон письма')}
+              {thanksTemplateFile && (
+                <Button type="button" variant="outline" disabled={previewing} onClick={showThanksSample}>
+                  <Icon name={previewing ? 'Loader2' : 'Eye'} size={15} className={`mr-2 ${previewing ? 'animate-spin' : ''}`} /> Посмотреть образец
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Пустой бланк PNG или JPG до 8 МБ. Письмо получает участник, у которого в профиле указан тренер. Цвет текста и рейтинг берутся из настроек диплома ниже.</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
