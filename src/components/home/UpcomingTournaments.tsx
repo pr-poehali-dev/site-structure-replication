@@ -14,6 +14,7 @@ interface Item {
   price: number | null;
   status: string;
   tournament_type?: string;
+  rating_type?: string;
   spots_left?: number | null;
 }
 
@@ -76,6 +77,9 @@ export default function UpcomingTournaments() {
                       <span className="capitalize">{p.weekday}{t.time_msk ? `, ${t.time_msk} МСК` : ''}</span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${meta.badge}`}>
                         <Icon name={meta.icon} size={11} /> {meta.label}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${t.rating_type === 'blitz' ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-100 text-sky-800 border-sky-300'}`}>
+                        <Icon name={t.rating_type === 'blitz' ? 'Zap' : 'Clock'} size={11} /> {t.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}
                       </span>
                     </p>
                   </div>
