@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { ru } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -58,17 +61,17 @@ export default function TournamentsList({
 }: TournamentsListProps) {
   const { user } = useAuth();
   const isSpectator = isSpectatorLogin(user?.login);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [pickedDate, setPickedDate] = useState<Date | undefined>();
+  const toKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const tournamentDays = allTournaments.filter(t => t.date).map(t => { const [y, m, d] = t.date!.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); });
   const [typeF, setTypeF] = useState('all');
   const [formatF, setFormatF] = useState('all');
   const tournaments = allTournaments.filter(t =>
-    (!dateFrom || (!!t.date && t.date.slice(0, 10) >= dateFrom)) &&
-    (!dateTo || (!!t.date && t.date.slice(0, 10) <= dateTo)) &&
+    (!pickedDate || t.date?.slice(0, 10) === toKey(pickedDate)) &&
     (typeF === 'all' || (t.tournament_type || 'qualifying') === typeF) &&
     (formatF === 'all' || (t.rating_type || 'rapid') === formatF)
   );
-  const filtersActive = !!dateFrom || !!dateTo || typeF !== 'all' || formatF !== 'all';
+  const filtersActive = !!pickedDate || typeF !== 'all' || formatF !== 'all';
   return (
     <div className="lg:col-span-2">
       <div className="flex items-center gap-3 mb-7">
@@ -77,12 +80,30 @@ export default function TournamentsList({
       </div>
       {!loading && allTournaments.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>с</span>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
-            <span>по</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-9 w-full sm:w-48 justify-start text-sm font-normal">
+                <Icon name="CalendarDays" size={16} className="mr-2" />
+                {pickedDate ? pickedDate.toLocaleDateString('ru-RU') : 'Любая дата'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                locale={ru}
+                weekStartsOn={1}
+                selected={pickedDate}
+                onSelect={setPickedDate}
+                modifiers={{ hasTournament: tournamentDays }}
+                modifiersClassNames={{ hasTournament: 'bg-secondary/20 text-secondary font-bold rounded-md' }}
+              />
+              {pickedDate && (
+                <div className="border-t p-2">
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setPickedDate(undefined)}>Сбросить дату</Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
           <FilterSelect items={TYPE_FILTERS} value={typeF} onChange={setTypeF} />
           <FilterSelect items={FORMAT_FILTERS} value={formatF} onChange={setFormatF} />
         </div>
