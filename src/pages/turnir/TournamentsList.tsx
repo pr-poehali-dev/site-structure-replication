@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
@@ -27,18 +28,84 @@ interface TournamentsListProps {
   cancellingId: number | null;
 }
 
+const DATE_FILTERS = [
+  { id: 'all', label: 'Все даты' },
+  { id: 'upcoming', label: 'Предстоящие' },
+  { id: 'week', label: 'Неделя' },
+  { id: 'month', label: 'Месяц' },
+  { id: 'past', label: 'Прошедшие' },
+];
+const TYPE_FILTERS = [
+  { id: 'all', label: 'Все типы' },
+  { id: 'warmup', label: 'Разминочные' },
+  { id: 'training', label: 'Тренировочные' },
+  { id: 'qualifying', label: 'Квалификационные' },
+];
+const FORMAT_FILTERS = [
+  { id: 'all', label: 'Любой формат' },
+  { id: 'blitz', label: 'Блиц' },
+  { id: 'rapid', label: 'Рапид' },
+];
+
+function matchDate(date: string | null | undefined, f: string) {
+  if (f === 'all') return true;
+  if (!date) return false;
+  const d = new Date(date);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  if (f === 'past') return d < today;
+  if (d < today) return false;
+  if (f === 'upcoming') return true;
+  const end = new Date(today);
+  if (f === 'week') end.setDate(end.getDate() + 7);
+  else end.setMonth(end.getMonth() + 1);
+  return d <= end;
+}
+
+function Chips({ items, value, onChange }: { items: { id: string; label: string }[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map(i => (
+        <button
+          key={i.id}
+          type="button"
+          onClick={() => onChange(i.id)}
+          className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${value === i.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-primary/50'}`}
+        >
+          {i.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function TournamentsList({
-  tournaments, loading, onOpenModal, onOpenParticipants, onOpenImagePreview,
+  tournaments: allTournaments, loading, onOpenModal, onOpenParticipants, onOpenImagePreview,
   appliedTournamentIds, myApplications, onCancelApplication, cancellingId,
 }: TournamentsListProps) {
   const { user } = useAuth();
   const isSpectator = isSpectatorLogin(user?.login);
+  const [dateF, setDateF] = useState('all');
+  const [typeF, setTypeF] = useState('all');
+  const [formatF, setFormatF] = useState('all');
+  const tournaments = allTournaments.filter(t =>
+    matchDate(t.date, dateF) &&
+    (typeF === 'all' || (t.tournament_type || 'qualifying') === typeF) &&
+    (formatF === 'all' || (t.rating_type || 'rapid') === formatF)
+  );
+  const filtersActive = dateF !== 'all' || typeF !== 'all' || formatF !== 'all';
   return (
     <div className="lg:col-span-2">
       <div className="flex items-center gap-3 mb-7">
         <h2 className="font-heading font-bold text-2xl md:text-3xl text-primary uppercase shrink-0">Список турниров</h2>
         <div className="h-px flex-1 bg-border" />
       </div>
+      {!loading && allTournaments.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-6 flex flex-col gap-2">
+          <Chips items={DATE_FILTERS} value={dateF} onChange={setDateF} />
+          <Chips items={TYPE_FILTERS} value={typeF} onChange={setTypeF} />
+          <Chips items={FORMAT_FILTERS} value={formatF} onChange={setFormatF} />
+        </div>
+      )}
       {loading ? (
         <div className="text-center py-20 text-gray-400">
           <Icon name="Loader" size={36} className="mx-auto mb-3 opacity-40 animate-spin" />
@@ -47,8 +114,8 @@ export default function TournamentsList({
       ) : tournaments.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Icon name="Swords" size={48} className="mx-auto mb-4 opacity-20" />
-          <p className="text-xl font-medium">Турниров пока нет</p>
-          <p className="mt-2 text-sm">Следите за обновлениями — скоро появятся новые соревнования</p>
+          <p className="text-xl font-medium">{filtersActive ? 'Ничего не найдено' : 'Турниров пока нет'}</p>
+          <p className="mt-2 text-sm">{filtersActive ? 'Попробуйте изменить фильтры' : 'Следите за обновлениями — скоро появятся новые соревнования'}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
