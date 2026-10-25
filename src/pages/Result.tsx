@@ -8,6 +8,7 @@ import { ELECTRONIC_RESULTS_URL } from '@/lib/electronicResults';
 
 const RESULTS_URL = 'https://functions.poehali.dev/63f1c6fa-4f4f-4834-94be-73b844b9d51a';
 const PAGE_SIZE = 20;
+const ELECTRONIC_PREVIEW = 8;
 
 interface OlympiadResult {
   id: number;
@@ -37,6 +38,7 @@ export default function Result() {
   const [loading, setLoading] = useState(true);
   const [electronic, setElectronic] = useState<{ tournament_id: number; title: string; date: string | null }[]>([]);
 
+  const [showAllElectronic, setShowAllElectronic] = useState(false);
   const [filterTitle, setFilterTitle] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterRating, setFilterRating] = useState('');
@@ -130,22 +132,25 @@ export default function Result() {
 
         {electronic.length > 0 && (
           <section>
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-1 h-8 bg-secondary rounded-full" />
               <h2 className="font-heading font-bold text-2xl text-primary">Электронные результаты</h2>
             </div>
-            <div className="flex flex-col gap-3">
-              {electronic.map(e => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {(showAllElectronic ? electronic : electronic.slice(0, ELECTRONIC_PREVIEW)).map(e => (
                 <Link key={e.tournament_id} to={`/result/${e.tournament_id}`}
-                  className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-white hover:border-secondary hover:shadow-md transition-all group">
-                  <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
-                    <Icon name="Trophy" size={20} className="text-secondary" />
-                  </div>
-                  <span className="flex-1 font-medium text-primary group-hover:text-secondary transition-colors">{e.title}</span>
-                  <Icon name="ChevronRight" size={16} className="text-muted-foreground group-hover:text-secondary shrink-0" />
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border bg-white hover:border-secondary hover:shadow-sm transition-all group">
+                  <Icon name="Trophy" size={16} className="text-secondary shrink-0" />
+                  <span className="flex-1 min-w-0 text-sm font-medium text-primary group-hover:text-secondary transition-colors truncate">{e.title}</span>
+                  {e.date && <span className="text-xs text-muted-foreground shrink-0">{new Date(e.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>}
                 </Link>
               ))}
             </div>
+            {electronic.length > ELECTRONIC_PREVIEW && (
+              <button onClick={() => setShowAllElectronic(v => !v)} className="mt-3 text-sm font-medium text-secondary hover:underline">
+                {showAllElectronic ? 'Свернуть' : `Показать все (${electronic.length})`}
+              </button>
+            )}
           </section>
         )}
 
