@@ -187,8 +187,8 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
   lines.forEach((line, i) => drawText(ctx, line, 997 + i * 35, 30, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
 
   const who = d.place === 1 ? 'победителя' : d.place !== null && d.place >= 2 && d.place <= 3 ? 'призёра' : 'участника';
-  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820, x: LINE_X });
-  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820, x: LINE_X });
+  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1190, 30, { style: 'italic bold', maxWidth: 820, x: LINE_X });
+  drawText(ctx, d.participantFio, 1250, 44, { style: 'italic bold', maxWidth: 820, x: LINE_X });
 
   drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560, x: LINE_X });
   drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560, x: LINE_X });
