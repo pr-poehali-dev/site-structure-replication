@@ -131,6 +131,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
     setGenerating(true);
     try {
       const blob = await renderNominationDiploma(diplomaInfo.nom_template_url, {
+        tournamentType: diplomaInfo.tournament.type,
         tournamentTitle: diplomaInfo.tournament.title,
         nominationLabel: entry.n.label,
         place: entry.e.place,

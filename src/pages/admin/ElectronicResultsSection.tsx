@@ -254,6 +254,7 @@ export default function ElectronicResultsSection({ password }: Props) {
       const nm = noms.find(n => n.username.toLowerCase() === uname) || noms[0];
       const def = NOMINATIONS.find(x => x.kind === nm?.kind) || NOMINATIONS[0];
       const blob = await renderNominationDiploma(nomTemplateFile.file_url, {
+        tournamentType: tInfo.type,
         tournamentTitle: title,
         nominationLabel: def.label,
         place: nm?.place ?? 1,

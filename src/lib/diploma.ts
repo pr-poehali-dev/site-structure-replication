@@ -16,7 +16,7 @@ export interface DiplomaData {
 const TYPE_LABELS: Record<string, string> = {
   warmup: 'Разминочный турнир по шахматам',
   training: 'Тренировочный турнир по шахматам',
-  qualifying: 'Квалификационный турнир по шахматам',
+  qualifying: 'Всероссийский турнир по шахматам',
 };
 
 const ROMAN = ['', 'I', 'II', 'III'];
@@ -180,10 +180,10 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
   drawText(ctx, d.coachLastDative, 830, 84, { style: 'italic bold', maxWidth: 820 });
   drawText(ctx, d.coachNameDative, 915, 72, { style: 'italic bold', maxWidth: 820 });
 
-  ctx.font = `italic bold 26px ${FONT}`;
+  ctx.font = `italic bold 30px ${FONT}`;
   const instLines = wrapText(ctx, (d.institution || '').trim(), 760).slice(0, 2);
   const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
-  lines.forEach((line, i) => drawText(ctx, line, 997 + i * 31, 26, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
+  lines.forEach((line, i) => drawText(ctx, line, 997 + i * 35, 30, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
 
   const who = d.place === 1 ? 'победителя' : d.place !== null && d.place >= 2 && d.place <= 3 ? 'призёра' : 'участника';
   drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820 });
@@ -200,6 +200,7 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
 
 
 export interface NominationDiplomaData {
+  tournamentType?: string;
   tournamentTitle: string;
   nominationLabel: string;
   place: number | null;
@@ -233,13 +234,16 @@ export async function renderNominationDiploma(templateUrl: string, d: Nomination
   ctx.textBaseline = 'middle';
 
   const title = d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim();
+  const isQual = d.tournamentType === 'qualifying';
   ctx.font = `italic bold 36px ${FONT}`;
-  const titleLines = wrapText(ctx, title, 920).slice(0, 3);
-  const ty = 372 - ((titleLines.length - 1) * 19);
-  titleLines.forEach((line, i) => drawText(ctx, line, ty + i * 38, 36, { style: 'italic bold', maxWidth: 940, x: 882 }));
+  const titleLines = wrapText(ctx, isQual ? `«${title}»` : title, 920).slice(0, 3);
+  const allLines = isQual ? [TYPE_LABELS.qualifying, ...titleLines] : titleLines;
+  const ty = 372 - ((allLines.length - 1) * 19);
+  allLines.forEach((line, i) => drawText(ctx, line, ty + i * 38, 36, { style: 'italic bold', maxWidth: 940, x: 882 }));
 
-  if (d.showPlace !== false && d.place !== null && d.place >= 1 && d.place <= 3) {
-    drawText(ctx, `за ${ROMAN[d.place]} место`, 655, 64, { x: 893 });
+  const placeNum = d.showPlace === false || d.place === null ? 1 : d.place;
+  if (placeNum >= 1 && placeNum <= 3) {
+    drawText(ctx, `за ${ROMAN[placeNum]} место`, 655, 64, { x: 893 });
   }
   drawText(ctx, `в номинации «${d.nominationLabel}»`, 727, 31, { style: 'italic bold', maxWidth: 840, x: 880 });
   if (d.category) {
@@ -247,11 +251,11 @@ export async function renderNominationDiploma(templateUrl: string, d: Nomination
   }
 
   drawText(ctx, d.fio, 925, 82, { style: 'italic bold', color: '#d2691e', maxWidth: 800, x: 886 });
-  ctx.font = `italic bold 22px ${FONT}`;
-  const instLines = wrapText(ctx, (d.institution || '').trim(), 620).slice(0, 3);
+  ctx.font = `italic bold 26px ${FONT}`;
+  const instLines = wrapText(ctx, (d.institution || '').trim(), 640).slice(0, 3);
   const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
-  const startY = 1028 - ((lines.length - 2) * 13);
-  lines.forEach((line, i) => drawText(ctx, line, startY + i * 26, 22, { style: 'italic bold', color: '#333333', maxWidth: 640, x: 882 }));
+  const startY = 1028 - ((lines.length - 2) * 15);
+  lines.forEach((line, i) => drawText(ctx, line, startY + i * 31, 26, { style: 'italic bold', color: '#333333', maxWidth: 640, x: 882 }));
 
   if (d.coach) {
     drawText(ctx, 'Тренер:', 1197, 34, { x: 938 });
