@@ -20,7 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const ROMAN = ['', 'I', 'II', 'III'];
-const CENTER_X = 820;
+const CENTER_X = 894;
 const FONT = '"Times New Roman", Times, serif';
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -157,28 +157,6 @@ export function splitCoachDative(coachFio: string | null, last: string | null, n
   return { last: parts[0] || '', name: parts.slice(1).join(' ') };
 }
 
-function detectWordCenter(ctx: CanvasRenderingContext2D, width: number, k: number, y0: number, y1: number): number | null {
-  const from = Math.round(250 * k);
-  const w = Math.min(width, Math.round(1300 * k)) - from;
-  const top = Math.round(y0 * k);
-  const hgt = Math.round((y1 - y0) * k);
-  if (w <= 0 || hgt <= 0) return null;
-  const data = ctx.getImageData(from, top, w, hgt).data;
-  let min = w;
-  let max = -1;
-  for (let y = 0; y < hgt; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      if (data[i] + data[i + 1] + data[i + 2] < 270) {
-        if (x < min) min = x;
-        if (x > max) max = x;
-      }
-    }
-  }
-  if (max - min < 60) return null;
-  return (from + (min + max) / 2) / k;
-}
-
 export async function renderThanks(templateUrl: string, d: ThanksData): Promise<Blob> {
   const img = await loadImage(templateUrl);
   const canvas = document.createElement('canvas');
@@ -191,30 +169,29 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  const THANKS_X = detectWordCenter(ctx, canvas.width, k, 700, 790) ?? CENTER_X;
   whiteText = d.textColor === 'white';
   ctx.scale(k, k);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  drawText(ctx, TYPE_LABELS[d.tournamentType] || 'Турнир по шахматам', 352, 42, { style: 'italic bold', x: THANKS_X });
-  drawText(ctx, `«${d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim()}»`, 405, 42, { style: 'italic bold', x: THANKS_X });
+  drawText(ctx, TYPE_LABELS[d.tournamentType] || 'Турнир по шахматам', 352, 42, { style: 'italic bold' });
+  drawText(ctx, `«${d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim()}»`, 405, 42, { style: 'italic bold' });
 
-  drawText(ctx, d.coachLastDative, 830, 84, { style: 'italic bold', maxWidth: 820, x: THANKS_X });
-  drawText(ctx, d.coachNameDative, 915, 72, { style: 'italic bold', maxWidth: 820, x: THANKS_X });
+  drawText(ctx, d.coachLastDative, 830, 84, { style: 'italic bold', maxWidth: 820 });
+  drawText(ctx, d.coachNameDative, 915, 72, { style: 'italic bold', maxWidth: 820 });
 
   ctx.font = `italic bold 30px ${FONT}`;
   const instLines = wrapText(ctx, (d.institution || '').trim(), 760).slice(0, 2);
   const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
-  lines.forEach((line, i) => drawText(ctx, line, 997 + i * 35, 30, { style: 'italic bold', color: '#333333', maxWidth: 780, x: THANKS_X }));
+  lines.forEach((line, i) => drawText(ctx, line, 997 + i * 35, 30, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
 
   const who = d.place === 1 ? 'победителя' : d.place !== null && d.place >= 2 && d.place <= 3 ? 'призёра' : 'участника';
-  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820, x: THANKS_X });
-  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820, x: THANKS_X });
+  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820 });
+  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820 });
 
-  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560, x: THANKS_X });
-  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560, x: THANKS_X });
-  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560, x: THANKS_X });
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560 });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560 });
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать благодарственное письмо'))), 'image/png');
