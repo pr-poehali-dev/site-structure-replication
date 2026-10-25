@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -194,6 +195,9 @@ export default function MyResultBlock({ tournamentId }: Props) {
     else if (diplomaInfo?.nom_template_url) docs.push({ key: `nom:${n.kind}`, label: `Диплом: ${n.label}`, url: null });
   });
   if (diplomaInfo?.awards_enabled !== true) docs.length = 0;
+  const canOrderAwards = (me.rank != null && me.rank >= 1 && me.rank <= 3)
+    || (groupRow?.place != null && groupRow.place >= 1 && groupRow.place <= 3)
+    || noms.length > 0;
 
   return (
     <div className="rounded-lg border border-secondary/40 bg-secondary/10 px-4 py-3 flex flex-col gap-2">
@@ -238,6 +242,11 @@ export default function MyResultBlock({ tournamentId }: Props) {
             ))}
           </div>
         </div>
+      )}
+      {canOrderAwards && (
+        <Link to="/kubki" className="flex items-center justify-center gap-2 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold px-5 py-3 text-sm shadow-md transition-colors">
+          <Icon name="Trophy" size={18} /> Заказать награды
+        </Link>
       )}
       {protocolLink}
       {noms.length > 0 && (
