@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { renderDiploma, renderThanks, splitCoachDative, downloadBlob } from '@/lib/diploma';
+import { renderDiploma, renderThanks, renderNominationDiploma, splitCoachDative, downloadBlob } from '@/lib/diploma';
 import { ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultFile, ResultsSnapshot } from '@/lib/electronicResults';
 
 interface DiplomaInfo {
@@ -11,6 +11,10 @@ interface DiplomaInfo {
   rating_limit: string | null;
   text_color?: 'black' | 'white';
   thanks_rating_limit?: string | null;
+  nom_template_url?: string | null;
+  nom_rating_limit?: string | null;
+  nom_text_color?: 'black' | 'white';
+  awards_enabled?: boolean;
   thanks_text_color?: 'black' | 'white';
   tournament: { title: string; type: string; age_category: string | null; date: string | null };
   profile: { institution: string | null; country_city: string | null; coach_fio: string | null; fio_genitive?: string | null; coach_last_dative?: string | null; coach_name_dative?: string | null };
@@ -115,6 +119,39 @@ export default function MyResultBlock({ tournamentId }: Props) {
     setGenerating(false);
   }
 
+  async function handleGenerateNom(kind: string) {
+    if (!diplomaInfo?.nom_template_url || !snap || !user) return;
+    const mine = snap.overall.find(r => r.user_id === user.id);
+    if (!mine) return;
+    const grp = snap.groups.find(g => g.name === mine.group);
+    const entry = grp ? NOMINATIONS.flatMap(n => (grp.nominations[n.kind] || [])
+      .filter(e => e.username.toLowerCase() === mine.username.toLowerCase())
+      .map(e => ({ n, e }))).find(x => x.n.kind === kind) : undefined;
+    if (!entry) return;
+    setGenerating(true);
+    try {
+      const blob = await renderNominationDiploma(diplomaInfo.nom_template_url, {
+        tournamentTitle: diplomaInfo.tournament.title,
+        nominationLabel: entry.n.label,
+        place: entry.e.place,
+        showPlace: entry.n.places > 1,
+        category: grp ? grp.name : null,
+        fio: mine.fio,
+        institution: diplomaInfo.profile.institution,
+        cityCountry: diplomaInfo.profile.country_city,
+        coach: diplomaInfo.profile.coach_fio,
+        ageCategory: diplomaInfo.tournament.age_category,
+        ratingLimit: diplomaInfo.nom_rating_limit ?? null,
+        textColor: diplomaInfo.nom_text_color === 'white' ? 'white' : 'black',
+        date: diplomaInfo.tournament.date,
+      });
+      downloadBlob(blob, `Диплом номинации - ${mine.fio}.png`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось создать диплом');
+    }
+    setGenerating(false);
+  }
+
   if (loading) {
     return <p className="text-xs text-gray-400 flex items-center gap-2"><Icon name="Loader2" size={14} className="animate-spin" /> Загружаем ваш результат...</p>;
   }
@@ -153,7 +190,9 @@ export default function MyResultBlock({ tournamentId }: Props) {
   noms.forEach((n, i) => {
     const f = files.find(x => x.kind === `nom_${n.kind}`);
     if (f) docs.push({ key: `nom${i}`, label: `Диплом: ${n.label}`, url: f.file_url });
+    else if (diplomaInfo?.nom_template_url) docs.push({ key: `nom:${n.kind}`, label: `Диплом: ${n.label}`, url: null });
   });
+  if (diplomaInfo?.awards_enabled === false) docs.length = 0;
 
   return (
     <div className="rounded-lg border border-secondary/40 bg-secondary/10 px-4 py-3 flex flex-col gap-2">
@@ -189,7 +228,7 @@ export default function MyResultBlock({ tournamentId }: Props) {
                     <Icon name="Download" size={13} /> Скачать
                   </a>
                 ) : (
-                  <button type="button" onClick={d.key === 'thanks' ? handleGenerateThanks : handleGenerate} disabled={generating}
+                  <button type="button" onClick={d.key === 'thanks' ? handleGenerateThanks : d.key.startsWith('nom:') ? () => handleGenerateNom(d.key.slice(4)) : handleGenerate} disabled={generating}
                     className="text-xs px-3 py-1.5 rounded-full font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1.5 shrink-0 disabled:opacity-60">
                     <Icon name={generating ? 'Loader2' : 'Download'} size={13} className={generating ? 'animate-spin' : ''} /> Скачать
                   </button>

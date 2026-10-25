@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import Icon from '@/components/ui/icon';
 import FileSlot from './FileSlot';
 import { toast } from 'sonner';
-import { renderDiploma, renderThanks, splitCoachDative } from '@/lib/diploma';
+import { renderDiploma, renderThanks, renderNominationDiploma, splitCoachDative } from '@/lib/diploma';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
 } from '@/lib/electronicResults';
@@ -43,6 +44,9 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [sampleUserId, setSampleUserId] = useState('');
   const [previewing, setPreviewing] = useState(false);
   const [textColor, setTextColor] = useState<'black' | 'white'>('black');
+  const [nomRatingLimit, setNomRatingLimit] = useState('');
+  const [nomTextColor, setNomTextColor] = useState<'black' | 'white'>('black');
+  const [awardsEnabled, setAwardsEnabled] = useState(true);
   const [thanksRatingLimit, setThanksRatingLimit] = useState('');
   const [thanksTextColor, setThanksTextColor] = useState<'black' | 'white'>('black');
 
@@ -81,6 +85,9 @@ export default function ElectronicResultsSection({ password }: Props) {
     setSampleUserId('');
     setTextColor(data.config.diploma_text_color === 'white' ? 'white' : 'black');
     setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
+    setNomTextColor(data.config.nom_text_color === 'white' ? 'white' : 'black');
+    setNomRatingLimit(data.config.nom_rating_limit != null ? String(data.config.nom_rating_limit) : '');
+    setAwardsEnabled(data.config.awards_enabled !== false);
     setThanksTextColor(data.config.thanks_text_color === 'white' ? 'white' : 'black');
     setThanksRatingLimit(data.config.thanks_rating_limit != null ? String(data.config.thanks_rating_limit) : '');
   }
@@ -89,13 +96,13 @@ export default function ElectronicResultsSection({ password }: Props) {
     if (currentId) await openTournament(currentId);
   }
 
-  async function send(action: 'save' | 'publish' | 'unpublish') {
+  async function send(action: 'save' | 'publish' | 'unpublish', awardsOverride?: boolean) {
     if (!currentId) return;
     setSaving(true);
     const res = await fetch(ELECTRONIC_RESULTS_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit, diploma_text_color: textColor, thanks_rating_limit: thanksRatingLimit, thanks_text_color: thanksTextColor }),
+      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit, diploma_text_color: textColor, thanks_rating_limit: thanksRatingLimit, thanks_text_color: thanksTextColor, nom_rating_limit: nomRatingLimit, nom_text_color: nomTextColor, awards_enabled: awardsOverride ?? awardsEnabled }),
     });
     const data = await res.json().catch(() => ({}));
     setSaving(false);
@@ -236,11 +243,51 @@ export default function ElectronicResultsSection({ password }: Props) {
     setPreviewing(false);
   };
 
+  const nomTemplateFile = files.find(f => f.kind === 'nom_template');
+
+  const showNomSample = async () => {
+    if (!nomTemplateFile) return;
+    setPreviewing(true);
+    try {
+      const uname = samplePlayer?.username.toLowerCase();
+      const own = sampleGroup ? sampleGroup.name : null;
+      const nm = noms.find(n => n.username.toLowerCase() === uname) || noms[0];
+      const def = NOMINATIONS.find(x => x.kind === nm?.kind) || NOMINATIONS[0];
+      const blob = await renderNominationDiploma(nomTemplateFile.file_url, {
+        tournamentTitle: title,
+        nominationLabel: def.label,
+        place: nm?.place ?? 1,
+        category: nm?.group_name || own,
+        fio: samplePlayer?.fio || 'Иванова Мария',
+        institution: sampleProfile?.institution || 'МБОУ СОШ № 1',
+        cityCountry: sampleProfile?.country_city || 'Москва, Россия',
+        coach: sampleProfile?.coach_fio || 'Иванов Иван Иванович',
+        ageCategory: tInfo.age_category,
+        ratingLimit: nomRatingLimit.trim() || null,
+        textColor: nomTextColor,
+        date: tInfo.date,
+        showPlace: def.places > 1,
+      });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Не удалось собрать образец');
+    }
+    setPreviewing(false);
+  };
+
   const noAge = players.filter(p => p.age === null).length;
   const noGender = players.filter(p => !p.gender).length;
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-primary">Наградные документы для участников</p>
+          <p className="text-xs text-gray-400">{awardsEnabled ? 'Включено: участники могут скачать диплом, письмо и дипломы номинаций' : 'Выключено: наградные документы у участников не отображаются'}</p>
+        </div>
+        <Switch checked={awardsEnabled} disabled={saving || loading} onCheckedChange={v => { setAwardsEnabled(v); send('save', v); }} />
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <button onClick={() => { setCurrentId(null); setPreview(null); }} className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1 mb-1">
@@ -287,6 +334,33 @@ export default function ElectronicResultsSection({ password }: Props) {
               </select>
             </div>
           )}
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон диплома для номинаций</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {slot('_tournament', 'nom_template', 'Загрузить шаблон диплома номинации')}
+              {nomTemplateFile && (
+                <Button type="button" variant="outline" disabled={previewing} onClick={showNomSample}>
+                  <Icon name={previewing ? 'Loader2' : 'Eye'} size={15} className={`mr-2 ${previewing ? 'animate-spin' : ''}`} /> Посмотреть образец
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Рейтинг МШ:</span>
+              <Input className="w-48" type="text" maxLength={100} placeholder="например: от 1000 или до 800" value={nomRatingLimit} onChange={e => setNomRatingLimit(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Цвет текста:</span>
+              {(['black', 'white'] as const).map(c => (
+                <button key={c} type="button" onClick={() => setNomTextColor(c)}
+                  className={`px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 ${nomTextColor === c ? 'border-secondary ring-2 ring-secondary/40 font-semibold' : 'border-gray-300 hover:border-secondary'}`}>
+                  <span className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${c === 'white' ? 'bg-white' : 'bg-black'}`} />
+                  {c === 'white' ? 'Белый' : 'Чёрный'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Один бланк для всех номинаций. Название номинации, место и данные участника подставляются автоматически. Образец строится по участнику, у которого есть номинация. Не забудьте нажать «Сохранить».</p>
+          </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон благодарственного письма</h3>

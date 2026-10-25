@@ -61,7 +61,7 @@ let whiteText = false;
 
 function drawText(
   ctx: CanvasRenderingContext2D, text: string, y: number, size: number,
-  opts: { style?: string; color?: string; maxWidth?: number } = {},
+  opts: { style?: string; color?: string; maxWidth?: number; x?: number } = {},
 ) {
   if (!text) return;
   const maxWidth = opts.maxWidth ?? 900;
@@ -72,7 +72,7 @@ function drawText(
     ctx.font = `${opts.style ?? 'bold'} ${s}px ${FONT}`;
   }
   ctx.fillStyle = whiteText ? '#ffffff' : (opts.color ?? '#222222');
-  ctx.fillText(text, CENTER_X, y);
+  ctx.fillText(text, opts.x ?? CENTER_X, y);
 }
 
 export async function renderDiploma(templateUrl: string, d: DiplomaData): Promise<Blob> {
@@ -195,5 +195,74 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать благодарственное письмо'))), 'image/png');
+  });
+}
+
+
+export interface NominationDiplomaData {
+  tournamentTitle: string;
+  nominationLabel: string;
+  place: number | null;
+  category: string | null;
+  fio: string;
+  institution: string | null;
+  cityCountry: string | null;
+  coach: string | null;
+  ageCategory: string | null;
+  ratingLimit: string | null;
+  date: string | null;
+  textColor?: 'black' | 'white';
+  showPlace?: boolean;
+}
+
+export async function renderNominationDiploma(templateUrl: string, d: NominationDiplomaData): Promise<Blob> {
+  const img = await loadImage(templateUrl);
+  const canvas = document.createElement('canvas');
+  const up = img.naturalWidth < 2000 ? 2 : 1;
+  canvas.width = img.naturalWidth * up;
+  canvas.height = img.naturalHeight * up;
+  const k = canvas.width / 1400;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Не удалось создать диплом');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  whiteText = d.textColor === 'white';
+  ctx.scale(k, k);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const title = d.tournamentTitle.replace(/^["«]|["»]$/g, '').trim();
+  ctx.font = `italic bold 36px ${FONT}`;
+  const titleLines = wrapText(ctx, title, 920).slice(0, 3);
+  const ty = 372 - ((titleLines.length - 1) * 19);
+  titleLines.forEach((line, i) => drawText(ctx, line, ty + i * 38, 36, { style: 'italic bold', maxWidth: 940, x: 882 }));
+
+  if (d.showPlace !== false && d.place !== null && d.place >= 1 && d.place <= 3) {
+    drawText(ctx, `за ${ROMAN[d.place]} место`, 655, 64, { x: 893 });
+  }
+  drawText(ctx, `в номинации «${d.nominationLabel}»`, 727, 31, { style: 'italic bold', maxWidth: 840, x: 880 });
+  if (d.category) {
+    drawText(ctx, `в возрастной категории: ${d.category}`, 778, 28, { style: 'italic bold', maxWidth: 840, x: 880 });
+  }
+
+  drawText(ctx, d.fio, 925, 82, { style: 'italic bold', color: '#d2691e', maxWidth: 800, x: 886 });
+  ctx.font = `italic bold 22px ${FONT}`;
+  const instLines = wrapText(ctx, (d.institution || '').trim(), 620).slice(0, 3);
+  const lines = [...instLines, (d.cityCountry || '').trim()].filter(Boolean);
+  const startY = 1028 - ((lines.length - 2) * 13);
+  lines.forEach((line, i) => drawText(ctx, line, startY + i * 26, 22, { style: 'italic bold', color: '#333333', maxWidth: 640, x: 882 }));
+
+  if (d.coach) {
+    drawText(ctx, 'Тренер:', 1197, 34, { x: 938 });
+    drawText(ctx, d.coach, 1251, 34, { maxWidth: 650, x: 938 });
+  }
+
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1330, 24, { maxWidth: 520, x: 972 });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1362, 24, { maxWidth: 520, x: 972 });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1394, 24, { maxWidth: 520, x: 972 });
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать диплом'))), 'image/png');
   });
 }
