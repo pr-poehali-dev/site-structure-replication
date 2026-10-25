@@ -46,3 +46,13 @@ export default function TournamentTypeBadge({ type }: { type?: string }) {
     </Tooltip>
   );
 }
+
+export function RatingTypeBadge({ type }: { type?: string }) {
+  const blitz = type === 'blitz';
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold border ${blitz ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-100 text-sky-800 border-sky-300'}`}>
+      <Icon name={blitz ? 'Zap' : 'Clock'} size={13} />
+      {blitz ? 'Блиц' : 'Рапид'}
+    </span>
+  );
+}

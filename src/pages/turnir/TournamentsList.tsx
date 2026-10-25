@@ -6,7 +6,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Tournament, formatDate } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 import { isSpectatorLogin } from '@/lib/spectators';
-import TournamentTypeBadge, { getTypeMeta } from './TournamentTypeBadge';
+import TournamentTypeBadge, { RatingTypeBadge, getTypeMeta } from './TournamentTypeBadge';
 
 interface MyApplication {
   tournament_id: number;
@@ -67,7 +67,10 @@ export default function TournamentsList({
                 <div className={`px-6 py-5 border-b border-gray-100 ${isOpen ? 'bg-primary/5' : 'bg-gray-50'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex flex-col items-start gap-2">
-                      <TournamentTypeBadge type={t.tournament_type} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TournamentTypeBadge type={t.tournament_type} />
+                        <RatingTypeBadge type={t.rating_type} />
+                      </div>
                       <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
                     </div>
                     <div className="shrink-0 flex flex-col items-end gap-1">

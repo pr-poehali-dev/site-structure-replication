@@ -16,6 +16,7 @@ export interface Tournament {
   max_participants?: number | null;
   lila_tournament_id?: string | null;
   spots_left?: number | null;
+  rating_type?: 'blitz' | 'rapid';
   tournament_type?: 'warmup' | 'training' | 'qualifying';
 }
 
