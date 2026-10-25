@@ -311,7 +311,7 @@ export default function ElectronicResultsSection({ password }: Props) {
                               ))}
                             </select>
                             {cur && slot(cur.username, `nom_${nom.kind}`, 'Диплом номинации')}
-                            {nom.kind !== 'best_woman' && cur && (
+                            {!['best_woman', 'courage', 'young_talent'].includes(nom.kind) && cur && (
                               <Input className="w-full sm:w-72" placeholder="Ссылка на партию (необязательно)" value={cur.game_url}
                                 onChange={e => setNom(g.name, nom.kind, place, { game_url: e.target.value })} />
                             )}
