@@ -10,6 +10,8 @@ interface DiplomaInfo {
   thanks_template_url?: string | null;
   rating_limit: string | null;
   text_color?: 'black' | 'white';
+  thanks_rating_limit?: string | null;
+  thanks_text_color?: 'black' | 'white';
   tournament: { title: string; type: string; age_category: string | null; date: string | null };
   profile: { institution: string | null; country_city: string | null; coach_fio: string | null; fio_genitive?: string | null; coach_last_dative?: string | null; coach_name_dative?: string | null };
 }
@@ -102,8 +104,8 @@ export default function MyResultBlock({ tournamentId }: Props) {
         institution: diplomaInfo.profile.institution,
         cityCountry: diplomaInfo.profile.country_city,
         ageCategory: diplomaInfo.tournament.age_category,
-        ratingLimit: diplomaInfo.rating_limit,
-        textColor: diplomaInfo.text_color === 'white' ? 'white' : 'black',
+        ratingLimit: diplomaInfo.thanks_rating_limit ?? null,
+        textColor: diplomaInfo.thanks_text_color === 'white' ? 'white' : 'black',
         date: diplomaInfo.tournament.date,
       });
       downloadBlob(blob, `Благодарственное письмо - ${mine.fio}.png`);

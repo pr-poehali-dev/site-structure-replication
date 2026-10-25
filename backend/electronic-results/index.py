@@ -125,7 +125,7 @@ def assign_group(age, groups):
 
 
 def load_config(cur, tid):
-    cur.execute("SELECT status, age_groups, published_at, diploma_rating_limit, diploma_text_color FROM electronic_results WHERE tournament_id = %s", (tid,))
+    cur.execute("SELECT status, age_groups, published_at, diploma_rating_limit, diploma_text_color, thanks_rating_limit, thanks_text_color FROM electronic_results WHERE tournament_id = %s", (tid,))
     row = cur.fetchone()
     groups = json.loads(row[1]) if row else []
     cur.execute(
@@ -135,7 +135,9 @@ def load_config(cur, tid):
     noms = [{'id': r[0], 'group_name': r[1], 'kind': r[2], 'place': r[3], 'username': r[4], 'game_url': r[5]} for r in cur.fetchall()]
     return {'status': row[0] if row else 'draft', 'published_at': row[2] if row else None, 'age_groups': groups, 'nominations': noms,
             'diploma_rating_limit': row[3] if row else None,
-            'diploma_text_color': row[4] if row else 'black'}
+            'diploma_text_color': row[4] if row else 'black',
+            'thanks_rating_limit': row[5] if row else None,
+            'thanks_text_color': (row[6] if row else None) or 'black'}
 
 
 def build_snapshot(t, rows, cfg):
@@ -247,7 +249,7 @@ def handler(event: dict, context) -> dict:
             throw = cur.fetchone()
             cur.execute("SELECT title, tournament_type, age_category, date FROM tournaments WHERE id = %s", (int(tid),))
             trow = cur.fetchone()
-            cur.execute("SELECT diploma_rating_limit, diploma_text_color FROM electronic_results WHERE tournament_id = %s", (int(tid),))
+            cur.execute("SELECT diploma_rating_limit, diploma_text_color, thanks_rating_limit, thanks_text_color FROM electronic_results WHERE tournament_id = %s", (int(tid),))
             lrow = cur.fetchone()
             conn.close()
             if not trow:
@@ -257,6 +259,8 @@ def handler(event: dict, context) -> dict:
                 'thanks_template_url': throw[0] if throw else None,
                 'rating_limit': lrow[0] if lrow else None,
                 'text_color': lrow[1] if lrow else 'black',
+                'thanks_rating_limit': lrow[2] if lrow else None,
+                'thanks_text_color': (lrow[3] if lrow else None) or 'black',
                 'tournament': {'title': trow[0], 'type': trow[1] or 'qualifying', 'age_category': trow[2], 'date': trow[3]},
                 'profile': {'institution': urow[0], 'country_city': urow[1], 'coach_fio': urow[2],
                             'fio_genitive': urow[4], 'coach_last_dative': urow[5], 'coach_name_dative': urow[6]},
@@ -351,11 +355,14 @@ def handler(event: dict, context) -> dict:
             groups = parse_groups(body.get('age_groups'))
             rating_limit = str(body.get('diploma_rating_limit') or '').strip()[:100] or None
             text_color = 'white' if body.get('diploma_text_color') == 'white' else 'black'
+            thanks_limit = str(body.get('thanks_rating_limit') or '').strip()[:100] or None
+            thanks_color = 'white' if body.get('thanks_text_color') == 'white' else 'black'
             cur.execute(
-                """INSERT INTO electronic_results (tournament_id, age_groups, diploma_rating_limit, diploma_text_color) VALUES (%s, %s, %s, %s)
+                """INSERT INTO electronic_results (tournament_id, age_groups, diploma_rating_limit, diploma_text_color, thanks_rating_limit, thanks_text_color) VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (tournament_id) DO UPDATE SET age_groups = EXCLUDED.age_groups,
-                   diploma_rating_limit = EXCLUDED.diploma_rating_limit, diploma_text_color = EXCLUDED.diploma_text_color, updated_at = now()""",
-                (t['id'], json.dumps(groups, ensure_ascii=False), rating_limit, text_color),
+                   diploma_rating_limit = EXCLUDED.diploma_rating_limit, diploma_text_color = EXCLUDED.diploma_text_color,
+                   thanks_rating_limit = EXCLUDED.thanks_rating_limit, thanks_text_color = EXCLUDED.thanks_text_color, updated_at = now()""",
+                (t['id'], json.dumps(groups, ensure_ascii=False), rating_limit, text_color, thanks_limit, thanks_color),
             )
             cur.execute("DELETE FROM electronic_result_nominations WHERE tournament_id = %s", (t['id'],))
             group_names = {g['name'] for g in groups}

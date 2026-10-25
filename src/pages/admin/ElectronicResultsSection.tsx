@@ -36,6 +36,8 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [tInfo, setTInfo] = useState<{ type: string; age_category: string | null; date: string | null }>({ type: 'qualifying', age_category: null, date: null });
   const [previewing, setPreviewing] = useState(false);
   const [textColor, setTextColor] = useState<'black' | 'white'>('black');
+  const [thanksRatingLimit, setThanksRatingLimit] = useState('');
+  const [thanksTextColor, setThanksTextColor] = useState<'black' | 'white'>('black');
 
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password };
 
@@ -70,6 +72,8 @@ export default function ElectronicResultsSection({ password }: Props) {
     setFiles(data.files || []);
     setTextColor(data.config.diploma_text_color === 'white' ? 'white' : 'black');
     setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
+    setThanksTextColor(data.config.thanks_text_color === 'white' ? 'white' : 'black');
+    setThanksRatingLimit(data.config.thanks_rating_limit != null ? String(data.config.thanks_rating_limit) : '');
   }
 
   async function reloadFiles() {
@@ -82,7 +86,7 @@ export default function ElectronicResultsSection({ password }: Props) {
     const res = await fetch(ELECTRONIC_RESULTS_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit, diploma_text_color: textColor }),
+      body: JSON.stringify({ _action: action, tournament_id: currentId, age_groups: groups, nominations: noms, diploma_rating_limit: ratingLimit, diploma_text_color: textColor, thanks_rating_limit: thanksRatingLimit, thanks_text_color: thanksTextColor }),
     });
     const data = await res.json().catch(() => ({}));
     setSaving(false);
@@ -204,8 +208,8 @@ export default function ElectronicResultsSection({ password }: Props) {
         institution: 'Детский интеллектуальный клуб "Гарде"',
         cityCountry: 'г. Пермь, Россия',
         ageCategory: tInfo.age_category,
-        ratingLimit: ratingLimit.trim() || null,
-        textColor,
+        ratingLimit: thanksRatingLimit.trim() || null,
+        textColor: thanksTextColor,
         date: tInfo.date,
       });
       window.open(URL.createObjectURL(blob), '_blank');
@@ -268,7 +272,21 @@ export default function ElectronicResultsSection({ password }: Props) {
                 </Button>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">Пустой бланк PNG или JPG до 8 МБ. Письмо получает участник, у которого в профиле указан тренер. Цвет текста и рейтинг берутся из настроек диплома ниже.</p>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Рейтинг МШ:</span>
+              <Input className="w-48" type="text" maxLength={100} placeholder="например: от 1000 или до 800" value={thanksRatingLimit} onChange={e => setThanksRatingLimit(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm text-gray-600">Цвет текста:</span>
+              {(['black', 'white'] as const).map(c => (
+                <button key={c} type="button" onClick={() => setThanksTextColor(c)}
+                  className={`px-3 py-1.5 rounded-md border text-sm flex items-center gap-2 ${thanksTextColor === c ? 'border-secondary ring-2 ring-secondary/40 font-semibold' : 'border-gray-300 hover:border-secondary'}`}>
+                  <span className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${c === 'white' ? 'bg-white' : 'bg-black'}`} />
+                  {c === 'white' ? 'Белый' : 'Чёрный'}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Пустой бланк PNG или JPG до 8 МБ. Письмо получает участник, у которого в профиле указан тренер. Не забудьте нажать «Сохранить».</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
