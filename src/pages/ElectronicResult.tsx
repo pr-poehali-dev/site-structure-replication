@@ -4,9 +4,19 @@ import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import Seo from '@/components/Seo';
 import ResultTable from '@/components/ResultTable';
+import LilaGameDialog from '@/components/LilaGameDialog';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, ResultsSnapshot,
 } from '@/lib/electronicResults';
+
+function extractGameId(url: string): string | null {
+  try {
+    const seg = new URL(url).pathname.split('/').filter(Boolean).find(x => /^[A-Za-z0-9]{8,12}$/.test(x));
+    return seg ? seg.slice(0, 8) : null;
+  } catch {
+    return null;
+  }
+}
 
 const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
@@ -15,6 +25,7 @@ export default function ElectronicResult() {
   const [data, setData] = useState<ResultsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overall');
+  const [gameId, setGameId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${ELECTRONIC_RESULTS_URL}?tournament_id=${tournamentId}`)
@@ -86,11 +97,15 @@ export default function ElectronicResult() {
                             <div key={w.place} className="flex items-center gap-2">
                               <span>{nom.places > 1 ? MEDALS[w.place] : '🏆'}</span>
                               <span className="flex-1">{w.fio || w.username}</span>
-                              {w.game_url && (
+                              {w.game_url && (extractGameId(w.game_url) ? (
+                                <button type="button" onClick={() => setGameId(extractGameId(w.game_url))} className="text-secondary" title="Смотреть партию">
+                                  <Icon name="Play" size={14} />
+                                </button>
+                              ) : (
                                 <a href={w.game_url} target="_blank" rel="noopener noreferrer" className="text-secondary" title="Партия">
                                   <Icon name="ExternalLink" size={14} />
                                 </a>
-                              )}
+                              ))}
                             </div>
                           ))}
                         </div>
@@ -104,6 +119,7 @@ export default function ElectronicResult() {
         )}
       </main>
       <Footer />
+      <LilaGameDialog gameId={gameId} onClose={() => setGameId(null)} />
     </div>
   );
 }
