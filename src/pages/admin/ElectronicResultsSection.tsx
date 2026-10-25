@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import FileSlot from './FileSlot';
 import { toast } from 'sonner';
-import { renderDiploma, renderThanks } from '@/lib/diploma';
+import { renderDiploma, renderThanks, splitCoachDative } from '@/lib/diploma';
 import {
   ELECTRONIC_RESULTS_URL, NOMINATIONS, AgeGroup, NominationKind, ResultRow, ResultsSnapshot, ResultFile,
 } from '@/lib/electronicResults';
@@ -14,6 +14,11 @@ interface Props {
 }
 
 interface TournamentItem { id: number; title: string; date: string | null; result_status: string }
+
+interface SampleProfile {
+  institution: string | null; country_city: string | null; coach_fio: string | null;
+  fio_genitive: string | null; coach_last_dative: string | null; coach_name_dative: string | null;
+}
 
 interface NominationDraft { group_name: string; kind: NominationKind; place: number; username: string; game_url: string }
 
@@ -34,6 +39,8 @@ export default function ElectronicResultsSection({ password }: Props) {
   const [files, setFiles] = useState<ResultFile[]>([]);
   const [ratingLimit, setRatingLimit] = useState('');
   const [tInfo, setTInfo] = useState<{ type: string; age_category: string | null; date: string | null }>({ type: 'qualifying', age_category: null, date: null });
+  const [profiles, setProfiles] = useState<Record<string, SampleProfile>>({});
+  const [sampleUserId, setSampleUserId] = useState('');
   const [previewing, setPreviewing] = useState(false);
   const [textColor, setTextColor] = useState<'black' | 'white'>('black');
   const [thanksRatingLimit, setThanksRatingLimit] = useState('');
@@ -70,6 +77,8 @@ export default function ElectronicResultsSection({ password }: Props) {
     setStatus(data.config.status || 'draft');
     setPreview(data.preview);
     setFiles(data.files || []);
+    setProfiles(data.profiles || {});
+    setSampleUserId('');
     setTextColor(data.config.diploma_text_color === 'white' ? 'white' : 'black');
     setRatingLimit(data.config.diploma_rating_limit != null ? String(data.config.diploma_rating_limit) : '');
     setThanksTextColor(data.config.thanks_text_color === 'white' ? 'white' : 'black');
@@ -167,6 +176,13 @@ export default function ElectronicResultsSection({ password }: Props) {
 
   const templateFile = files.find(f => f.kind === 'diploma_template');
 
+  const samplePlayers = players.filter(p => p.user_id);
+  const samplePlayer = samplePlayers.find(p => String(p.user_id) === sampleUserId) || samplePlayers[0] || null;
+  const sampleProfile = samplePlayer?.user_id ? profiles[String(samplePlayer.user_id)] : undefined;
+  const sampleGroup = samplePlayer ? groups.find(g => g.name === samplePlayer.group) : undefined;
+  const sampleGroupRow = preview?.groups.find(g => g.name === samplePlayer?.group)?.table.find(r => r.user_id === samplePlayer?.user_id);
+  const samplePlace = sampleGroupRow?.place ?? samplePlayer?.rank ?? 1;
+
   const showSample = async () => {
     if (!templateFile) return;
     setPreviewing(true);
@@ -174,12 +190,12 @@ export default function ElectronicResultsSection({ password }: Props) {
       const blob = await renderDiploma(templateFile.file_url, {
         tournamentType: tInfo.type,
         tournamentTitle: title,
-        place: 1,
-        category: groups[0]?.name || null,
-        fio: 'Мозжерин Иван',
-        institution: 'МБОУ СОШ № 1',
-        cityCountry: 'Москва, Россия',
-        coach: 'Иванов Иван Иванович',
+        place: samplePlace,
+        category: sampleGroup?.name || null,
+        fio: samplePlayer?.fio || 'Мозжерин Иван',
+        institution: sampleProfile?.institution || 'МБОУ СОШ № 1',
+        cityCountry: sampleProfile?.country_city || 'Москва, Россия',
+        coach: sampleProfile?.coach_fio || 'Иванов Иван Иванович',
         ageCategory: tInfo.age_category,
         ratingLimit: ratingLimit.trim() || null,
         textColor,
@@ -198,15 +214,16 @@ export default function ElectronicResultsSection({ password }: Props) {
     if (!thanksTemplateFile) return;
     setPreviewing(true);
     try {
+      const c = splitCoachDative(sampleProfile?.coach_fio || 'Иванов Иван Иванович', sampleProfile?.coach_last_dative ?? null, sampleProfile?.coach_name_dative ?? null);
       const blob = await renderThanks(thanksTemplateFile.file_url, {
         tournamentType: tInfo.type,
         tournamentTitle: title,
-        place: 2,
-        participantFio: 'Ивановой Марии',
-        coachLastDative: 'Смирновой',
-        coachNameDative: 'Ирине Валерьевне',
-        institution: 'Детский интеллектуальный клуб "Гарде"',
-        cityCountry: 'г. Пермь, Россия',
+        place: samplePlace,
+        participantFio: (sampleProfile?.fio_genitive || '').trim() || samplePlayer?.fio || 'Ивановой Марии',
+        coachLastDative: c.last,
+        coachNameDative: c.name,
+        institution: sampleProfile?.institution || 'МБОУ СОШ № 1',
+        cityCountry: sampleProfile?.country_city || 'Москва, Россия',
         ageCategory: tInfo.age_category,
         ratingLimit: thanksRatingLimit.trim() || null,
         textColor: thanksTextColor,
@@ -261,6 +278,15 @@ export default function ElectronicResultsSection({ password }: Props) {
             {slot('_tournament', 'protocol', 'Загрузить протокол')}
             <p className="text-xs text-gray-400 mt-2">PDF, PNG или JPG до 8 МБ. Появится на странице результатов и в личном кабинете участников.</p>
           </div>
+
+          {samplePlayers.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-600">Образец строится на участнике:</span>
+              <select className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm max-w-xs" value={String(samplePlayer?.user_id || '')} onChange={e => setSampleUserId(e.target.value)}>
+                {samplePlayers.map(p => <option key={p.user_id} value={String(p.user_id)}>{p.fio}</option>)}
+              </select>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="font-heading font-bold text-base text-primary mb-2">Шаблон благодарственного письма</h3>

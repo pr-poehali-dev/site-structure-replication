@@ -296,8 +296,17 @@ def handler(event: dict, context) -> dict:
             arow = cur.fetchone()
             snap['tournament']['type'] = (arow[0] if arow else None) or 'qualifying'
             snap['tournament']['age_category'] = arow[1] if arow else None
+            uids = [r['user_id'] for r in snap['overall'] if r.get('user_id')]
+            profiles = {}
+            if uids:
+                cur.execute(
+                    "SELECT id, institution, country_city, coach_fio, fio_genitive, coach_last_dative, coach_name_dative FROM users WHERE id IN (%s)" % ','.join(str(int(i)) for i in uids)
+                )
+                for r in cur.fetchall():
+                    profiles[r[0]] = {'institution': r[1], 'country_city': r[2], 'coach_fio': r[3], 'fio_genitive': r[4],
+                                      'coach_last_dative': r[5], 'coach_name_dative': r[6]}
             conn.close()
-            return resp(200, {'tournament': snap['tournament'], 'config': cfg, 'players': snap['overall'], 'preview': snap, 'files': files})
+            return resp(200, {'tournament': snap['tournament'], 'config': cfg, 'players': snap['overall'], 'preview': snap, 'files': files, 'profiles': profiles})
 
         if tid:
             cur.execute("SELECT snapshot FROM electronic_results WHERE tournament_id = %s AND status = 'published'", (int(tid),))
