@@ -2,7 +2,7 @@ import func2url from '../../backend/func2url.json';
 
 export const ELECTRONIC_RESULTS_URL = func2url['electronic-results'];
 
-export type NominationKind = 'best_mate' | 'beautiful_mate' | 'best_woman' | 'courage' | 'young_talent';
+export type NominationKind = 'best_mate' | 'beautiful_mate' | 'best_woman' | 'courage' | 'young_talent' | 'battle_draw';
 
 export const NOMINATIONS: { kind: NominationKind; label: string; places: number }[] = [
   { kind: 'best_mate', label: 'Самый быстрый мат 1го тура', places: 1 },
@@ -10,6 +10,7 @@ export const NOMINATIONS: { kind: NominationKind; label: string; places: number 
   { kind: 'best_woman', label: 'Лучшая шахматистка', places: 3 },
   { kind: 'courage', label: 'За смелость и отвагу', places: 1 },
   { kind: 'young_talent', label: 'Юное дарование', places: 1 },
+  { kind: 'battle_draw', label: 'Боевая ничья', places: 1 },
 ];
 
 export interface AgeGroup { name: string; min: number; max: number }

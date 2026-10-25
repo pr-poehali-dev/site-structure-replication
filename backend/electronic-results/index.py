@@ -10,9 +10,9 @@ import boto3
 import psycopg2
 
 LILA = 'https://' + 'play.мир-шахмат.рф'.encode('idna').decode()
-KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3, 'courage': 1, 'young_talent': 1}
+KINDS = {'best_mate': 1, 'beautiful_mate': 3, 'best_woman': 3, 'courage': 1, 'young_talent': 1, 'battle_draw': 1}
 PROTOCOL_USER = '_tournament'
-FILE_KINDS = ['protocol', 'diploma', 'diploma_template', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman', 'nom_courage', 'nom_young_talent']
+FILE_KINDS = ['protocol', 'diploma', 'diploma_template', 'thanks', 'nom_best_mate', 'nom_beautiful_mate', 'nom_best_woman', 'nom_courage', 'nom_young_talent', 'nom_battle_draw']
 ALLOWED_TYPES = {'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg'}
 
 
