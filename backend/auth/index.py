@@ -438,5 +438,22 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Участник не найден'})}
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
 
+    if method == 'POST' and action == 'admin_set_password' and is_admin(event):
+        user_id = body.get('user_id')
+        new_password = body.get('new_password') or ''
+        if not user_id or len(new_password) < 6:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пароль должен быть не короче 6 символов'})}
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cur.fetchone():
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Участник не найден'})}
+        salt = secrets.token_hex(16)
+        cur.execute("UPDATE users SET password_hash = %s, password_salt = %s WHERE id = %s", (hash_password(new_password, salt), salt, user_id))
+        cur.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
+
     conn.close()
     return {'statusCode': 405, 'headers': cors_headers(), 'body': json.dumps({'error': 'Method not allowed'})}
