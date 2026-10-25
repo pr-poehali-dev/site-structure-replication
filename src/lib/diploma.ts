@@ -21,6 +21,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 const ROMAN = ['', 'I', 'II', 'III'];
 const CENTER_X = 894;
+const LINE_X = 1002;
 const FONT = '"Times New Roman", Times, serif';
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -110,13 +111,13 @@ export async function renderDiploma(templateUrl: string, d: DiplomaData): Promis
   lines.forEach((line, i) => drawText(ctx, line, startY + i * 38, 31, { style: 'italic bold', color: '#333333', maxWidth: 840 }));
 
   if (d.coach) {
-    drawText(ctx, 'Тренер:', 1185, 38);
-    drawText(ctx, d.coach, 1247, 38, { maxWidth: 700 });
+    drawText(ctx, 'Тренер:', 1185, 38, { x: LINE_X });
+    drawText(ctx, d.coach, 1247, 38, { maxWidth: 700, x: LINE_X });
   }
 
-  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560 });
-  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
-  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560 });
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560, x: LINE_X });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560, x: LINE_X });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560, x: LINE_X });
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать диплом'))), 'image/png');
@@ -186,12 +187,12 @@ export async function renderThanks(templateUrl: string, d: ThanksData): Promise<
   lines.forEach((line, i) => drawText(ctx, line, 997 + i * 35, 30, { style: 'italic bold', color: '#333333', maxWidth: 780 }));
 
   const who = d.place === 1 ? 'победителя' : d.place !== null && d.place >= 2 && d.place <= 3 ? 'призёра' : 'участника';
-  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820 });
-  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820 });
+  drawText(ctx, `За подготовку ${who} шахматного турнира`, 1175, 34, { style: 'italic bold', maxWidth: 820, x: LINE_X });
+  drawText(ctx, d.participantFio, 1240, 52, { style: 'italic bold', maxWidth: 820, x: LINE_X });
 
-  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560 });
-  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560 });
-  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560 });
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1327, 26, { maxWidth: 560, x: LINE_X });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1359, 26, { maxWidth: 560, x: LINE_X });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1391, 26, { maxWidth: 560, x: LINE_X });
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать благодарственное письмо'))), 'image/png');
@@ -258,13 +259,13 @@ export async function renderNominationDiploma(templateUrl: string, d: Nomination
   lines.forEach((line, i) => drawText(ctx, line, startY + i * 31, 26, { style: 'italic bold', color: '#333333', maxWidth: 640, x: 882 }));
 
   if (d.coach) {
-    drawText(ctx, 'Тренер:', 1197, 34, { x: 938 });
-    drawText(ctx, d.coach, 1251, 34, { maxWidth: 650, x: 938 });
+    drawText(ctx, 'Тренер:', 1197, 34, { x: 992 });
+    drawText(ctx, d.coach, 1251, 34, { maxWidth: 650, x: 992 });
   }
 
-  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1330, 24, { maxWidth: 520, x: 972 });
-  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1362, 24, { maxWidth: 520, x: 972 });
-  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1394, 24, { maxWidth: 520, x: 972 });
+  drawText(ctx, `Турнир: ${(d.ageCategory || '').replace(/\s*включительно/i, '')}`, 1330, 24, { maxWidth: 520, x: 992 });
+  drawText(ctx, `Рейтинг МШ: ${d.ratingLimit?.trim() || 'без ограничений'}`, 1362, 24, { maxWidth: 520, x: 992 });
+  drawText(ctx, `Дата участия: ${formatDate(d.date)}`, 1394, 24, { maxWidth: 520, x: 992 });
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Не удалось создать диплом'))), 'image/png');
