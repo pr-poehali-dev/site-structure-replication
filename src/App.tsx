@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ImpersonateBanner from "@/components/ImpersonateBanner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LilaBridge from "@/components/LilaBridge";
 import HallFloatingButton from "@/components/HallFloatingButton";
@@ -45,6 +46,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LilaBridge />
+          <ImpersonateBanner />
           <HallFloatingButton />
           <Routes>
             <Route path="/" element={<Index />} />

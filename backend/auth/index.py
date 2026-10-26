@@ -13,6 +13,9 @@ import boto3
 SESSION_DAYS = 30
 
 
+IMPERSONATOR_ID = 173
+
+
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], options=f"-c search_path={os.environ.get('MAIN_DB_SCHEMA', 'public')}")
 
@@ -242,6 +245,58 @@ def handler(event: dict, context) -> dict:
         user = user_to_dict(cur.fetchone())
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'token': new_token, 'user': user})}
+
+    # Просмотр сайта от имени участника — только для владельца
+    if method == 'POST' and action in ('impersonate_search', 'impersonate'):
+        me = get_user_by_token(cur, token)
+        if not me or me['id'] != IMPERSONATOR_ID:
+            conn.close()
+            return {'statusCode': 403, 'headers': cors_headers(), 'body': json.dumps({'error': 'Нет доступа'})}
+        if action == 'impersonate_search':
+            q = (body.get('q') or '').strip()
+            if len(q) < 2:
+                conn.close()
+                return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': []})}
+            like = '%' + q.replace('%', '').replace('_', '') + '%'
+            cur.execute(
+                """SELECT id, last_name, first_name, email, login FROM users
+                   WHERE id <> %s AND (last_name ILIKE %s OR first_name ILIKE %s OR email ILIKE %s OR login ILIKE %s
+                   OR (last_name || ' ' || first_name) ILIKE %s)
+                   ORDER BY last_name, first_name LIMIT 20""",
+                (IMPERSONATOR_ID, like, like, like, like, like)
+            )
+            rows = [{'id': r[0], 'last_name': r[1], 'first_name': r[2], 'email': r[3], 'login': r[4]} for r in cur.fetchall()]
+            conn.close()
+            return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'users': rows})}
+        try:
+            target_id = int(body.get('user_id'))
+        except (TypeError, ValueError):
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не указан пользователь'})}
+        if target_id == IMPERSONATOR_ID:
+            conn.close()
+            return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Это ваш аккаунт'})}
+        cur.execute("SELECT id FROM users WHERE id = %s", (target_id,))
+        if not cur.fetchone():
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Пользователь не найден'})}
+        new_token = secrets.token_hex(32)
+        expires_at = datetime.utcnow() + timedelta(hours=4)
+        cur.execute("INSERT INTO user_sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (target_id, new_token, expires_at))
+        source_ip = (event.get('requestContext', {}) or {}).get('identity', {}).get('sourceIp')
+        log_event(cur, IMPERSONATOR_ID, 'impersonate', {'target_user_id': target_id, 'ip': source_ip})
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (target_id,))
+        user = user_to_dict(cur.fetchone())
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'token': new_token, 'user': user})}
+
+    if method == 'POST' and action == 'silent_logout':
+        if token:
+            cur.execute("DELETE FROM user_sessions WHERE token = %s", (token,))
+            conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
     # Выход
     if method == 'POST' and action == 'logout':

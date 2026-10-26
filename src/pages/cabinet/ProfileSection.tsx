@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import ImpersonatePanel from '@/components/ImpersonatePanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { calcAge, formatDate } from './utils';
 
@@ -66,6 +67,7 @@ export default function ProfileSection() {
 
   return !editing ? (
     <div className="flex flex-col gap-4">
+      <ImpersonatePanel />
       {DEMO_GAME_USER_IDS.includes(user.id) && (
         <Link
           to={`/game/${DEMO_GAME_ID}`}

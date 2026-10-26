@@ -4,6 +4,7 @@ import func2url from '../../backend/func2url.json';
 const AUTH_URL = func2url['auth'];
 const LILA_SYNC_URL = func2url['lila-sync'];
 const TOKEN_KEY = 'auth_token';
+const ORIGINAL_TOKEN_KEY = 'auth_token_original';
 const LILA_BRIDGE_LOGOUT_URL = 'https://play.мир-шахмат.рф/bridge/logout';
 
 function logoutFromLila() {
@@ -76,6 +77,9 @@ interface AuthContextValue {
   user: UserProfile | null;
   token: string | null;
   loading: boolean;
+  impersonating: boolean;
+  startImpersonation: (userId: number) => Promise<{ ok: true } | { ok: false; error: string }>;
+  stopImpersonation: () => void;
   login: (identifier: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   register: (payload: RegisterPayload) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => void;
@@ -89,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
+  const [impersonating, setImpersonating] = useState(() => !!localStorage.getItem(ORIGINAL_TOKEN_KEY));
 
   useEffect(() => {
     const t = localStorage.getItem(TOKEN_KEY);
@@ -98,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     fetch(AUTH_URL, { headers: { 'X-Auth-Token': t } })
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => { setUser(data.user); setToken(t); syncLilaAccount(t); })
+      .then(data => { setUser(data.user); setToken(t); if (!localStorage.getItem(ORIGINAL_TOKEN_KEY)) syncLilaAccount(t); })
       .catch(() => { localStorage.removeItem(TOKEN_KEY); setUser(null); setToken(null); })
       .finally(() => setLoading(false));
   }, []);
@@ -108,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // "Логи" в админке. Без heartbeat статус "онлайн" определялся бы только по моментам
   // входа/выхода и был бы неточным для долгих сессий на сайте.
   useEffect(() => {
-    if (!token) return;
+    if (!token || impersonating) return;
     const ping = () => {
       fetch(AUTH_URL, {
         method: 'POST',
@@ -119,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ping();
     const interval = setInterval(ping, 120000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, impersonating]);
 
   const login = useCallback(async (identifier: string, password: string) => {
     const res = await fetch(AUTH_URL, {
@@ -151,7 +156,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true as const };
   }, []);
 
+  const startImpersonation = useCallback(async (userId: number) => {
+    const t = localStorage.getItem(TOKEN_KEY);
+    if (!t) return { ok: false as const, error: 'Не авторизован' };
+    const res = await fetch(AUTH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': t },
+      body: JSON.stringify({ _action: 'impersonate', user_id: userId }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false as const, error: data.error || 'Не удалось войти' };
+    if (!localStorage.getItem(ORIGINAL_TOKEN_KEY)) localStorage.setItem(ORIGINAL_TOKEN_KEY, t);
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setToken(data.token);
+    setUser(data.user);
+    setImpersonating(true);
+    return { ok: true as const };
+  }, []);
+
+  const stopImpersonation = useCallback(() => {
+    const orig = localStorage.getItem(ORIGINAL_TOKEN_KEY);
+    const cur = localStorage.getItem(TOKEN_KEY);
+    if (!orig) return;
+    if (cur) {
+      fetch(AUTH_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': cur }, body: JSON.stringify({ _action: 'silent_logout' }) }).catch(() => {});
+    }
+    localStorage.removeItem(ORIGINAL_TOKEN_KEY);
+    localStorage.setItem(TOKEN_KEY, orig);
+    window.location.href = '/cabinet';
+  }, []);
+
   const logout = useCallback(() => {
+    localStorage.removeItem(ORIGINAL_TOKEN_KEY);
+    setImpersonating(false);
     const t = localStorage.getItem(TOKEN_KEY);
     if (t) {
       fetch(AUTH_URL, {
@@ -195,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateProfile, uploadAvatar }}>
+    <AuthContext.Provider value={{ user, token, loading, impersonating, startImpersonation, stopImpersonation, login, register, logout, updateProfile, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );
