@@ -173,6 +173,15 @@
     timer = setTimeout(function () { timer = null; measure(); }, 150);
   }
 
+  function resetScroll() {
+    if (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }
+  window.addEventListener('scroll', resetScroll, { passive: true });
+  setInterval(resetScroll, 500);
   window.addEventListener('load', measure);
   window.addEventListener('resize', schedule);
   if (window.MutationObserver) {
