@@ -217,8 +217,8 @@ export default function TournamentRoom() {
               className="w-full bg-white"
               scrolling="no"
               style={{
-                height: (liveGame || frameIsGame) ? '70vh' : (frameHeight ?? '113vh'),
-                minHeight: (liveGame || frameIsGame) ? 480 : (frameHeight ? undefined : 800),
+                height: (liveGame || frameIsGame) ? 'max(100vh, 820px)' : (frameHeight ?? '113vh'),
+                minHeight: (liveGame || frameIsGame) ? 820 : (frameHeight ? undefined : 800),
                 border: '1px solid #E5E2DC',
                 borderRadius: 12,
                 overflow: 'hidden',
