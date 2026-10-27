@@ -233,7 +233,7 @@ export default function TournamentsList({
                 )}
                 {!isCancelled && !isSpectator && (
                   <div className="px-6 pb-3">
-                    <Link to={`/hall/${t.id}?observer=1`}>
+                    <Link to={`/room/${t.id}?guest=1`}>
                       <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/5 font-semibold">
                         <Icon name="Eye" size={16} className="mr-2" /> Гостевой вход (просмотр)
                       </Button>

@@ -37,7 +37,8 @@ export default function TournamentRoom() {
   const [frameIsGame, setFrameIsGame] = useState(false);
   const [frameGameId, setFrameGameId] = useState<string | null>(null);
   const [frameKey, setFrameKey] = useState(0);
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isGuest = searchParams.get('guest') === '1';
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const currentHeight = useRef<number | null>(null);
   const lockUntil = useRef(0);
@@ -112,7 +113,7 @@ export default function TournamentRoom() {
 
   useEffect(() => {
     if (authLoading || !tournamentId) return;
-    if (!token || isSpectator) {
+    if (!token || isSpectator || isGuest) {
       setJoined(true);
       return;
     }
@@ -137,7 +138,7 @@ export default function TournamentRoom() {
       .catch(e => { console.warn('lila join failed', e); if (!cancelled) setJoined(true); });
     const fallback = setTimeout(() => { if (!cancelled) setJoined(true); }, 12000);
     return () => { cancelled = true; clearTimeout(fallback); };
-  }, [token, authLoading, tournamentId, isSpectator]);
+  }, [token, authLoading, tournamentId, isSpectator, isGuest]);
 
   useEffect(() => {
     fetch(`${PUBLIC_URL}?id=${encodeURIComponent(tournamentId || '')}`)
