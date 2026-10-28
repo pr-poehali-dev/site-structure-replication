@@ -14,7 +14,7 @@ interface Props {
   password: string;
 }
 
-interface TournamentItem { id: number; title: string; date: string | null; result_status: string }
+interface TournamentItem { id: number; title: string; date: string | null; result_status: string; tournament_type?: string }
 
 interface SampleProfile {
   institution: string | null; country_city: string | null; coach_fio: string | null;
@@ -165,15 +165,23 @@ export default function ElectronicResultsSection({ password }: Props) {
         ) : items.length === 0 ? (
           <p className="text-gray-400 text-sm">Нет турниров со ссылкой на Lila</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {items.map(t => (
-              <button key={t.id} onClick={() => openTournament(t.id)}
-                className="flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-secondary transition-colors">
-                <span className="font-medium text-gray-800">{t.title}</span>
-                <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${t.result_status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {STATUS_LABELS[t.result_status] || 'Не оформлено'}
-                </span>
-              </button>
+          <div className="flex flex-col gap-5">
+            {[
+              { key: 'main', label: 'Турниры', list: items.filter(t => t.tournament_type !== 'warmup') },
+              { key: 'warmup', label: 'Разминочные турниры', list: items.filter(t => t.tournament_type === 'warmup') },
+            ].filter(g => g.list.length > 0).map(g => (
+              <div key={g.key} className="flex flex-col gap-2">
+                <h3 className="font-heading font-semibold text-primary">{g.label}</h3>
+                {g.list.map(t => (
+                  <button key={t.id} onClick={() => openTournament(t.id)}
+                    className="flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-secondary transition-colors">
+                    <span className="font-medium text-gray-800">{t.title}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${t.result_status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {STATUS_LABELS[t.result_status] || 'Не оформлено'}
+                    </span>
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         )}

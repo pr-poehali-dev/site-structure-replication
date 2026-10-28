@@ -284,12 +284,12 @@ def handler(event: dict, context) -> dict:
                 return resp(403, {'error': 'Нет доступа'})
             if not tid:
                 cur.execute(
-                    """SELECT t.id, t.title, t.date, COALESCE(er.status, '') FROM tournaments t
+                    """SELECT t.id, t.title, t.date, COALESCE(er.status, ''), COALESCE(t.tournament_type, 'qualifying') FROM tournaments t
                        LEFT JOIN electronic_results er ON er.tournament_id = t.id
                        WHERE t.lila_tournament_id IS NOT NULL AND t.lila_tournament_id <> ''
                        ORDER BY t.date DESC NULLS LAST, t.id DESC LIMIT 100"""
                 )
-                items = [{'id': r[0], 'title': r[1], 'date': r[2], 'result_status': r[3]} for r in cur.fetchall()]
+                items = [{'id': r[0], 'title': r[1], 'date': r[2], 'result_status': r[3], 'tournament_type': r[4]} for r in cur.fetchall()]
                 conn.close()
                 return resp(200, {'tournaments': items})
             t = load_tournament(cur, int(tid))
