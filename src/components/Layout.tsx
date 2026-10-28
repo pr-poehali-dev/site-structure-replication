@@ -248,10 +248,10 @@ export function Header() {
 export function Footer() {
   return (
     <footer id="contacts" className="bg-gradient-to-br from-[#14224F] via-[#1B2F6B] to-[#0F1B3F] text-white scroll-mt-16">
-      <div className="container px-4 py-12 grid md:grid-cols-3 gap-10 items-start max-w-5xl mx-auto">
+      <div className="container px-4 py-12 grid md:grid-cols-3 gap-10 items-start max-md:text-center max-w-5xl mx-auto">
         {/* Лого + копирайт */}
-        <div className="flex flex-col gap-3">
-          <div className="bg-[#141414] rounded-2xl px-5 py-4 inline-block w-fit ring-1 ring-white/20">
+        <div className="flex flex-col gap-3 max-md:items-center">
+          <div className="bg-[#141414] rounded-2xl px-5 py-4 inline-block w-fit max-md:mx-auto ring-1 ring-white/20">
             <img
               src="https://cdn.poehali.dev/projects/da0c042d-2017-4baf-94fb-5da234e7b163/bucket/5cb279c6-66b4-4693-bc8b-8649fcf4b0a8.png"
               alt="Мир шахмат"
@@ -264,17 +264,17 @@ export function Footer() {
         {/* Контакты */}
         <div>
           <h2 className="font-heading font-bold text-2xl uppercase mb-4">Контакты</h2>
-          <div className="space-y-3">
-            <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
+          <div className="space-y-3 max-md:flex max-md:flex-col max-md:items-center">
+            <a href="mailto:mir.shahmat@inbox.ru" className="flex items-center max-md:justify-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
               <Icon name="Mail" size={17} className="shrink-0" /> mir.shahmat@inbox.ru
             </a>
-            <a href="tel:+79922281068" className="flex items-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
+            <a href="tel:+79922281068" className="flex items-center max-md:justify-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
               <Icon name="Phone" size={17} className="shrink-0" /> 8-99-222-810-68
             </a>
-            <a href="https://мир-шахмат.рф" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
+            <a href="https://мир-шахмат.рф" target="_blank" rel="noopener noreferrer" className="flex items-center max-md:justify-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
               <Icon name="Globe" size={17} className="shrink-0" /> мир-шахмат.рф
             </a>
-            <a href="https://vk.com/mir.shahmat" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
+            <a href="https://vk.com/mir.shahmat" target="_blank" rel="noopener noreferrer" className="flex items-center max-md:justify-center gap-3 text-white/85 hover:text-white transition-colors text-sm">
               <Icon name="Users" size={17} className="shrink-0" /> vk.com/mir.shahmat
             </a>
           </div>
