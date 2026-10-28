@@ -10,6 +10,8 @@ const PERKS = [
   { icon: 'Award', text: 'Диплом каждому' },
   { icon: 'Users', text: 'Зачёт по возрастам' },
   { icon: 'Star', text: 'Номинации' },
+  { icon: 'Mail', text: 'Благодарственное письмо тренеру' },
+  { icon: 'Zap', text: '3 очка активности' },
 ];
 
 export default function TournamentInviteBanner() {
@@ -37,7 +39,7 @@ export default function TournamentInviteBanner() {
               <Icon name="Trophy" size={14} /> ЗАПИСЬ ОТКРЫТА
             </span>
             <DialogTitle className="font-heading font-extrabold text-3xl md:text-4xl uppercase leading-tight text-white">
-              Турнир <span className="text-[#FFD83D]">«Разгар каникул»</span>
+              Всероссийский турнир <span className="text-[#FFD83D]">«Разгар каникул»</span>
             </DialogTitle>
             <DialogDescription className="mt-3 text-base text-white/90">
               Сыграйте 7 партий, получите диплом и рейтинг. Онлайн, из дома!
