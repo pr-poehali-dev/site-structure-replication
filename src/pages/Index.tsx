@@ -9,6 +9,7 @@ import QuickLinks from '@/components/home/QuickLinks';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 import OlympiadsAndPerks from '@/components/home/OlympiadsAndPerks';
 import SidebarCards from '@/components/home/SidebarCards';
+import TournamentInviteBanner from '@/components/home/TournamentInviteBanner';
 
 const Index = () => {
   return (
@@ -20,6 +21,8 @@ const Index = () => {
       />
       <Header />
       <PublicPushSubscribe hideTrigger />
+
+      <TournamentInviteBanner />
 
       {/* Hero */}
       <section id="top" className="relative overflow-hidden bg-gradient-to-br from-[#14224F] via-[#1B2F6B] to-[#0F1B3F]">
