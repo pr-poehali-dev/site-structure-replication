@@ -42,6 +42,7 @@ function formatDate(dateStr: string) {
 const TONES = {
   amber: { box: 'border-amber-200 bg-amber-50/60', head: 'text-amber-700', icon: 'text-amber-600', hover: 'hover:border-amber-400' },
   blue: { box: 'border-sky-200 bg-sky-50/60', head: 'text-sky-700', icon: 'text-sky-600', hover: 'hover:border-sky-400' },
+  green: { box: 'border-emerald-200 bg-emerald-50/60', head: 'text-emerald-700', icon: 'text-emerald-600', hover: 'hover:border-emerald-400' },
 };
 
 function ElectronicColumn({ title, icon, tone, items }: { title: string; icon: string; tone: keyof typeof TONES; items: ElectronicItem[] }) {
@@ -180,7 +181,7 @@ export default function Result() {
               <div className="w-1 h-8 bg-secondary rounded-full" />
               <h2 className="font-heading font-bold text-2xl text-primary">Электронные результаты</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <ElectronicColumn
                 title="Квалификационные"
                 icon="Medal"
@@ -191,7 +192,13 @@ export default function Result() {
                 title="Тренировочные"
                 icon="Dumbbell"
                 tone="blue"
-                items={electronic.filter(e => e.tournament_type && e.tournament_type !== 'qualifying')}
+                items={electronic.filter(e => e.tournament_type === 'training')}
+              />
+              <ElectronicColumn
+                title="Разминочные"
+                icon="Flame"
+                tone="green"
+                items={electronic.filter(e => e.tournament_type === 'warmup')}
               />
             </div>
           </section>
