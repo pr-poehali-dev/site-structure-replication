@@ -66,13 +66,13 @@ export default function UpcomingTournaments() {
             const closed = t.status === 'closed';
             return (
               <li key={t.id}>
-                <Link to="/turnir" className="flex items-center gap-4 px-5 py-3 hover:bg-muted/60 transition-colors">
-                  <div className="w-14 shrink-0 text-center rounded-xl bg-secondary/10 py-1.5">
-                    <p className="font-heading font-bold text-2xl leading-none text-secondary">{p.day}</p>
-                    <p className="text-[11px] uppercase text-muted-foreground mt-0.5">{p.month}</p>
+                <Link to="/turnir" className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 hover:bg-muted/60 transition-colors">
+                  <div className="w-10 sm:w-14 shrink-0 text-center rounded-lg sm:rounded-xl bg-secondary/10 py-1 sm:py-1.5">
+                    <p className="font-heading font-bold text-lg sm:text-2xl leading-none text-secondary">{p.day}</p>
+                    <p className="text-[10px] sm:text-[11px] uppercase text-muted-foreground mt-0.5">{p.month}</p>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-primary truncate">{t.title}</p>
+                    <p className="font-semibold text-primary break-words leading-snug text-sm sm:text-base sm:truncate">{t.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                       <span className="capitalize">{p.weekday}{t.time_msk ? `, ${t.time_msk} МСК` : ''}</span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${meta.badge}`}>
