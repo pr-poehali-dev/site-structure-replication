@@ -148,7 +148,7 @@ export default function MostActive({ kinds, note, fallback = null, heading }: Pr
   return (
     <div className="animate-fade-in flex flex-col gap-3">
       {heading && <h1 className="sr-only">{heading}</h1>}
-      <div className="grid grid-cols-2 gap-5 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         {kinds.map(k => (
           <Board key={k} period={k} players={data[k].players} total={data[k].total} onShowAll={showAll} onOpenProfile={setProfileId} />
         ))}
