@@ -29,8 +29,9 @@ const Index = () => {
         <div className="absolute inset-0 chess-grid opacity-5" />
         <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-[#2DB86B]/30 blur-3xl animate-float" />
         <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#3D7BF7]/30 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="container relative grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 gap-10 items-center px-4 py-5">
+        <div className="container relative grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 gap-10 items-center px-4 py-5 max-md:py-0">
           <MostActive
+            className="hidden md:flex"
             kinds={['month', 'all']}
             heading="Мир шахмат — центр поддержки детского шахматного спорта"
             note="Очки за участие в турнирах: разминочный — 1, тренировочный — 2, квалификационный — 3  (не зависит от результатов)"
@@ -56,7 +57,7 @@ const Index = () => {
           </div>
             }
           />
-          <MostActive kinds={['blitz', 'rapid']} note="Рейтинг МШ — по итогам турниров «Мир шахмат»" />
+          <MostActive className="hidden md:flex" kinds={['blitz', 'rapid']} note="Рейтинг МШ — по итогам турниров «Мир шахмат»" />
         </div>
       </section>
 

@@ -116,9 +116,10 @@ interface Props {
   note?: string;
   fallback?: ReactNode;
   heading?: string;
+  className?: string;
 }
 
-export default function MostActive({ kinds, note, fallback = null, heading }: Props) {
+export default function MostActive({ kinds, note, fallback = null, heading, className = '' }: Props) {
   const [data, setData] = useState<Record<string, { players: Player[]; total: number }> | null>(null);
   const [dialog, setDialog] = useState<BoardKey | null>(null);
   const [profileId, setProfileId] = useState<number | null>(null);
@@ -146,7 +147,7 @@ export default function MostActive({ kinds, note, fallback = null, heading }: Pr
   const theme = dialog ? THEMES[dialog] : null;
 
   return (
-    <div className="animate-fade-in flex flex-col gap-3">
+    <div className={`animate-fade-in flex flex-col gap-3 ${className}`}>
       {heading && <h1 className="sr-only">{heading}</h1>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         {kinds.map(k => (
