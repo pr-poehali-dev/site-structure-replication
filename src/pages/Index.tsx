@@ -29,7 +29,7 @@ const Index = () => {
         <div className="absolute inset-0 chess-grid opacity-5" />
         <div className="absolute -top-10 -left-10 w-64 h-64 rounded-full bg-[#2DB86B]/30 blur-3xl animate-float" />
         <div className="absolute bottom-0 right-10 w-72 h-72 rounded-full bg-[#3D7BF7]/30 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="container relative grid lg:grid-cols-2 gap-10 items-center px-4 py-5">
+        <div className="container relative grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 gap-10 items-center px-4 py-5">
           <MostActive
             kinds={['month', 'all']}
             heading="Мир шахмат — центр поддержки детского шахматного спорта"
@@ -63,8 +63,8 @@ const Index = () => {
       <section className="bg-gradient-to-b from-[#EEF4FF] to-white">
         <div className="container px-4 py-6 flex flex-col gap-5">
           <QuickLinks />
-          <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
-            <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+            <div className="flex flex-col gap-5 min-w-0">
               <UpcomingTournaments />
               <OlympiadsAndPerks />
             </div>
