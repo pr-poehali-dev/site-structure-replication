@@ -192,7 +192,7 @@ export default function TournamentsList({
                   <div className="flex flex-col gap-1.5 text-sm text-gray-500 mt-auto">
                     {t.location && <span className="flex items-center gap-2"><Icon name="MapPin" size={14} className="text-secondary" />{t.location}</span>}
                     {t.age_category && <span className="flex items-center gap-2"><Icon name="Users" size={14} className="text-secondary" />{t.age_category}</span>}
-                    {t.price && <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />Взнос: {t.price} ₽</span>}
+                    <span className="flex items-center gap-2"><Icon name="CreditCard" size={14} className="text-secondary" />{Number(t.price) > 0 ? `Взнос: ${t.price} ₽` : 'Бесплатно'}</span>
                     {t.time_control && <span className="flex items-center gap-2"><Icon name="Timer" size={14} className="text-secondary" />Контроль времени: {t.time_control}</span>}
                     {t.regulation_url && (
                       <a href={t.regulation_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-medium text-primary hover:underline">
