@@ -1,5 +1,9 @@
+import { useEffect, useState } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
+const STORAGE_KEY = 'invite-razgar-kanikul-seen';
 
 const PERKS = [
   { icon: 'TrendingUp', text: 'Рейтинг МШ' },
@@ -9,37 +13,57 @@ const PERKS = [
 ];
 
 export default function TournamentInviteBanner() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(STORAGE_KEY)) return;
+    const t = setTimeout(() => setOpen(true), 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleChange = (v: boolean) => {
+    setOpen(v);
+    if (!v) sessionStorage.setItem(STORAGE_KEY, '1');
+  };
+
   return (
-    <section className="bg-white pt-4">
-      <div className="container px-4">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#14224F] to-[#1B2F6B] text-white">
-          <div className="absolute -right-10 -top-10 w-56 h-56 rounded-full bg-secondary/30 blur-3xl" />
-          <div className="relative grid md:grid-cols-[1fr_auto] gap-5 items-center p-5 md:p-7">
-            <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-primary text-xs font-bold tracking-wide mb-3">
-                <Icon name="Trophy" size={14} /> ЗАПИСЬ ОТКРЫТА
-              </span>
-              <h2 className="font-heading font-bold text-2xl md:text-4xl uppercase leading-tight">
-                Турнир «Разгар каникул»
-              </h2>
-              <p className="mt-2 text-sm md:text-base text-white/80">
-                28 октября в 14:00 МСК. Онлайн, рапид 10+5, 7 туров. Для детей до 17 лет, взнос 250 ₽.
-              </p>
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                {PERKS.map(p => (
-                  <div key={p.text} className="flex items-center gap-2 text-xs bg-white/10 rounded-lg px-2.5 py-1.5">
-                    <Icon name={p.icon} size={16} className="shrink-0" />
-                    <span>{p.text}</span>
-                  </div>
-                ))}
-              </div>
+    <Dialog open={open} onOpenChange={handleChange}>
+      <DialogContent className="max-w-lg p-0 overflow-hidden border-0 rounded-3xl bg-transparent">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#7C4DFF] via-[#5B3FE0] to-[#2b1b5a] text-white p-6 md:p-8">
+          <div className="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-[#FFD83D]/40 blur-3xl" />
+          <div className="absolute -left-16 bottom-0 w-56 h-56 rounded-full bg-[#2DB86B]/40 blur-3xl" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFD83D] text-[#2b1b5a] text-xs font-extrabold tracking-wide mb-4 animate-pulse">
+              <Icon name="Trophy" size={14} /> ЗАПИСЬ ОТКРЫТА
+            </span>
+            <DialogTitle className="font-heading font-extrabold text-3xl md:text-4xl uppercase leading-tight text-white">
+              Турнир <span className="text-[#FFD83D]">«Разгар каникул»</span>
+            </DialogTitle>
+            <DialogDescription className="mt-3 text-base text-white/90">
+              Сыграйте 7 партий, получите диплом и рейтинг. Онлайн, из дома!
+            </DialogDescription>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-xl bg-white/15 px-3 py-2"><div className="text-[10px] uppercase text-white/70">Когда</div><b>28 октября, 14:00 МСК</b></div>
+              <div className="rounded-xl bg-white/15 px-3 py-2"><div className="text-[10px] uppercase text-white/70">Взнос</div><b>250 ₽</b></div>
+              <div className="rounded-xl bg-white/15 px-3 py-2"><div className="text-[10px] uppercase text-white/70">Формат</div><b>Рапид 10+5, 7 туров</b></div>
+              <div className="rounded-xl bg-white/15 px-3 py-2"><div className="text-[10px] uppercase text-white/70">Возраст</div><b>до 17 лет</b></div>
             </div>
-            <Button asChild size="lg" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold text-base h-12 px-7">
-              <a href="/turnir"><Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться</a>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {PERKS.map(p => (
+                <span key={p.text} className="inline-flex items-center gap-1.5 text-xs bg-[#FFD83D]/20 text-[#FFD83D] rounded-full px-2.5 py-1 font-semibold">
+                  <Icon name={p.icon} size={13} /> {p.text}
+                </span>
+              ))}
+            </div>
+
+            <Button asChild size="lg" className="mt-5 w-full bg-[#FFD83D] text-[#2b1b5a] hover:bg-[#ffe270] font-extrabold text-base h-12">
+              <a href="/turnir"><Icon name="CalendarCheck" size={18} className="mr-2" /> Записаться на турнир</a>
             </Button>
           </div>
         </div>
-      </div>
-    </section>
+      </DialogContent>
+    </Dialog>
   );
 }
