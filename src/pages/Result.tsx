@@ -208,7 +208,7 @@ export default function Result() {
         <section>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-1 h-8 bg-secondary rounded-full" />
-            <h2 className="font-heading font-bold text-2xl text-primary">Результаты турниров</h2>
+            <h2 className="font-heading font-bold text-2xl text-primary">Результаты турниров (Архив)</h2>
           </div>
 
           {/* Фильтры */}
