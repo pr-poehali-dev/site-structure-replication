@@ -63,7 +63,7 @@ function ElectronicColumn({ title, icon, tone, items }: { title: string; icon: s
             <Link key={e.tournament_id} to={`/result/${e.tournament_id}`}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white ${t.hover} hover:shadow-sm transition-all group`}>
               <Icon name="Trophy" size={14} className={`${t.icon} shrink-0`} />
-              <span className="flex-1 min-w-0 text-sm font-medium text-primary truncate">{e.title}</span>
+              <span className="flex-1 min-w-0 text-sm font-medium text-primary break-words">{e.title}</span>
               {e.date && <span className="text-xs text-muted-foreground shrink-0">{new Date(e.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>}
             </Link>
           ))}
