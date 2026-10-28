@@ -64,7 +64,7 @@ const Index = () => {
       <section className="bg-gradient-to-b from-[#EEF4FF] to-white">
         <div className="container px-4 py-6 flex flex-col gap-5">
           <QuickLinks />
-          <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+          <div className="max-lg:contents lg:grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
             <div className="flex flex-col gap-5 min-w-0">
               <UpcomingTournaments />
               <OlympiadsAndPerks />

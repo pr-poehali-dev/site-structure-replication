@@ -6,8 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function SidebarCards() {
   const { user } = useAuth();
   return (
-    <aside className="flex flex-col gap-4">
-      <div className="rounded-2xl bg-gradient-to-br from-[#3D7BF7] to-[#2A5FD6] text-white p-5 shadow-sm">
+    <aside className="max-lg:contents lg:flex lg:flex-col gap-4">
+      <div className="max-lg:-order-1 rounded-2xl bg-gradient-to-br from-[#3D7BF7] to-[#2A5FD6] text-white p-5 shadow-sm">
         {user ? (
           <>
             <p className="text-xs uppercase font-semibold opacity-80">Добро пожаловать</p>
