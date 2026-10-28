@@ -85,8 +85,8 @@ export default function UpcomingTournaments() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-heading font-bold text-primary">{t.price ? `${t.price} ₽` : 'Бесплатно'}</p>
-                    <p className={`text-[11px] font-semibold ${closed ? 'text-orange-600' : 'text-emerald-600'}`}>
-                      {closed ? 'Приём закрыт' : t.spots_left != null ? `Мест: ${t.spots_left}` : 'Приём открыт'}
+                    <p className={`text-[11px] font-semibold ${closed || (t.spots_left != null && t.spots_left <= 0) ? 'text-orange-600' : 'text-emerald-600'}`}>
+                      {t.spots_left != null && t.spots_left <= 0 ? 'Мест нет' : closed ? 'Приём закрыт' : t.spots_left != null ? `Мест: ${t.spots_left}` : 'Приём открыт'}
                     </p>
                   </div>
                 </Link>

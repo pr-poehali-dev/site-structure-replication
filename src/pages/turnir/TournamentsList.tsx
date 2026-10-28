@@ -124,6 +124,7 @@ export default function TournamentsList({
           {tournaments.map(t => {
             const isCancelled = t.status === 'cancelled';
             const isOpen = t.status !== 'closed' && !isCancelled;
+            const noSpots = t.spots_left != null && t.spots_left <= 0;
             const hasPreviews = !!(t.announcement_url || t.diploma_sample_url);
             const isApplied = appliedTournamentIds.includes(t.id);
             const myApp = myApplications.find(a => a.tournament_id === t.id);
@@ -144,9 +145,9 @@ export default function TournamentsList({
                     </div>
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold ${isCancelled ? 'bg-red-100 text-red-700' : isOpen ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                        {isCancelled ? 'Турнир отменён' : isOpen ? 'Приём открыт' : 'Приём закрыт'}
+                        {isCancelled ? 'Турнир отменён' : noSpots ? 'Мест нет' : isOpen ? 'Приём открыт' : 'Приём закрыт'}
                       </span>
-                      {isOpen && t.spots_left != null && (
+                      {isOpen && t.spots_left != null && !noSpots && (
                         <span className={`text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1 ${t.spots_left <= 3 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
                           <Icon name="Users" size={12} />
                           {t.spots_left > 0 ? `Осталось мест: ${t.spots_left}` : 'Мест нет'}
@@ -259,13 +260,13 @@ export default function TournamentsList({
                       <Icon name={cancellingId === t.id ? 'Loader2' : 'XCircle'} size={16} className={`mr-2 ${cancellingId === t.id ? 'animate-spin' : ''}`} />
                       Отменить участие
                     </Button>
-                  ) : isOpen ? (
+                  ) : isOpen && !noSpots ? (
                     <Button className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold" onClick={() => onOpenModal(t)}>
                       <Icon name="ClipboardCheck" size={16} className="mr-2" /> Подать заявку
                     </Button>
                   ) : (
                     <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gray-100 text-gray-400 font-semibold py-2.5 text-sm">
-                      <Icon name="Lock" size={15} /> Приём заявок завершён
+                      <Icon name="Lock" size={15} /> {noSpots ? 'Мест нет' : 'Приём заявок завершён'}
                     </div>
                   )}
                   <Button variant="outline" className="flex-1 text-primary border-primary/30 hover:bg-primary/5" onClick={() => onOpenParticipants(t)}>
