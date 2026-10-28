@@ -260,9 +260,9 @@ export default function UsersSection({ password }: UsersSectionProps) {
           <p>Участники не найдены</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           {users.map(u => (
-            <div key={u.id} className={`bg-white rounded-2xl shadow p-5 flex items-center gap-4 flex-wrap ${selected.has(u.id) ? 'ring-2 ring-secondary' : ''}`}>
+            <div key={u.id} className={`bg-white rounded-xl shadow-sm p-2.5 flex items-center gap-3 flex-wrap ${selected.has(u.id) ? 'ring-2 ring-secondary' : ''}`}>
               <input
                 type="checkbox"
                 className="w-4 h-4 accent-secondary shrink-0"
@@ -270,53 +270,53 @@ export default function UsersSection({ password }: UsersSectionProps) {
                 onChange={() => toggleOne(u.id)}
                 aria-label="Выбрать участника"
               />
-              <Avatar className="w-12 h-12 shrink-0">
+              <Avatar className="w-9 h-9 shrink-0 text-xs">
                 <AvatarImage src={u.avatar_url || undefined} alt={u.first_name} />
                 <AvatarFallback className="bg-gradient-to-br from-secondary/70 to-secondary text-white font-heading font-bold">
                   {initials(u.last_name, u.first_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-[180px]">
-                <p className="font-semibold text-primary flex items-center gap-2">
+              <div className="flex-1 min-w-[160px]">
+                <p className="font-semibold text-sm text-primary flex items-center gap-2">
                   {u.last_name} {u.first_name} {u.middle_name || ''}
                   {needsDative(u) && (
                     <span title="Заполните тренера в дательном падеже" className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
                   )}
                 </p>
-                <p className="text-sm text-gray-400">{u.email}</p>
+                <p className="text-xs text-gray-400">{u.email}</p>
               </div>
-              <div className="flex gap-3 shrink-0">
-                <div className="bg-blue-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Баланс</p>
-                  <p className="font-bold text-primary">{(u.balance ?? 0).toLocaleString('ru')} ₽</p>
+              <div className="flex gap-1.5 shrink-0 flex-wrap">
+                <div className="bg-blue-50 rounded-lg px-2 py-0.5 text-center min-w-[64px]">
+                  <p className="text-[8px] text-gray-400 uppercase tracking-wide">Баланс</p>
+                  <p className="font-bold text-xs text-primary">{(u.balance ?? 0).toLocaleString('ru')} ₽</p>
                 </div>
-                <div className="bg-green-50 rounded-lg px-3 py-1.5 text-center min-w-[80px]">
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Бонусы</p>
-                  <p className="font-bold text-primary">{(u.bonus_balance ?? 0).toLocaleString('ru')} ₽</p>
+                <div className="bg-green-50 rounded-lg px-2 py-0.5 text-center min-w-[64px]">
+                  <p className="text-[8px] text-gray-400 uppercase tracking-wide">Бонусы</p>
+                  <p className="font-bold text-xs text-primary">{(u.bonus_balance ?? 0).toLocaleString('ru')} ₽</p>
                 </div>
-                <div className="flex gap-1.5">
-                  <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">МШ Блиц</p>
-                    <p className="font-bold text-primary">{u.rating_blitz ?? '—'}</p>
+                <div className="flex gap-1">
+                  <div className="bg-muted/50 rounded-lg px-2 py-0.5 text-center min-w-[56px]">
+                    <p className="text-[8px] text-gray-400 uppercase tracking-wide">МШ Блиц</p>
+                    <p className="font-bold text-xs text-primary">{u.rating_blitz ?? '—'}</p>
                   </div>
-                  <div className="bg-muted/50 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">МШ Рапид</p>
-                    <p className="font-bold text-primary">{u.rating_rapid ?? '—'}</p>
+                  <div className="bg-muted/50 rounded-lg px-2 py-0.5 text-center min-w-[56px]">
+                    <p className="text-[8px] text-gray-400 uppercase tracking-wide">МШ Рапид</p>
+                    <p className="font-bold text-xs text-primary">{u.rating_rapid ?? '—'}</p>
                   </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <div className="bg-secondary/10 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">ФШР Блиц</p>
-                    <p className="font-bold text-primary">{u.fsr_rating_blitz ?? '—'}</p>
+                <div className="flex gap-1">
+                  <div className="bg-secondary/10 rounded-lg px-2 py-0.5 text-center min-w-[56px]">
+                    <p className="text-[8px] text-gray-400 uppercase tracking-wide">ФШР Блиц</p>
+                    <p className="font-bold text-xs text-primary">{u.fsr_rating_blitz ?? '—'}</p>
                   </div>
-                  <div className="bg-secondary/10 rounded-lg px-3 py-1.5 text-center min-w-[70px]">
-                    <p className="text-[9px] text-gray-400 uppercase tracking-wide">ФШР Рапид</p>
-                    <p className="font-bold text-primary">{u.fsr_rating_rapid ?? '—'}</p>
+                  <div className="bg-secondary/10 rounded-lg px-2 py-0.5 text-center min-w-[56px]">
+                    <p className="text-[8px] text-gray-400 uppercase tracking-wide">ФШР Рапид</p>
+                    <p className="font-bold text-xs text-primary">{u.fsr_rating_rapid ?? '—'}</p>
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => openEdit(u)} className="shrink-0">
-                <Icon name="Pencil" size={14} className="mr-1" /> Редактировать
+              <Button variant="outline" size="sm" onClick={() => openEdit(u)} className="shrink-0 h-8 px-2" title="Редактировать">
+                <Icon name="Pencil" size={14} />
               </Button>
             </div>
           ))}
