@@ -1,0 +1,3 @@
+INSERT INTO t_p58220589_site_structure_repli.applications (tournament_id, tournament_title, fio, age, fsr_id, coach, country_city, email, phone, status, user_id, paid_from_balance, price, bonus_paid)
+SELECT 57, 'Разгар каникул', 'Мозжерин Иван', '14', '557237', 'Шабуров Алексей Георгиевич', 'Кунгур, Россия', 'ivanmozzherin@mail.ru', '+79519500023', 'paid', 226, false, 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM t_p58220589_site_structure_repli.applications WHERE tournament_id = 57 AND user_id = 226);
