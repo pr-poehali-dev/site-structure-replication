@@ -14,6 +14,8 @@ export interface Tournament {
   regulation_url: string | null;
   announcement_url: string | null;
   max_participants?: number | null;
+  rating_min?: number | null;
+  rating_max?: number | null;
   lila_tournament_id?: string | null;
   spots_left?: number | null;
   rating_type?: 'blitz' | 'rapid';

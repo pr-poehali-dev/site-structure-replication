@@ -141,6 +141,12 @@ export default function TournamentsList({
                         <TournamentTypeBadge type={t.tournament_type} />
                         <RatingTypeBadge type={t.rating_type} />
                         <ActivityPointsBadge type={t.tournament_type} />
+                        {(t.rating_min != null || t.rating_max != null) && (
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold border bg-slate-100 text-slate-800 border-slate-300">
+                            <Icon name="Gauge" size={11} />
+                            Рейтинг {t.rating_min != null && t.rating_max != null ? `${t.rating_min}–${t.rating_max}` : t.rating_min != null ? `от ${t.rating_min}` : `до ${t.rating_max}`}
+                          </span>
+                        )}
                       </div>
                       <h2 className="font-heading font-bold text-xl text-primary leading-tight">{t.title}</h2>
                     </div>

@@ -176,6 +176,8 @@ export default function TournamentsSection({
               price: tForm.price ? parseFloat(tForm.price) : null,
               rounds_count: tForm.rounds_count ? parseInt(tForm.rounds_count, 10) : 5,
               max_participants: tForm.max_participants ? parseInt(tForm.max_participants, 10) : null,
+              rating_min: tForm.rating_min !== '' ? parseInt(tForm.rating_min, 10) : null,
+              rating_max: tForm.rating_max !== '' ? parseInt(tForm.rating_max, 10) : null,
               ...(isEdit ? { _action: 'update', id: tEditId } : {}),
             }),
           });
@@ -218,6 +220,8 @@ export default function TournamentsSection({
       rating_type: t.rating_type || 'rapid',
       tournament_type: t.tournament_type || 'qualifying',
       max_participants: t.max_participants != null ? String(t.max_participants) : '',
+      rating_min: t.rating_min != null ? String(t.rating_min) : '',
+      rating_max: t.rating_max != null ? String(t.rating_max) : '',
       admin_message: t.admin_message || '',
       lila_tournament_ref: t.lila_tournament_id || '',
       lila_tournament_password: t.lila_tournament_password || '',
@@ -368,6 +372,8 @@ export default function TournamentsSection({
           <div><Label>Время МСК</Label><Input className="mt-1" placeholder="19:00" value={tForm.time_msk} onChange={e => setTForm({ ...tForm, time_msk: e.target.value })} /></div>
           <div><Label>Число туров (швейцарская система)</Label><Input type="number" min={1} max={15} className="mt-1" value={tForm.rounds_count} onChange={e => setTForm({ ...tForm, rounds_count: e.target.value })} /></div>
           <div><Label>Максимальное число участников</Label><Input type="number" min={1} className="mt-1" placeholder="Без ограничения" value={tForm.max_participants} onChange={e => setTForm({ ...tForm, max_participants: e.target.value })} /></div>
+          <div><Label>Рейтинг участников: от</Label><Input type="number" min={0} className="mt-1" placeholder="Без ограничения" value={tForm.rating_min} onChange={e => setTForm({ ...tForm, rating_min: e.target.value })} /></div>
+          <div><Label>Рейтинг участников: до</Label><Input type="number" min={0} className="mt-1" placeholder="Без ограничения" value={tForm.rating_max} onChange={e => setTForm({ ...tForm, rating_max: e.target.value })} /></div>
           <div>
             <Label>Тип турнира</Label>
             <select
