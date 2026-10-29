@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Header, Footer } from '@/components/Layout';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,32 @@ export default function PuzzleSolve() {
   const [hintSquare, setHintSquare] = useState<string | null>(null);
   const [hintText, setHintText] = useState('');
   const [newlySolved, setNewlySolved] = useState(false);
+
+  const navigate = useNavigate();
+  const [all, setAll] = useState<Puzzle[]>([]);
+  const [levels, setLevels] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem('puzzle-levels') || '[]'); } catch { return []; }
+  });
+
+  useEffect(() => {
+    fetch(PUZZLES_URL, { headers: token ? { 'X-Auth-Token': token } : {} })
+      .then(r => r.json())
+      .then(d => setAll(d.puzzles || []))
+      .catch(() => {});
+  }, [token]);
+
+  function toggleLevel(l: number) {
+    const next = levels.includes(l) ? levels.filter(x => x !== l) : [...levels, l];
+    setLevels(next);
+    localStorage.setItem('puzzle-levels', JSON.stringify(next));
+  }
+
+  const pool = all.filter(p => !levels.length || levels.includes(p.difficulty));
+  const curIdx = all.findIndex(p => String(p.id) === String(puzzleId));
+  const after = pool.filter(p => all.indexOf(p) > curIdx);
+  const before = pool.filter(p => all.indexOf(p) < curIdx);
+  const nextPuzzle = after[0] || pool.find(p => String(p.id) !== String(puzzleId)) || null;
+  const prevPuzzle = before.length ? before[before.length - 1] : [...pool].reverse().find(p => String(p.id) !== String(puzzleId)) || null;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['X-Auth-Token'] = token;
@@ -134,6 +160,25 @@ export default function PuzzleSolve() {
                   <Button variant="outline" onClick={showHint} disabled={busy}><Icon name="Lightbulb" size={15} className="mr-2" />Подсказка</Button>
                 )}
                 <Button variant="outline" onClick={() => reset(puzzle)}><Icon name="RotateCcw" size={15} className="mr-2" />Сначала</Button>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" disabled={!prevPuzzle} onClick={() => prevPuzzle && navigate(`/puzzles/${prevPuzzle.id}`)}>
+                  <Icon name="ChevronLeft" size={16} className="mr-1" />Предыдущая
+                </Button>
+                <Button className="flex-1" disabled={!nextPuzzle} onClick={() => nextPuzzle && navigate(`/puzzles/${nextPuzzle.id}`)}>
+                  Следующая<Icon name="ChevronRight" size={16} className="ml-1" />
+                </Button>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Категории задач{levels.length ? '' : ' (выбраны все)'}</p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map(l => (
+                    <button key={l} onClick={() => toggleLevel(l)}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${levels.includes(l) ? 'bg-secondary text-secondary-foreground border-secondary' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+                      {DIFFICULTY_LABELS[l]}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
