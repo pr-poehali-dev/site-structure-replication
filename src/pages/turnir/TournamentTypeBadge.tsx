@@ -27,6 +27,21 @@ export const TYPE_META: Record<TournamentType, { label: string; icon: string; ba
   },
 };
 
+export const TYPE_POINTS: Record<TournamentType, number> = { warmup: 1, training: 2, qualifying: 3 };
+
+export function getTypePoints(type?: string) {
+  return TYPE_POINTS[(type as TournamentType)] ?? 3;
+}
+
+export function ActivityPointsBadge({ type }: { type?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold border bg-violet-100 text-violet-800 border-violet-300">
+      <Icon name="Flame" size={11} />
+      + {getTypePoints(type)} очк{getTypePoints(type) === 1 ? 'о' : 'а'} активности
+    </span>
+  );
+}
+
 export function getTypeMeta(type?: string) {
   return TYPE_META[(type as TournamentType)] || TYPE_META.qualifying;
 }

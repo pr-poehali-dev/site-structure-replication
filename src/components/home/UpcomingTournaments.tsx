@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
-import { getTypeMeta } from '@/pages/turnir/TournamentTypeBadge';
+import { getTypeMeta, ActivityPointsBadge } from '@/pages/turnir/TournamentTypeBadge';
 import func2url from '../../../backend/func2url.json';
 
 const PUBLIC_URL = func2url['tournaments-public'];
@@ -81,6 +81,7 @@ export default function UpcomingTournaments() {
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${t.rating_type === 'blitz' ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-100 text-sky-800 border-sky-300'}`}>
                         <Icon name={t.rating_type === 'blitz' ? 'Zap' : 'Clock'} size={11} /> {t.rating_type === 'blitz' ? 'Блиц' : 'Рапид'}
                       </span>
+                      <ActivityPointsBadge type={t.tournament_type} />
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
