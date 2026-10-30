@@ -1,0 +1,1 @@
+UPDATE t_p58220589_site_structure_repli.users SET fsr_rating_rapid = 1003, fsr_rating_blitz = 1017, rating_rapid = 1003, rating_blitz = 1017 WHERE id = 307 AND fsr_id = '768827';

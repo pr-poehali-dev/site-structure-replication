@@ -9,6 +9,7 @@ import { UserAccount, AUTH_URL } from './adminTypes';
 import func2url from '../../../backend/func2url.json';
 
 const BALANCE_URL = func2url['balance'];
+const LILA_SYNC_URL = func2url['lila-sync'];
 
 interface UsersSectionProps {
   password: string;
@@ -347,6 +348,18 @@ export default function UsersSection({ password }: UsersSectionProps) {
               <h2 className="font-bold text-xl text-primary">Редактирование участника</h2>
               <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600"><Icon name="X" size={20} /></button>
             </div>
+            <Button type="button" variant="outline" size="sm" className="mb-4" onClick={async () => {
+              const res = await fetch(LILA_SYNC_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+                body: JSON.stringify({ _action: 'admin_push_rating', user_id: editUser.id }),
+              });
+              const d = await res.json();
+              if (res.ok) toast.success(`Рейтинг отправлен в Лилу: рапид ${d.rapid}, блиц ${d.blitz}`);
+              else toast.error(d.error || 'Не удалось отправить рейтинг в Лилу');
+            }}>
+              <Icon name="Send" size={14} className="mr-1" /> Отправить рейтинг в Лилу
+            </Button>
             <form onSubmit={handleSaveUser} className="flex flex-col gap-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Личные данные</p>

@@ -32,7 +32,7 @@ def cors_headers():
     return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-Bridge-Secret',
+        'Access-Control-Allow-Headers': 'X-Admin-Password, Content-Type, X-Auth-Token, X-Bridge-Secret',
     }
 
 
@@ -244,6 +244,31 @@ def handler(event: dict, context) -> dict:
     # Вызывается фронтендом фоном сразу после регистрации/логина — если у пользователя
     # ещё нет зеркального аккаунта Lila, создаёт его. Идемпотентно: повторный вызов при
     # уже готовом аккаунте ничего не делает.
+    if method == 'POST' and action == 'admin_push_rating':
+        admin_pw = headers.get('X-Admin-Password') or headers.get('x-admin-password', '')
+        if not os.environ.get('ADMIN_PASSWORD') or admin_pw != os.environ['ADMIN_PASSWORD']:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Неверный пароль'})}
+        cur.execute("SELECT lila_username, rating_blitz, rating_rapid FROM users WHERE id = %s", (int(body.get('user_id', 0)),))
+        row = cur.fetchone()
+        if not row or not row[0]:
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers(), 'body': json.dumps({'error': 'Аккаунт Lila не найден'})}
+        base = os.environ.get('LILA_BRIDGE_URL', 'https://play.xn----8sba3atdzuy2a.xn--p1ai').strip().rstrip('/')
+        payload = json.dumps({'username': row[0], 'blitz': int(row[1] or 1000), 'rapid': int(row[2] or 1000)}).encode()
+        req = urllib.request.Request(f"{base}/bridge/set-rating", data=payload, method='POST')
+        req.add_header('Content-Type', 'application/json')
+        req.add_header('User-Agent', 'Mozilla/5.0 (lila-sync-bridge)')
+        req.add_header('X-Bridge-Secret', os.environ.get('LILA_BRIDGE_SECRET', ''))
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            ok = resp.status == 200
+            text = resp.read().decode()[:300]
+        if ok:
+            cur.execute("UPDATE users SET lila_rating_seeded_at = now() WHERE id = %s", (int(body.get('user_id', 0)),))
+            conn.commit()
+        conn.close()
+        return {'statusCode': 200 if ok else 502, 'headers': cors_headers(), 'body': json.dumps({'ok': ok, 'lila_response': text, 'blitz': row[1], 'rapid': row[2]})}
+
     if method == 'POST' and action == 'ensure_account':
         user = get_user_by_token(cur, auth_token)
         if not user:
