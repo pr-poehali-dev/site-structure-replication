@@ -114,6 +114,15 @@ export default function MailingSection({ password }: { password: string }) {
             <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-100">
               {html ? <iframe title="Предпросмотр письма" srcDoc={html} className="w-full h-[600px] bg-white" /> : <p className="p-6 text-sm text-gray-500">Загрузка...</p>}
             </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-primary flex items-center gap-2"><Icon name="Code" size={16} /> HTML письма</p>
+                <Button type="button" variant="outline" size="sm" disabled={!html} onClick={() => { navigator.clipboard.writeText(html); toast.success('HTML скопирован'); }}>
+                  <Icon name="Copy" size={14} className="mr-1.5" /> Копировать
+                </Button>
+              </div>
+              <Textarea readOnly value={html} rows={10} className="font-mono text-xs" />
+            </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Input type="email" placeholder="Email для тестового письма" value={testEmail} onChange={e => setTestEmail(e.target.value)} />
               <Button onClick={sendTest} disabled={busy || !testEmail} variant="outline" className="shrink-0">Отправить тест</Button>
