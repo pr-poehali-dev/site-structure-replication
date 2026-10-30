@@ -22,6 +22,7 @@ import SubscriptionsSection from './admin/SubscriptionsSection';
 import PromoCodesSection from './admin/PromoCodesSection';
 import SubscriptionPlansSection from './admin/SubscriptionPlansSection';
 import FsrRatingsSection from './admin/FsrRatingsSection';
+import MailingSection from './admin/MailingSection';
 import LogsSection from './admin/LogsSection';
 import BalanceSection from './admin/BalanceSection';
 import ReferralStatsSection from './admin/ReferralStatsSection';
@@ -289,6 +290,7 @@ export default function Admin() {
             ['fsr-ratings', 'FileSpreadsheet', 'Файлы рейтинга'],
             ['balance', 'Wallet', 'Баланс'],
             ['referrals', 'Share2', 'Рефералы'],
+            ['mailing', 'Mail', 'Рассылки'],
             ['logs', 'ScrollText', 'Логи'],
           ] as const).map(([key, icon, label]) => (
             <button key={key} onClick={() => setSection(key)}
@@ -449,6 +451,8 @@ export default function Admin() {
             fetchSubs={fetchSubs}
           />
         )}
+
+        {section === 'mailing' && <MailingSection password={password} />}
 
         {/* === ПРОМОКОДЫ === */}
         {section === 'promo-codes' && (
