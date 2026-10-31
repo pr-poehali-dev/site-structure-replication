@@ -153,7 +153,8 @@ def handler(event: dict, context) -> dict:
             res = send_batch(chunk, subject, html, sender_email)
             if res.get('error'):
                 failed += len(chunk)
-                errors.append(res.get('error'))
+                errors.append(f"{res.get('error')} ({res.get('code', '')})")
+                print(f"Unisender sendEmail error: {json.dumps(res, ensure_ascii=False)}")
             else:
                 sent += len(chunk)
 
