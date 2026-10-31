@@ -26,6 +26,7 @@ import MailingSection from './admin/MailingSection';
 import LogsSection from './admin/LogsSection';
 import BalanceSection from './admin/BalanceSection';
 import ReferralStatsSection from './admin/ReferralStatsSection';
+import ActivistAwardsSection from './admin/ActivistAwardsSection';
 import PushNotificationsButton from './admin/PushNotificationsButton';
 import ResetDemoGameButton from './admin/ResetDemoGameButton';
 
@@ -290,6 +291,7 @@ export default function Admin() {
             ['fsr-ratings', 'FileSpreadsheet', 'Файлы рейтинга'],
             ['balance', 'Wallet', 'Баланс'],
             ['referrals', 'Share2', 'Рефералы'],
+            ['activist-awards', 'Trophy', 'Активист месяца'],
             ['mailing', 'Mail', 'Рассылки'],
             ['logs', 'ScrollText', 'Логи'],
           ] as const).map(([key, icon, label]) => (
@@ -438,6 +440,8 @@ export default function Admin() {
         )}
 
         {section === 'puzzles' && <PuzzlesAdminSection password={password} />}
+
+        {section === 'activist-awards' && <ActivistAwardsSection password={password} />}
 
         {section === 'electronic-results' && <ElectronicResultsSection password={password} />}
 

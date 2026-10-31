@@ -114,7 +114,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = { new: 'bg-blue-100 t
 export const ICON_OPTIONS = ['award', 'trophy', 'medal', 'star', 'gift', 'crown'];
 export const EMPTY_TR_FORM = { number: '', date: '', title: '', fsr_rating: '', protocol_url: '', regulation_url: '' };
 
-export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'electronic-results' | 'puzzles' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings' | 'logs' | 'balance' | 'referrals' | 'mailing';
+export type Section = 'tournaments' | 'archive' | 'applications' | 'users' | 'awards' | 'award-orders' | 'results' | 'electronic-results' | 'puzzles' | 'subscriptions' | 'promo-codes' | 'subscription-plans' | 'fsr-ratings' | 'logs' | 'balance' | 'referrals' | 'mailing' | 'activist-awards';
 
 export interface ActivityLog {
   id: number; user_id: number; fio: string; email: string;

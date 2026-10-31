@@ -14,11 +14,12 @@ import GamesHistorySection from './cabinet/GamesHistorySection';
 import ReferralsSection from './cabinet/ReferralsSection';
 import ComingSoon from './cabinet/ComingSoon';
 import PuzzlesSection from './cabinet/PuzzlesSection';
+import AchievementsSection from './cabinet/AchievementsSection';
 import CabinetSidebar, { CabinetTab } from './cabinet/CabinetSidebar';
 import { formatDate } from './cabinet/utils';
 import { useMyApplications } from '@/hooks/useMyApplications';
 
-const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders', 'referrals', 'puzzles'];
+const VALID_TABS: CabinetTab[] = ['tournaments', 'profile', 'balance', 'rating', 'games', 'orders', 'referrals', 'puzzles', 'achievements'];
 
 export default function Cabinet() {
   const { user, loading } = useAuth();
@@ -136,6 +137,7 @@ export default function Cabinet() {
             {tab === 'games' && <GamesHistorySection />}
             {tab === 'referrals' && <ReferralsSection />}
             {tab === 'puzzles' && <PuzzlesSection />}
+            {tab === 'achievements' && <AchievementsSection />}
             {tab === 'orders' && (
               <ComingSoon icon="Package" title="Заказы атрибутики" description="Здесь появится история ваших заказов кубков, медалей и другой турнирной атрибутики." />
             )}
