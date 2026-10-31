@@ -310,6 +310,36 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'ok': True})}
 
+    if method == 'POST' and action in ('upload_avatar', 'remove_avatar'):
+        user = get_user_by_token(cur, token)
+        if not user:
+            conn.close()
+            return {'statusCode': 401, 'headers': cors_headers(), 'body': json.dumps({'error': 'Не авторизован'})}
+        if action == 'remove_avatar':
+            cur.execute("UPDATE users SET avatar_url = NULL WHERE id = %s", (user['id'],))
+        else:
+            ext_map = {'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'}
+            content_type = body.get('content_type') or ''
+            if content_type not in ext_map:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Допустимы фото JPG, PNG или WEBP'})}
+            try:
+                data = base64.b64decode(body.get('photo_b64') or '')
+            except Exception:
+                data = b''
+            if not data or len(data) > 5 * 1024 * 1024:
+                conn.close()
+                return {'statusCode': 400, 'headers': cors_headers(), 'body': json.dumps({'error': 'Фото должно быть не больше 5 МБ'})}
+            key = f"avatars/{user['id']}_{uuid.uuid4().hex[:12]}.{ext_map[content_type]}"
+            get_s3().put_object(Bucket='files', Key=key, Body=data, ContentType=content_type)
+            cur.execute("UPDATE users SET avatar_url = %s WHERE id = %s", (cdn_url(key), user['id']))
+            cur.execute("INSERT INTO avatar_bonuses (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING", (user['id'],))
+        conn.commit()
+        cur.execute(f"{USER_SELECT} WHERE id = %s", (user['id'],))
+        row = cur.fetchone()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers(), 'body': json.dumps({'user': user_to_dict(row)})}
+
     if method == 'POST' and action == 'update_profile':
         user = get_user_by_token(cur, token)
         if not user:

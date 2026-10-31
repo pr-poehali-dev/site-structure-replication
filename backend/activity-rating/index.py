@@ -53,6 +53,9 @@ def collect_participation(cur):
         if (tid, uid) not in part and tid in info:
             pts, tdate = info[tid]
             part[(tid, uid)] = (pts, tdate)
+    cur.execute("SELECT user_id, awarded_at FROM avatar_bonuses")
+    for uid, awarded_at in cur.fetchall():
+        part[('avatar', uid)] = (1, awarded_at.date())
     return part
 
 
@@ -63,7 +66,7 @@ def build_ranking(part, period):
         if period == 'month' and not (when and when.year == today.year and when.month == today.month):
             continue
         cur_pts, cnt = totals.get(uid, (0, 0))
-        totals[uid] = (cur_pts + pts, cnt + 1)
+        totals[uid] = (cur_pts + pts, cnt + (0 if tid == 'avatar' else 1))
     ordered = sorted(totals.items(), key=lambda x: (-x[1][0], -x[1][1], x[0]))
     ranking = []
     prev_key, place = None, 0
@@ -89,7 +92,7 @@ def handler(event: dict, context) -> dict:
     rating_kind = params.get('rating')
     if rating_kind in ('blitz', 'rapid'):
         col = 'rating_blitz' if rating_kind == 'blitz' else 'rating_rapid'
-        ids = sorted({uid for (_, uid) in collect_participation(cur)})
+        ids = sorted({uid for (tid, uid) in collect_participation(cur) if tid != 'avatar'})
         players = []
         if ids:
             id_list = ','.join(str(i) for i in ids)

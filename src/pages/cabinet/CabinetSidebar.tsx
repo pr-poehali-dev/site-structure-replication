@@ -80,6 +80,17 @@ export default function CabinetSidebar({ tab, onChange }: Props) {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
 
+        {!user.avatar_url && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 text-xs font-medium text-orange-700 animate-pulse hover:bg-orange-100 transition-colors"
+          >
+            <Icon name="ArrowUp" size={16} className="shrink-0 animate-bounce" />
+            Поставьте аватарку и получите +1 очко активности
+          </button>
+        )}
+
         <div>
           <p className="font-heading font-bold text-base text-primary leading-tight">{user.last_name} {user.first_name}</p>
           <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>

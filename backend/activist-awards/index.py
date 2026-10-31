@@ -49,6 +49,9 @@ def collect_participation(cur):
     for tid, uid in cur.fetchall():
         if (tid, uid) not in part and tid in info:
             part[(tid, uid)] = info[tid]
+    cur.execute(f"SELECT user_id, awarded_at FROM {SCHEMA}.avatar_bonuses")
+    for uid, awarded_at in cur.fetchall():
+        part[('avatar', uid)] = (1, awarded_at.date())
     return part
 
 
@@ -58,7 +61,7 @@ def month_ranking(part, month):
         if not when or when.strftime('%Y-%m') != month:
             continue
         p, c = totals.get(uid, (0, 0))
-        totals[uid] = (p + pts, c + 1)
+        totals[uid] = (p + pts, c + (0 if tid == 'avatar' else 1))
     ordered = sorted(totals.items(), key=lambda x: (-x[1][0], -x[1][1], x[0]))
     out, prev, place = [], None, 0
     for i, (uid, (p, c)) in enumerate(ordered, start=1):
